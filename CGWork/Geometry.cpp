@@ -86,7 +86,7 @@ HomogeneousPoint::HomogeneousPoint()
 }
 
 HomogeneousPoint::HomogeneousPoint(double x_, double y_, double z_, double w_)
-	: HomogeneousPoint(x, y, z, w)
+	: x(x_), y(y_), z(z_), w(w_)
 {
 }
 
@@ -110,12 +110,14 @@ LineSegment::LineSegment(const Point3D& p0_, const Point3D& p1_)
 {
 }
 
-Polygon::Polygon(const std::vector<Point3D>& points_)
+Polygon3D::Polygon3D() {}
+
+Polygon3D::Polygon3D(const std::vector<Point3D>& points_)
 	: points(points_)
 {
 }
 
-std::vector<LineSegment> Polygon::Edges() const
+std::vector<LineSegment> Polygon3D::Edges() const
 {
 	std::vector<LineSegment> res;
 	res.reserve(points.size());
@@ -126,7 +128,7 @@ std::vector<LineSegment> Polygon::Edges() const
 	return res;
 }
 
-Vector3D Polygon::Normal() const
+Vector3D Polygon3D::Normal() const
 {
 	for (int i = 0; i < points.size(); ++i)
 	{
@@ -142,7 +144,9 @@ Vector3D Polygon::Normal() const
 	return Point3D::Zero;
 }
 
-PolygonalObject::PolygonalObject(const std::vector<PolygonalObject>& polygons_)
+PolygonalObject::PolygonalObject() {}
+
+PolygonalObject::PolygonalObject(const std::vector<Polygon3D>& polygons_)
 	: polygons(polygons_)
 {
 }

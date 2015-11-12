@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GEOMETRY_H
+#define GEOMETRY_H
 
 #include <vector>
 
@@ -65,10 +66,11 @@ public:
 	Point3D p0, p1;
 };
 
-class Polygon
+class Polygon3D
 {
 public:
-	Polygon(const std::vector<Point3D>& points_);
+	Polygon3D();
+	Polygon3D(const std::vector<Point3D>& points_);
 
 	std::vector<LineSegment> Edges() const;
 	Vector3D Normal() const;
@@ -78,7 +80,11 @@ public:
 
 class PolygonalObject
 {
-	PolygonalObject(const std::vector<PolygonalObject>& polygons_);
+public:
+	PolygonalObject();
+	PolygonalObject(const std::vector<Polygon3D>& polygons_);
 
-	std::vector<PolygonalObject> polygons;
+	std::vector<Polygon3D> polygons;
 };
+
+#endif

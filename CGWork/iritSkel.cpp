@@ -1,5 +1,10 @@
 #include "stdafx.h"
 #include "iritSkel.h"
+
+#include <vector>
+#include "Geometry.h"
+#include "IritAdapter.h"
+
 /*****************************************************************************
 * Skeleton for an interface to a parser to read IRIT data files.			 *
 ******************************************************************************
@@ -75,6 +80,11 @@ bool CGSkelProcessIritDataFiles(CString &FileNames, int NumFiles)
 	/* Traverse ALL the parsed data, recursively. */
 	IPTraverseObjListHierarchy(PObjects, CrntViewMat, 
 		CGSkelDumpOneTraversedObject);
+
+	// Convert to our data structure:
+	IritAdapter::Convert(PObjects);
+	// Finished converting
+
 	return true;
 }
 
@@ -297,3 +307,61 @@ int CGSkelGetObjectTransp(IPObjectStruct *PObj, double *Transp)
 	return !IP_ATTR_IS_BAD_REAL(*Transp);
 }
 
+namespace IritAdapter
+{
+	Polygon3D ConvertPolygon(IPPolygonStruct* p)
+	{
+		std::vector<Point3D> vertices;
+		IPVertexStruct* v = p->PVertex;
+		while (v != NULL)
+		{
+			// assume 3D. no indication in structure...
+			vertices.push_back(Point3D(v->Coord[0], v->Coord[1], v->Coord[2]));
+			v = v->Pnext;
+		}
+		return Polygon3D(vertices);
+	}
+
+	PolygonalObject ConvertSingleObject(IPObjectStruct* iritObjects)
+	{
+		if (!IP_IS_POLYGON_OBJ(iritObjects))
+		{
+			throw ConvertError();
+		}
+		std::vector<Polygon3D> currPolys;
+		IPPolygonStruct* currPoly = iritObjects->U.Pl;
+		while (currPoly != NULL)
+		{
+			currPolys.push_back(ConvertPolygon(currPoly));
+			currPoly = currPoly->Pnext;
+		}
+		return PolygonalObject(currPolys);
+	}
+
+	std::vector<PolygonalObject> Convert(IPObjectStruct* iritObjects)
+	{
+		std::vector<PolygonalObject> res;
+		if (IP_IS_OLST_OBJ(iritObjects))
+		{
+			std::vector<PolygonalObject> res;
+			res.reserve(iritObjects->U.Lst.ListMaxLen);
+			IPObjectStruct** currObject = iritObjects->U.Lst.PObjList;
+			while ((*currObject) != NULL)
+			{
+				res.push_back(ConvertSingleObject(*currObject));
+				++currObject;
+			}
+			return res;
+		}
+		else if (IP_IS_POLYGON_OBJ(iritObjects))
+		{
+			std::vector<PolygonalObject> res;
+			res.push_back(ConvertSingleObject(iritObjects));
+			return res;
+		}
+		else
+		{
+			throw ConvertError();
+		}
+	}
+}
