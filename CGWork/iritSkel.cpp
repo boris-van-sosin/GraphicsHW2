@@ -50,8 +50,15 @@ bool CGSkelProcessIritDataFiles(CString &FileNames, int NumFiles)
 
 	/* Get the data files: */
 	IPSetFlattenObjects(FALSE);
-	if ((PObjects = IPGetDataFiles((const char* const *)(LPCTSTR*)&FileNames, 1/*NumFiles*/, TRUE, FALSE)) == NULL)
+	// Boris' patch: convert FileNames to an array of size 1
+	// then convert it from wide char to char
+	LPCTSTR* tmp1 = (LPCTSTR*)&FileNames;
+	char tmp2[201];
+	char* tmp3[1] = { tmp2 };
+	wcstombs(tmp2, *tmp1, 200);
+	if ((PObjects = IPGetDataFiles(tmp3, 1/*NumFiles*/, TRUE, FALSE)) == NULL)
 		return false;
+	// End of patch
 	PObjects = IPResolveInstances(PObjects);
 
 	if (IPWasPrspMat)
