@@ -1,0 +1,5 @@
+look for lst -> pl
+Scene
+	Objects
+		Vertices
+		Polygons (lines, normals)
