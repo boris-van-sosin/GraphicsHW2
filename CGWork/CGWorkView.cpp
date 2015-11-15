@@ -253,24 +253,61 @@ void tempDrawLine(CDC* pDC, int x0, int y0, int x1, int y1, COLORREF clr) {
 	int dx = x1 - x0;
 	int dy = y1 - y0;
 
-	if (dx != 0 && abs(dy / dx) < 1) { // small sloap
+	bool swapXY = false;
+	if (abs(dy) > dx)
+	{
+		swap(x0, y0);
+		swap(x1, y1);
+		if (x0 > x1) {
+			swap(x0, x1);
+			swap(y0, y1);
+		}
+		dx = x1 - x0;
+		dy = y1 - y0;
+		swapXY = true;
+	}
+
+	bool reverseY = (dy < 0); // was: && ((-dy) < dx)
+	if (reverseY)
+	{
+		dy = -dy;
+	}
+
+	if (dx > 0 && dy >= 0 && dy<dx) {
 
 		int err = 2 * dy - dx;
-
+		int horizontal = 2 * dy, diagonal = 2*(dy - dx);
 		SetPixel(*pDC, x0, y0, clr);
 		int y = y0;
 
 		for (int x = x0 + 1; x <= x1; x++) {
-			SetPixel(*pDC, x, y, clr);
-			err += 2 * dy;
-			if (err != 0) {
-				int err_sign = err > 0 ? 1 : -1;
-				y += err_sign;
-				err -= 2 * dx * err_sign;
+			if (err < 0) {
+				err = err + horizontal;
+			}
+			else
+			{
+				err = err + diagonal;
+				if (!reverseY)
+				{
+					++y;
+				}
+				else
+				{
+					--y;
+				}
+			}
+			if (!swapXY)
+			{
+				SetPixel(*pDC, x, y, clr);
+			}
+			else
+			{
+				SetPixel(*pDC, y, x, clr);
 			}
 		}
 	}
-	else { // large sloap - swapping x, y
+	else { // large slope - swapping x, y
+		/*
 		if (y0 > y1) {
 			swap(x0, x1);
 			swap(y0, y1);
@@ -293,6 +330,7 @@ void tempDrawLine(CDC* pDC, int x0, int y0, int x1, int y1, COLORREF clr) {
 				err -= 2 * dy * err_sign;
 			}
 		}
+		*/
 	}
 }
 // temp code end
@@ -305,40 +343,34 @@ void CCGWorkView::OnDraw(CDC* pDC)
 	    return;
 
 	// some drawing teset
+	
+	int points[][4] = {
+		{ 0, 0, 700, 50 },
+		{ 0, 0, 100, 50 },
+		{ 0, 300, 100, 250 },
+		{ 0, 300, 800, 250 },
+		{ 300, 300, 200, 250 },
+		{ 50, 300, 70, 0 },
+		{100,50,150,400},
+		{300,300,400,0},
+		{ 150, 150, 150, 20 },
+		{70,60,70,80},
+		{ 50, 80, 100, 80 },
+		{ 100, 90, 50, 90 },
+	};
 
-	int num = 0;
-	if (num > 0){ // weather to draw debug or actual lines
-		//0
-		pDC->MoveTo(0, 0);
-		LineTo(*pDC, 700, 50);
+	int xd = 500, yd = 0;
 
-		//1
-		pDC->MoveTo(0, 0);
-		LineTo(*pDC, 100, 50);
+	for (int i = 0; i < sizeof(points) / sizeof(points[0]); ++i) {
+		pDC->MoveTo(xd + points[i][0], yd + points[i][1]);
+		LineTo(*pDC, xd + points[i][2], yd + points[i][3]);
 
-		// 2
-		pDC->MoveTo(0, 300);
-		LineTo(*pDC, 100, 250);
+		if (points[i][0] == 150)
+		{
+			int j = 0;
+		}
 
-		// 3
-		pDC->MoveTo(100, 50);
-		LineTo(*pDC, 150, 400);
-
-		// 4
-		pDC->MoveTo(300, 300);
-		LineTo(*pDC, 400, 0);
-
-		// 5
-		//pDC->MoveTo(150, 150);
-		//LineTo(*pDC, 150, 20);
-	}
-	else {
-		tempDrawLine(pDC, 0, 0, 700, 50, RGB(255, 0, 0)); //0
-		tempDrawLine(pDC, 0, 0, 100, 50, RGB(255, 0, 0)); //1
-		tempDrawLine(pDC, 0, 300, 100, 250, RGB(255, 0, 0)); //2
-		tempDrawLine(pDC, 100, 50, 150, 400, RGB(255, 0, 0)); //3
-		tempDrawLine(pDC, 300, 300, 400, 0, RGB(255, 0, 0)); //4
-		//tempDrawLine(pDC, 150, 150, 150, 20, RGB(255, 0, 0)); //5
+		tempDrawLine(pDC, points[i][0], points[i][1], points[i][2], points[i][3], RGB(255, 0, 0));
 	}
 
 }
