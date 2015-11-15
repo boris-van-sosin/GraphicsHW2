@@ -221,12 +221,126 @@ BOOL CCGWorkView::OnEraseBkgnd(CDC* pDC)
 // CCGWorkView drawing
 /////////////////////////////////////////////////////////////////////////////
 
+// this is temp code
+/*
+plotLine(x0,y0, x1,y1)
+dx=x1-x0
+dy=y1-y0
+
+D = 2*dy - dx
+plot(x0,y0)
+y=y0
+
+for x from x0+1 to x1
+plot(x,y)
+D = D + (2*dy)
+if D > 0
+y = y+1
+D = D - (2*dx)
+*/
+void swap(int& x, int& y) {
+	int  z = x;
+	x = y;
+	y = z;
+}
+
+void tempDrawLine(CDC* pDC, int x0, int y0, int x1, int y1, COLORREF clr) {
+	if (x0 > x1) {
+		swap(x0, x1);
+		swap(y0, y1);
+	}
+
+	int dx = x1 - x0;
+	int dy = y1 - y0;
+
+	if (dx != 0 && abs(dy / dx) < 1) { // small sloap
+
+		int err = 2 * dy - dx;
+
+		SetPixel(*pDC, x0, y0, clr);
+		int y = y0;
+
+		for (int x = x0 + 1; x <= x1; x++) {
+			SetPixel(*pDC, x, y, clr);
+			err += 2 * dy;
+			if (err != 0) {
+				int err_sign = err > 0 ? 1 : -1;
+				y += err_sign;
+				err -= 2 * dx * err_sign;
+			}
+		}
+	}
+	else { // large sloap - swapping x, y
+		if (y0 > y1) {
+			swap(x0, x1);
+			swap(y0, y1);
+		}
+
+		int dx = x1 - x0;
+		int dy = y1 - y0;
+
+		int err = 2 * dx - dy;
+
+		SetPixel(*pDC, x0, y0, clr);
+		int x = x0;
+
+		for (int y = y0 + 1; y <= y1; y++) {
+			SetPixel(*pDC, x, y, clr);
+			err += 2 * dx;
+			if (err != 0) {
+				int err_sign = err > 0 ? 1 : -1;
+				x += err_sign;
+				err -= 2 * dy * err_sign;
+			}
+		}
+	}
+}
+// temp code end
+
 void CCGWorkView::OnDraw(CDC* pDC)
 {
 	CCGWorkDoc* pDoc = GetDocument();
 	ASSERT_VALID(pDoc);
 	if (!pDoc)
 	    return;
+
+	// some drawing teset
+
+	int num = 0;
+	if (num > 0){ // weather to draw debug or actual lines
+		//0
+		pDC->MoveTo(0, 0);
+		LineTo(*pDC, 700, 50);
+
+		//1
+		pDC->MoveTo(0, 0);
+		LineTo(*pDC, 100, 50);
+
+		// 2
+		pDC->MoveTo(0, 300);
+		LineTo(*pDC, 100, 250);
+
+		// 3
+		pDC->MoveTo(100, 50);
+		LineTo(*pDC, 150, 400);
+
+		// 4
+		pDC->MoveTo(300, 300);
+		LineTo(*pDC, 400, 0);
+
+		// 5
+		//pDC->MoveTo(150, 150);
+		//LineTo(*pDC, 150, 20);
+	}
+	else {
+		tempDrawLine(pDC, 0, 0, 700, 50, RGB(255, 0, 0)); //0
+		tempDrawLine(pDC, 0, 0, 100, 50, RGB(255, 0, 0)); //1
+		tempDrawLine(pDC, 0, 300, 100, 250, RGB(255, 0, 0)); //2
+		tempDrawLine(pDC, 100, 50, 150, 400, RGB(255, 0, 0)); //3
+		tempDrawLine(pDC, 300, 300, 400, 0, RGB(255, 0, 0)); //4
+		//tempDrawLine(pDC, 150, 150, 150, 20, RGB(255, 0, 0)); //5
+	}
+
 }
 
 
