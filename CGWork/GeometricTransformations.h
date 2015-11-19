@@ -105,4 +105,11 @@ typedef MatrixBase<HomogeneousPoint, 4> MatrixHomogeneous;
 Matrix3D ToMatrix3D(const Vector3D& r0, const Vector3D& r1, const Vector3D& r2);
 MatrixHomogeneous ToMatrixHomogeneous(const HomogeneousPoint& r0, const HomogeneousPoint& r1, const HomogeneousPoint& r2, const HomogeneousPoint& r3);
 
+const Matrix3D ZerosMatrix3D;
+const Matrix3D UnitMatrix3D = ToMatrix3D(Vector3D(1, 0, 0), Vector3D(0, 1, 0), Vector3D(0, 0, 1));
+
+const MatrixHomogeneous ZerosMatrixHomogeneous;
+const MatrixHomogeneous UnitMatrixHomogeneous = ToMatrixHomogeneous(HomogeneousPoint(1, 0, 0, 0), HomogeneousPoint(0, 1, 0, 0), HomogeneousPoint(0, 0, 1, 0), HomogeneousPoint(0, 0, 0, 1));
+const MatrixHomogeneous ZerosWithW1MatrixHomogeneous = ToMatrixHomogeneous(HomogeneousPoint(0, 0, 0, 0), HomogeneousPoint(0, 0, 0, 0), HomogeneousPoint(0, 0, 0, 0), HomogeneousPoint(0, 0, 0, 1));
+
 #endif

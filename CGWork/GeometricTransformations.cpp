@@ -11,3 +11,4 @@ MatrixHomogeneous ToMatrixHomogeneous(const HomogeneousPoint& r0, const Homogene
 	HomogeneousPoint rows[4] = { r0, r1, r2, r3 };
 	return MatrixHomogeneous(rows);
 }
+
