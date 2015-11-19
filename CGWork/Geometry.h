@@ -57,6 +57,8 @@ public:
 
 public:
 	double x, y, z, w;
+	static const HomogeneousPoint Zeros;
+	static const HomogeneousPoint ZerosWithW1;
 };
 
 class LineSegment

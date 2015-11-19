@@ -174,6 +174,9 @@ double HomogeneousPoint::operator*(const HomogeneousPoint& other) const
 	return x*other.x + y*other.y + z*other.z + w*other.w;
 }
 
+const HomogeneousPoint HomogeneousPoint::Zeros(0, 0, 0, 0);
+const HomogeneousPoint HomogeneousPoint::ZerosWithW1(0, 0, 0, 1);
+
 LineSegment::LineSegment(const Point3D& p0_, const Point3D& p1_)
 	: p0(p0_), p1(p1_)
 {
