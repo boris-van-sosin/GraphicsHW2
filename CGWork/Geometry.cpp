@@ -73,6 +73,39 @@ Point3D Point3D::Normalized() const
 	return (*this) / Norm();
 }
 
+double& Point3D::operator[](size_t i)
+{
+	switch (i)
+	{
+	case 0:
+		return x;
+	case 1:
+		return y;
+	case 2:
+		return z;
+	default:
+		throw GeometryException();
+		break;
+	}
+}
+
+const double& Point3D::operator[](size_t i) const
+{
+	switch (i)
+	{
+	case 0:
+		return x;
+	case 1:
+		return y;
+	case 2:
+		return z;
+	default:
+		throw GeometryException();
+		break;
+	}
+}
+
+
 Point3D operator*(double s, const Point3D& p)
 {
 	return Point3D(p.x*s, p.y*s, p.z*s);
@@ -98,6 +131,42 @@ HomogeneousPoint::HomogeneousPoint(const HomogeneousPoint& other)
 HomogeneousPoint::HomogeneousPoint(const Point3D& p)
 	: HomogeneousPoint(p.x, p.y, p.z, 1)
 {
+}
+
+double& HomogeneousPoint::operator[](size_t i)
+{
+	switch (i)
+	{
+	case 0:
+		return x;
+	case 1:
+		return y;
+	case 2:
+		return z;
+	case 3:
+		return w;
+	default:
+		throw GeometryException();
+		break;
+	}
+}
+
+const double& HomogeneousPoint::operator[](size_t i) const
+{
+	switch (i)
+	{
+	case 0:
+		return x;
+	case 1:
+		return y;
+	case 2:
+		return z;
+	case 3:
+		return w;
+	default:
+		throw GeometryException();
+		break;
+	}
 }
 
 double HomogeneousPoint::operator*(const HomogeneousPoint& other) const

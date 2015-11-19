@@ -7,6 +7,8 @@
 
 class HomogeneousPoint;
 
+class GeometryException {};
+
 class Point3D
 {
 public:
@@ -27,6 +29,9 @@ public:
 	double Norm() const;
 	double SquareNorm() const;
 	Point3D Normalized() const;
+	
+	double& operator[](size_t i);
+	const double& operator[](size_t i) const;
 
 public:
 	double x, y, z;
@@ -46,6 +51,9 @@ public:
 	explicit HomogeneousPoint(const Point3D& p);
 
 	double operator*(const HomogeneousPoint& other) const;
+
+	double& operator[](size_t i);
+	const double& operator[](size_t i) const;
 
 public:
 	double x, y, z, w;
