@@ -97,4 +97,29 @@ public:
 	std::vector<Polygon3D> polygons;
 };
 
+class EmptyBoundingBoxException {};
+
+class BoundingBox
+{
+private:
+	BoundingBox(double minX_, double maxX_, double minY_, double maxY_, double minZ_, double maxZ_);
+public:
+	BoundingBox(const BoundingBox& other);
+	BoundingBox(const BoundingBox& b1, const BoundingBox& b2);
+
+public:
+	static BoundingBox OfLineSegmnet(const LineSegment& line);
+	static BoundingBox OfLineSegmnets(const std::vector<LineSegment>& lines);
+	static BoundingBox OfPolygon(const Polygon3D& poly);
+	static BoundingBox OfPolygons(const std::vector<Polygon3D>& polys);
+	static BoundingBox OfObject(const PolygonalObject& obj);
+	static BoundingBox OfObjects(const std::vector<PolygonalObject>& objs);
+
+public:
+	const double minX, maxX, minY, maxY, minZ, maxZ;
+
+private:
+	static BoundingBox join(const std::vector<BoundingBox>& boxes);
+};
+
 #endif

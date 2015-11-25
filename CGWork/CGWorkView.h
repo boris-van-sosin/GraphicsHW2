@@ -16,6 +16,8 @@
 
 #include "Light.h"
 
+#include "Geometry.h"
+
 class CCGWorkView : public CView
 {
 protected: // create from serialization only
@@ -110,6 +112,14 @@ protected:
 	afx_msg void OnLightConstants();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
+
+private:
+	void FlipYAxis();
+	void FitSceneToWindow();
+	void DrawScene(CDC* pDC);
+
+private:
+	std::vector<PolygonalObject> _objects;
 };
 
 #ifndef _DEBUG  // debug version in CGWorkView.cpp

@@ -48,7 +48,7 @@ IPFreeformConvStateStruct CGSkelFFCState = {
 * RETURN VALUE:                                                              *
 *   bool:		false - fail, true - success.                                *
 *****************************************************************************/
-bool CGSkelProcessIritDataFiles(CString &FileNames, int NumFiles)
+bool CGSkelProcessIritDataFiles(CString &FileNames, int NumFiles, std::vector<PolygonalObject>& outObjects)
 {
 	IPObjectStruct *PObjects;
 	IrtHmgnMatType CrntViewMat;
@@ -82,7 +82,7 @@ bool CGSkelProcessIritDataFiles(CString &FileNames, int NumFiles)
 		CGSkelDumpOneTraversedObject);
 
 	// Convert to our data structure:
-	IritAdapter::Convert(PObjects);
+	outObjects = IritAdapter::Convert(PObjects);
 	// Finished converting
 
 	return true;

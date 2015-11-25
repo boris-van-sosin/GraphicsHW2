@@ -12,6 +12,9 @@ using std::endl;
 #include "MaterialDlg.h"
 #include "LightDialog.h"
 
+#include "Geometry.h"
+#include "GeometricTransformations.h"
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #undef THIS_FILE
@@ -244,7 +247,7 @@ void swap(int& x, int& y) {
 	y = z;
 }
 
-void tempDrawLine(CDC* pDC, int x0, int y0, int x1, int y1, COLORREF clr) {
+void innerDrawLine(CDC* pDC, int x0, int y0, int x1, int y1, COLORREF clr) {
 	if (x0 > x1) {
 		swap(x0, x1);
 		swap(y0, y1);
@@ -273,7 +276,7 @@ void tempDrawLine(CDC* pDC, int x0, int y0, int x1, int y1, COLORREF clr) {
 		dy = -dy;
 	}
 
-	if (dx > 0 && dy >= 0 && dy<dx) {
+	if (dx > 0 && dy >= 0 && dy<=dx) {
 
 		int err = 2 * dy - dx;
 		int horizontal = 2 * dy, diagonal = 2*(dy - dx);
@@ -335,28 +338,23 @@ void tempDrawLine(CDC* pDC, int x0, int y0, int x1, int y1, COLORREF clr) {
 }
 // temp code end
 
-void CCGWorkView::OnDraw(CDC* pDC)
+void DrawTestLines(CDC* pDC)
 {
-	CCGWorkDoc* pDoc = GetDocument();
-	ASSERT_VALID(pDoc);
-	if (!pDoc)
-	    return;
-
 	// some drawing teset
-	
+
 	int points[][4] = {
-		{ 0, 0, 700, 50 },
-		{ 0, 0, 100, 50 },
-		{ 0, 300, 100, 250 },
-		{ 0, 300, 800, 250 },
-		{ 300, 300, 200, 250 },
-		{ 50, 300, 70, 0 },
-		{100,50,150,400},
-		{300,300,400,0},
-		{ 150, 150, 150, 20 },
-		{70,60,70,80},
-		{ 50, 80, 100, 80 },
-		{ 100, 90, 50, 90 },
+			{ 0, 0, 700, 50 },
+			{ 0, 0, 100, 50 },
+			{ 0, 300, 100, 250 },
+			{ 0, 300, 800, 250 },
+			{ 300, 300, 200, 250 },
+			{ 50, 300, 70, 0 },
+			{ 100, 50, 150, 400 },
+			{ 300, 300, 400, 0 },
+			{ 150, 150, 150, 20 },
+			{ 70, 60, 70, 80 },
+			{ 50, 80, 100, 80 },
+			{ 100, 90, 50, 90 },
 	};
 
 	int xd = 500, yd = 0;
@@ -370,9 +368,55 @@ void CCGWorkView::OnDraw(CDC* pDC)
 			int j = 0;
 		}
 
-		tempDrawLine(pDC, points[i][0], points[i][1], points[i][2], points[i][3], RGB(255, 0, 0));
+		innerDrawLine(pDC, points[i][0], points[i][1], points[i][2], points[i][3], RGB(255, 0, 0));
 	}
+}
 
+void DrawLineSegment(CDC* pDC, const Point3D& p0, const Point3D& p1, COLORREF clr)
+{
+	innerDrawLine(pDC, p0.x, p0.y, p1.x, p1.y, clr);
+}
+
+void DrawLineSegment(CDC* pDC, const LineSegment& line, COLORREF clr)
+{
+	DrawLineSegment(pDC, line.p0, line.p1, clr);
+}
+
+void DrawPolygon(CDC* pDC, const Polygon3D& poly, COLORREF clr)
+{
+	if (poly.points.size() < 2)
+	{
+		return;
+	}
+	for (std::vector<Point3D>::const_iterator i = poly.points.begin(); i != poly.points.end(); ++i)
+	{
+		if (i + 1 != poly.points.end())
+		{
+			DrawLineSegment(pDC, *i, *(i + 1), clr);
+		}
+		else
+		{
+			DrawLineSegment(pDC, *i, poly.points.front(), clr);
+		}
+	}
+}
+
+void DrawObject(CDC* pDC, const PolygonalObject& obj, COLORREF clr)
+{
+	for (std::vector<Polygon3D>::const_iterator i = obj.polygons.begin(); i != obj.polygons.end(); ++i)
+	{
+		DrawPolygon(pDC, *i, clr);
+	}
+}
+
+void CCGWorkView::OnDraw(CDC* pDC)
+{
+	CCGWorkDoc* pDoc = GetDocument();
+	ASSERT_VALID(pDoc);
+	if (!pDoc)
+	    return;
+
+	DrawScene(pDC);
 }
 
 
@@ -410,7 +454,9 @@ void CCGWorkView::OnFileLoad()
 	if (dlg.DoModal () == IDOK) {
 		m_strItdFileName = dlg.GetPathName();		// Full path and filename
 		PngWrapper p;
-		CGSkelProcessIritDataFiles(m_strItdFileName, 1);
+		CGSkelProcessIritDataFiles(m_strItdFileName, 1, _objects);
+		FlipYAxis();
+		FitSceneToWindow();
 		// Open the file and read it.
 		// Your code here...
 
@@ -585,4 +631,46 @@ void CCGWorkView::OnLightConstants()
 	    m_ambientLight = dlg.GetDialogData(LIGHT_ID_AMBIENT);
 	}	
 	Invalidate();
+}
+
+void CCGWorkView::FlipYAxis()
+{
+	MatrixHomogeneous flipY = Matrices::Flip(AXIS_Y);
+	for (std::vector<PolygonalObject>::iterator i = _objects.begin(); i != _objects.end(); ++i)
+	{
+		(*i) = flipY * (*i);
+	}
+}
+
+void CCGWorkView::FitSceneToWindow()
+{
+	const int margin = 5;
+	RECT rect;
+	GetWindowRect(&rect);
+
+	int height = rect.bottom - rect.top - 2*margin;
+	int width = rect.right - rect.left - 2 * margin;
+
+	double minWindowDim = min(height, width);
+
+	BoundingBox bbox = BoundingBox::OfObjects(_objects);
+	double maxBBoxDim = max(bbox.maxX - bbox.minX, max(bbox.maxY - bbox.minY, bbox.maxZ - bbox.minZ));
+
+	double resizeRatio = minWindowDim / maxBBoxDim;
+
+	MatrixHomogeneous scale = Matrices::Scale(resizeRatio);
+	MatrixHomogeneous moveToTopLeft = Matrices::Translate(-bbox.minX, -bbox.minY, -bbox.minZ);
+	MatrixHomogeneous m = (scale * moveToTopLeft);
+	for (std::vector<PolygonalObject>::iterator i = _objects.begin(); i != _objects.end(); ++i)
+	{
+		(*i) = m * (*i);
+	}
+}
+
+void CCGWorkView::DrawScene(CDC* pDC)
+{
+	for (std::vector<PolygonalObject>::iterator i = _objects.begin(); i != _objects.end(); ++i)
+	{
+		DrawObject(pDC, *i, RGB(255, 0, 0));
+	}
 }

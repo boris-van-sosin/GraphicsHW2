@@ -15,7 +15,10 @@
 #include "ip_cnvrt.h"
 #include "symb_lib.h"
 
-bool CGSkelProcessIritDataFiles(CString &FileNames, int NumFiles);
+#include <vector>
+#include "Geometry.h"
+
+bool CGSkelProcessIritDataFiles(CString &FileNames, int NumFiles, std::vector<PolygonalObject>& outObjects = std::vector<PolygonalObject>());
 void CGSkelDumpOneTraversedObject(IPObjectStruct *PObj, IrtHmgnMatType Mat);
 int CGSkelGetObjectColor(IPObjectStruct *PObj, double RGB[3]);
 const char *CGSkelGetObjectTexture(IPObjectStruct *PObj);

@@ -222,3 +222,155 @@ PolygonalObject::PolygonalObject(const std::vector<Polygon3D>& polygons_)
 	: polygons(polygons_)
 {
 }
+
+/*BoundingBox::BoundingBox(const LineSegment& line)
+	: minX(fmin(line.p0.x, line.p1.x)),
+	maxX(fmax(line.p0.x, line.p1.x)),
+	minY(fmin(line.p0.y, line.p1.y)),
+	maxY(fmax(line.p0.y, line.p1.y)),
+	minZ(fmin(line.p0.z, line.p1.z)),
+	maxZ(fmax(line.p0.z, line.p1.z))
+{
+}*/
+
+BoundingBox::BoundingBox(double minX_, double maxX_, double minY_, double maxY_, double minZ_, double maxZ_)
+	: minX(minX_), maxX(maxX_), minY(minY_), maxY(maxY_), minZ(minZ_), maxZ(minZ_)
+{}
+
+BoundingBox::BoundingBox(const BoundingBox& other)
+	: BoundingBox(other.minX, other.maxX, other.minY, other.maxY, other.minZ, other.maxZ)
+{}
+
+BoundingBox::BoundingBox(const BoundingBox& b1, const BoundingBox& b2)
+	: BoundingBox(
+	fmin(b1.minX, b2.minX),
+	fmax(b1.maxX, b2.maxX),
+	fmin(b1.minY, b2.minY),
+	fmax(b1.maxY, b2.maxY),
+	fmin(b1.minZ, b2.minZ),
+	fmax(b1.maxZ, b2.maxZ))
+{}
+
+BoundingBox BoundingBox::OfLineSegmnet(const LineSegment& line)
+{
+	return BoundingBox(fmin(line.p0.x, line.p1.x), fmax(line.p0.x, line.p1.x), fmin(line.p0.y, line.p1.y), fmax(line.p0.y, line.p1.y), fmin(line.p0.z, line.p1.z), fmax(line.p0.z, line.p1.z));
+}
+
+BoundingBox BoundingBox::OfLineSegmnets(const std::vector<LineSegment>& lines)
+{
+	if (lines.empty())
+	{
+		throw EmptyBoundingBoxException();
+	}
+
+	BoundingBox first = OfLineSegmnet(lines.front());
+	double minX = first.minX,
+		maxX = first.maxX,
+		minY = first.minY,
+		maxY = first.maxY,
+		minZ = first.minZ,
+		maxZ = first.maxZ;
+	for (std::vector<LineSegment>::const_iterator i = (lines.begin() + 1); i != lines.end(); ++i)
+	{
+		BoundingBox curr = OfLineSegmnet(*i);
+		minX = fmin(minX, curr.minX);
+		maxX = fmax(maxX, curr.maxX);
+		minY = fmin(minY, curr.minY);
+		maxY = fmax(maxY, curr.maxY);
+		minZ = fmin(minZ, curr.minZ);
+		maxZ = fmax(maxZ, curr.maxZ);
+	}
+
+	return BoundingBox(minX, maxX, minY, maxY, minZ, maxZ);
+}
+
+BoundingBox BoundingBox::OfPolygon(const Polygon3D& poly)
+{
+	return OfLineSegmnets(poly.Edges());
+}
+
+BoundingBox BoundingBox::OfPolygons(const std::vector<Polygon3D>& polys)
+{
+	if (polys.empty())
+	{
+		throw EmptyBoundingBoxException();
+	}
+
+	BoundingBox first = OfPolygon(polys.front());
+	double minX = first.minX,
+		maxX = first.maxX,
+		minY = first.minY,
+		maxY = first.maxY,
+		minZ = first.minZ,
+		maxZ = first.maxZ;
+	for (std::vector<Polygon3D>::const_iterator i = (polys.begin() + 1); i != polys.end(); ++i)
+	{
+		BoundingBox curr = OfPolygon(*i);
+		minX = fmin(minX, curr.minX);
+		maxX = fmax(maxX, curr.maxX);
+		minY = fmin(minY, curr.minY);
+		maxY = fmax(maxY, curr.maxY);
+		minZ = fmin(minZ, curr.minZ);
+		maxZ = fmax(maxZ, curr.maxZ);
+	}
+
+	return BoundingBox(minX, maxX, minY, maxY, minZ, maxZ);
+}
+
+BoundingBox BoundingBox::OfObject(const PolygonalObject& obj)
+{
+	return OfPolygons(obj.polygons);
+}
+
+BoundingBox BoundingBox::OfObjects(const std::vector<PolygonalObject>& objs)
+{
+	if (objs.empty())
+	{
+		throw EmptyBoundingBoxException();
+	}
+
+	BoundingBox first = OfObject(objs.front());
+	double minX = first.minX,
+		maxX = first.maxX,
+		minY = first.minY,
+		maxY = first.maxY,
+		minZ = first.minZ,
+		maxZ = first.maxZ;
+	for (std::vector<PolygonalObject>::const_iterator i = (objs.begin() + 1); i != objs.end(); ++i)
+	{
+		BoundingBox curr = OfObject(*i);
+		minX = fmin(minX, curr.minX);
+		maxX = fmax(maxX, curr.maxX);
+		minY = fmin(minY, curr.minY);
+		maxY = fmax(maxY, curr.maxY);
+		minZ = fmin(minZ, curr.minZ);
+		maxZ = fmax(maxZ, curr.maxZ);
+	}
+
+	return BoundingBox(minX, maxX, minY, maxY, minZ, maxZ);
+}
+
+BoundingBox BoundingBox::join(const std::vector<BoundingBox>& boxes)
+{
+	if (boxes.empty())
+	{
+		throw EmptyBoundingBoxException();
+	}
+
+	double minX = boxes.front().minX, 		
+		maxX = boxes.front().maxX,
+		minY = boxes.front().minY,
+		maxY = boxes.front().maxY,
+		minZ = boxes.front().minZ,
+		maxZ = boxes.front().maxZ;
+	for (std::vector<BoundingBox>::const_iterator i = (boxes.begin()+1); i != boxes.end(); ++i)
+	{
+		minX = fmin(minX, i->minX);
+		maxX = fmax(maxX, i->maxX);
+		minY = fmin(minY, i->minY);
+		maxY = fmax(maxY, i->maxY);
+		minZ = fmin(minZ, i->minZ);
+		maxZ = fmax(maxZ, i->maxZ);
+	}
+	return BoundingBox(minX, maxX, minY, maxY, minZ, maxZ);
+}
