@@ -280,7 +280,14 @@ void innerDrawLine(CDC* pDC, int x0, int y0, int x1, int y1, COLORREF clr) {
 
 		int err = 2 * dy - dx;
 		int horizontal = 2 * dy, diagonal = 2*(dy - dx);
-		SetPixel(*pDC, x0, y0, clr);
+		if (!swapXY)
+		{
+			SetPixel(*pDC, x0, y0, clr);
+		}
+		else
+		{
+			SetPixel(*pDC, y0, x0, clr);
+		}
 		int y = y0;
 
 		for (int x = x0 + 1; x <= x1; x++) {
@@ -309,31 +316,9 @@ void innerDrawLine(CDC* pDC, int x0, int y0, int x1, int y1, COLORREF clr) {
 			}
 		}
 	}
-	else { // large slope - swapping x, y
-		/*
-		if (y0 > y1) {
-			swap(x0, x1);
-			swap(y0, y1);
-		}
-
-		int dx = x1 - x0;
-		int dy = y1 - y0;
-
-		int err = 2 * dx - dy;
-
+	else if (dx==0 && dy==0)
+	{
 		SetPixel(*pDC, x0, y0, clr);
-		int x = x0;
-
-		for (int y = y0 + 1; y <= y1; y++) {
-			SetPixel(*pDC, x, y, clr);
-			err += 2 * dx;
-			if (err != 0) {
-				int err_sign = err > 0 ? 1 : -1;
-				x += err_sign;
-				err -= 2 * dy * err_sign;
-			}
-		}
-		*/
 	}
 }
 // temp code end
@@ -652,6 +637,13 @@ void CCGWorkView::FitSceneToWindow()
 	int width = rect.right - rect.left - 2 * margin;
 
 	double minWindowDim = min(height, width);
+
+	MatrixHomogeneous r = Matrices::Rotate(AXIS_X, M_PI / 8) * Matrices::Rotate(AXIS_Z, M_PI / 8);
+	for (std::vector<PolygonalObject>::iterator i = _objects.begin(); i != _objects.end(); ++i)
+	{
+		(*i) = r * (*i);
+	}
+
 
 	BoundingBox bbox = BoundingBox::OfObjects(_objects);
 	double maxBBoxDim = max(bbox.maxX - bbox.minX, max(bbox.maxY - bbox.minY, bbox.maxZ - bbox.minZ));
