@@ -65,6 +65,8 @@ BEGIN_MESSAGE_MAP(CCGWorkView, CView)
 	ON_COMMAND(ID_LIGHT_SHADING_GOURAUD, OnLightShadingGouraud)
 	ON_UPDATE_COMMAND_UI(ID_LIGHT_SHADING_GOURAUD, OnUpdateLightShadingGouraud)
 	ON_COMMAND(ID_LIGHT_CONSTANTS, OnLightConstants)
+	ON_WM_MOUSEMOVE()
+	ON_WM_MOUSEWHEEL()
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -218,6 +220,45 @@ BOOL CCGWorkView::OnEraseBkgnd(CDC* pDC)
 	return true;
 }
 
+void CCGWorkView::OnMouseMove(UINT nFlags, CPoint point) {
+	// this is the handler of mouse move
+
+	////////////////////////////
+	//if (!(nFlags & MK_LBUTTON))
+	//	return;
+	//int a = 8;
+	//Invalidate();
+}
+
+BOOL CCGWorkView::OnMouseWheel(UINT flags, short zdelta, CPoint point) {
+	double rotate_angle = zdelta / WHEEL_DELTA;
+	Axis axis;
+	if (m_nAxis == ID_AXIS_X)
+		axis = AXIS_X;
+	if (m_nAxis == ID_AXIS_Y)
+		axis = AXIS_Y;
+	if (m_nAxis == ID_AXIS_Z)
+		axis = AXIS_Z;
+
+	MatrixHomogeneous mat = Matrices::Rotate(axis, rotate_angle);
+	
+	applyMat(mat, 0);
+	Invalidate();
+	return true;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Apply matrix on a model
+/////////////////////////////////////////////////////////////////////////////
+bool CCGWorkView::applyMat(const MatrixHomogeneous& mat, int ibj_idx) {
+	if (ibj_idx >= _objects.size()) {
+		return false;
+	}
+	for (auto it = _objects[ibj_idx].polygons.begin(); it != _objects[ibj_idx].polygons.end(); ++it) {
+		(*it) = mat * (*it);
+	}
+	return true;
+}
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -242,7 +283,7 @@ y = y+1
 D = D - (2*dx)
 */
 
-void ImageSetPixel(CImage& img, int x, int y, COLORREF clr)
+void inline ImageSetPixel(CImage& img, int x, int y, COLORREF clr)
 {
 	int red = GetRValue(clr);
 	int green = GetGValue(clr);
@@ -690,6 +731,20 @@ void CCGWorkView::FitSceneToWindow()
 
 void CCGWorkView::DrawScene(CImage& img)
 {
+	// I am really angry ringt now. I know it is awfull
+	RECT rect;
+	LPRECT lprect = &rect;
+	int h = img.GetHeight();
+	int w = img.GetWidth();
+	rect.top = 0;
+	rect.bottom = h;
+	rect.left = 0;
+	rect.right = w;
+	for (int i = 0; i < h; i++) {
+		for (int j = 0; j < w; j++) {
+			img.SetPixel(j, i, RGB(0, 0, 255));
+		}
+	}
 	for (std::vector<PolygonalObject>::iterator i = _objects.begin(); i != _objects.end(); ++i)
 	{
 		DrawObject(img, *i, RGB(255, 0, 0));

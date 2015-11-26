@@ -18,6 +18,7 @@
 #include "Light.h"
 
 #include "Geometry.h"
+#include "GeometricTransformations.h"
 
 class CCGWorkView : public CView
 {
@@ -111,6 +112,8 @@ protected:
 	afx_msg void OnLightShadingGouraud();
 	afx_msg void OnUpdateLightShadingGouraud(CCmdUI* pCmdUI);
 	afx_msg void OnLightConstants();
+	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+	afx_msg BOOL OnMouseWheel(UINT, short, CPoint);
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 
@@ -121,6 +124,7 @@ private:
 
 private:
 	std::vector<PolygonalObject> _objects;
+	bool applyMat(const MatrixHomogeneous& mat, int ibj_idx);
 };
 
 #ifndef _DEBUG  // debug version in CGWorkView.cpp
