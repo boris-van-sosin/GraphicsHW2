@@ -241,13 +241,31 @@ if D > 0
 y = y+1
 D = D - (2*dx)
 */
+
+void ImageSetPixel(CImage& img, int x, int y, COLORREF clr)
+{
+	int red = GetRValue(clr);
+	int green = GetGValue(clr);
+	int blue = GetBValue(clr);
+
+	if (x >= img.GetWidth() || y >= img.GetHeight() || x < 0 || y < 0)
+	{
+		return;
+	}
+
+	BYTE* pos = (BYTE*) img.GetPixelAddress(x, y);
+	*pos = blue;
+	*(pos + 1) = green;
+	*(pos + 2) = red;
+}
+
 void swap(int& x, int& y) {
 	int  z = x;
 	x = y;
 	y = z;
 }
 
-void innerDrawLine(CDC* pDC, int x0, int y0, int x1, int y1, COLORREF clr) {
+void innerDrawLine(CImage& img, int x0, int y0, int x1, int y1, COLORREF clr) {
 	if (x0 > x1) {
 		swap(x0, x1);
 		swap(y0, y1);
@@ -282,11 +300,11 @@ void innerDrawLine(CDC* pDC, int x0, int y0, int x1, int y1, COLORREF clr) {
 		int horizontal = 2 * dy, diagonal = 2*(dy - dx);
 		if (!swapXY)
 		{
-			SetPixel(*pDC, x0, y0, clr);
+			ImageSetPixel(img, x0, y0, clr);
 		}
 		else
 		{
-			SetPixel(*pDC, y0, x0, clr);
+			ImageSetPixel(img, y0, x0, clr);
 		}
 		int y = y0;
 
@@ -308,22 +326,22 @@ void innerDrawLine(CDC* pDC, int x0, int y0, int x1, int y1, COLORREF clr) {
 			}
 			if (!swapXY)
 			{
-				SetPixel(*pDC, x, y, clr);
+				ImageSetPixel(img, x, y, clr);
 			}
 			else
 			{
-				SetPixel(*pDC, y, x, clr);
+				ImageSetPixel(img, y, x, clr);
 			}
 		}
 	}
 	else if (dx==0 && dy==0)
 	{
-		SetPixel(*pDC, x0, y0, clr);
+		ImageSetPixel(img, x0, y0, clr);
 	}
 }
 // temp code end
 
-void DrawTestLines(CDC* pDC)
+void DrawTestLines(CDC* pDC, CImage& img)
 {
 	// some drawing teset
 
@@ -353,21 +371,21 @@ void DrawTestLines(CDC* pDC)
 			int j = 0;
 		}
 
-		innerDrawLine(pDC, points[i][0], points[i][1], points[i][2], points[i][3], RGB(255, 0, 0));
+		innerDrawLine(img, points[i][0], points[i][1], points[i][2], points[i][3], RGB(255, 0, 0));
 	}
 }
 
-void DrawLineSegment(CDC* pDC, const Point3D& p0, const Point3D& p1, COLORREF clr)
+void DrawLineSegment(CImage& img, const Point3D& p0, const Point3D& p1, COLORREF clr)
 {
-	innerDrawLine(pDC, p0.x, p0.y, p1.x, p1.y, clr);
+	innerDrawLine(img, p0.x, p0.y, p1.x, p1.y, clr);
 }
 
-void DrawLineSegment(CDC* pDC, const LineSegment& line, COLORREF clr)
+void DrawLineSegment(CImage& img, const LineSegment& line, COLORREF clr)
 {
-	DrawLineSegment(pDC, line.p0, line.p1, clr);
+	DrawLineSegment(img, line.p0, line.p1, clr);
 }
 
-void DrawPolygon(CDC* pDC, const Polygon3D& poly, COLORREF clr)
+void DrawPolygon(CImage& img, const Polygon3D& poly, COLORREF clr)
 {
 	if (poly.points.size() < 2)
 	{
@@ -377,20 +395,20 @@ void DrawPolygon(CDC* pDC, const Polygon3D& poly, COLORREF clr)
 	{
 		if (i + 1 != poly.points.end())
 		{
-			DrawLineSegment(pDC, *i, *(i + 1), clr);
+			DrawLineSegment(img, *i, *(i + 1), clr);
 		}
 		else
 		{
-			DrawLineSegment(pDC, *i, poly.points.front(), clr);
+			DrawLineSegment(img, *i, poly.points.front(), clr);
 		}
 	}
 }
 
-void DrawObject(CDC* pDC, const PolygonalObject& obj, COLORREF clr)
+void DrawObject(CImage& img, const PolygonalObject& obj, COLORREF clr)
 {
 	for (std::vector<Polygon3D>::const_iterator i = obj.polygons.begin(); i != obj.polygons.end(); ++i)
 	{
-		DrawPolygon(pDC, *i, clr);
+		DrawPolygon(img, *i, clr);
 	}
 }
 
@@ -401,7 +419,18 @@ void CCGWorkView::OnDraw(CDC* pDC)
 	if (!pDoc)
 	    return;
 
-	DrawScene(pDC);
+	RECT rect;
+	GetWindowRect(&rect);
+
+	int h = rect.bottom - rect.top;
+	int w = rect.right - rect.left;
+
+	CImage img;
+	img.Create(w, h, 32);
+	DrawScene(img);
+	img.BitBlt(*pDC, 0, 0, w, h, 0, 0);
+	//temporary:
+	img.Destroy();
 }
 
 
@@ -659,10 +688,10 @@ void CCGWorkView::FitSceneToWindow()
 	}
 }
 
-void CCGWorkView::DrawScene(CDC* pDC)
+void CCGWorkView::DrawScene(CImage& img)
 {
 	for (std::vector<PolygonalObject>::iterator i = _objects.begin(); i != _objects.end(); ++i)
 	{
-		DrawObject(pDC, *i, RGB(255, 0, 0));
+		DrawObject(img, *i, RGB(255, 0, 0));
 	}
 }

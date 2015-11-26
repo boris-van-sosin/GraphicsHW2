@@ -13,6 +13,7 @@
 #include "gl\gl.h"    // Include the standard CGWork  headers
 #include "gl\glu.h"   // Add the utility library
 
+#include <atlimage.h>
 
 #include "Light.h"
 
@@ -116,7 +117,7 @@ protected:
 private:
 	void FlipYAxis();
 	void FitSceneToWindow();
-	void DrawScene(CDC* pDC);
+	void DrawScene(CImage& img);
 
 private:
 	std::vector<PolygonalObject> _objects;
