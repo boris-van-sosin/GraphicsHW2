@@ -232,6 +232,7 @@ void CCGWorkView::OnMouseMove(UINT nFlags, CPoint point) {
 
 BOOL CCGWorkView::OnMouseWheel(UINT flags, short zdelta, CPoint point) {
 	double rotate_angle = zdelta / WHEEL_DELTA;
+	rotate_angle /= 10;
 	Axis axis;
 	if (m_nAxis == ID_AXIS_X)
 		axis = AXIS_X;
@@ -254,9 +255,14 @@ bool CCGWorkView::applyMat(const MatrixHomogeneous& mat, int ibj_idx) {
 	if (ibj_idx >= _objects.size()) {
 		return false;
 	}
+	for (auto it = _objects.begin(); it != _objects.end(); ++it) {
+		(*it) = mat * (*it);
+	}
+	/*
 	for (auto it = _objects[ibj_idx].polygons.begin(); it != _objects[ibj_idx].polygons.end(); ++it) {
 		(*it) = mat * (*it);
 	}
+	*/
 	return true;
 }
 
@@ -731,20 +737,6 @@ void CCGWorkView::FitSceneToWindow()
 
 void CCGWorkView::DrawScene(CImage& img)
 {
-	// I am really angry ringt now. I know it is awfull
-	RECT rect;
-	LPRECT lprect = &rect;
-	int h = img.GetHeight();
-	int w = img.GetWidth();
-	rect.top = 0;
-	rect.bottom = h;
-	rect.left = 0;
-	rect.right = w;
-	for (int i = 0; i < h; i++) {
-		for (int j = 0; j < w; j++) {
-			img.SetPixel(j, i, RGB(0, 0, 255));
-		}
-	}
 	for (std::vector<PolygonalObject>::iterator i = _objects.begin(); i != _objects.end(); ++i)
 	{
 		DrawObject(img, *i, RGB(255, 0, 0));
