@@ -26,6 +26,23 @@ Point3D Point3D::operator+(const Point3D& other) const
 	return Point3D(x + other.x, y + other.y, z + other.z);
 }
 
+Point3D& Point3D::operator+=(const Point3D& other)
+{
+	x += other.x;
+	y += other.y;
+	z += other.z;
+	return *this;
+}
+
+Point3D& Point3D::operator-=(const Point3D& other)
+{
+	x -= other.x;
+	y -= other.y;
+	z -= other.z;
+	return *this;
+}
+
+
 Point3D Point3D::operator-(const Point3D& other) const
 {
 	return Point3D(x - other.x, y - other.y, z - other.z);
@@ -206,14 +223,31 @@ Vector3D Polygon3D::Normal() const
 	{
 		const Point3D& p0 = points[i];
 		const Point3D& p1 = points[(i + 1) % points.size()];
-		Vector3D n = p0.Cross(p1); // with the point order
+		const Point3D& p2 = points[(i + 2) % points.size()];
+		Vector3D n = (p1 - p0).Cross(p2 - p1); // with the point order
 		if (n.SquareNorm() > GEOMETRIC_COMPUTATION_ESPILON)
 		{
-			return n;
+			return n.Normalized();
 		}
 	}
 	// polygon is a "flat" line
 	return Point3D::Zero;
+}
+
+std::pair<double, Point3D> Polygon3D::AreaAndCentroid() const
+{
+	Vector3D v = Vector3D::Zero;
+	Point3D p = Point3D::Zero;
+	const Vector3D n = Normal();
+	for (std::vector<Point3D>::const_iterator i = points.begin(); i != points.end(); ++i)
+	{
+		std::vector<Point3D>::const_iterator j = (i + 1 != points.end() ? (i + 1) : points.begin());
+		v += i->Cross(*j);
+
+		p += (points.front() + *i + *j) * ((*i - points.front()).Cross(*j - points.front()) * n);
+	}
+	double area = fabs((v *n) / 2.0);
+	return std::pair<double, Point3D>(area, p / (area * 6));
 }
 
 PolygonalObject::PolygonalObject() {}

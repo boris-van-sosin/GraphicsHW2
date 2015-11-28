@@ -456,6 +456,10 @@ void DrawObject(CImage& img, const PolygonalObject& obj, COLORREF clr)
 	for (std::vector<Polygon3D>::const_iterator i = obj.polygons.begin(); i != obj.polygons.end(); ++i)
 	{
 		DrawPolygon(img, *i, clr);
+		// test:
+		std::pair<double, Point3D> p = i->AreaAndCentroid();
+		DrawLineSegment(img, LineSegment(p.second, p.second + ((i->Normal()) * 10)), RGB(0, 255, 0));
+		//
 	}
 }
 

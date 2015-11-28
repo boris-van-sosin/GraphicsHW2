@@ -20,6 +20,8 @@ public:
 public:
 	Point3D operator+(const Point3D& other) const;
 	Point3D operator-(const Point3D& other) const;
+	Point3D& operator+=(const Point3D& other);
+	Point3D& operator-=(const Point3D& other);
 	Point3D operator-() const;
 	double operator*(const Point3D& other) const;
 	Point3D operator*(double s) const;
@@ -84,6 +86,7 @@ public:
 
 	std::vector<LineSegment> Edges() const;
 	Vector3D Normal() const;
+	std::pair<double, Point3D> AreaAndCentroid() const;
 
 	std::vector<Point3D> points;
 };
