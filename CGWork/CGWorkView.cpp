@@ -67,6 +67,7 @@ BEGIN_MESSAGE_MAP(CCGWorkView, CView)
 	ON_COMMAND(ID_LIGHT_CONSTANTS, OnLightConstants)
 	ON_WM_MOUSEMOVE()
 	ON_WM_MOUSEWHEEL()
+	ON_WM_KEYDOWN()
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -230,9 +231,7 @@ void CCGWorkView::OnMouseMove(UINT nFlags, CPoint point) {
 	//Invalidate();
 }
 
-BOOL CCGWorkView::OnMouseWheel(UINT flags, short zdelta, CPoint point) {
-	double rotate_angle = zdelta / WHEEL_DELTA;
-	rotate_angle /= 10;
+void CCGWorkView::rotate(double rotate_angle) {
 	Axis axis;
 	if (m_nAxis == ID_AXIS_X)
 		axis = AXIS_X;
@@ -242,10 +241,32 @@ BOOL CCGWorkView::OnMouseWheel(UINT flags, short zdelta, CPoint point) {
 		axis = AXIS_Z;
 
 	MatrixHomogeneous mat = Matrices::Rotate(axis, rotate_angle);
-	
+
 	applyMat(mat, 0);
 	Invalidate();
+}
+
+BOOL CCGWorkView::OnMouseWheel(UINT flags, short zdelta, CPoint point) {
+	double rotate_angle = zdelta / WHEEL_DELTA;
+	rotate_angle /= 10;
+	
+	rotate(rotate_angle);
+
 	return true;
+}
+
+afx_msg void CCGWorkView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags) {
+
+	switch (nChar) {
+	case 90: // z
+		rotate(-(double)nChar * (double)nRepCnt / 1000.0);
+		break;
+	case 88: // x
+		rotate((double)nChar * (double)nRepCnt / 1000.0);
+		break;
+	default:
+		break;
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////////

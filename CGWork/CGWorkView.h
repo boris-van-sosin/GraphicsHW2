@@ -114,6 +114,7 @@ protected:
 	afx_msg void OnLightConstants();
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 	afx_msg BOOL OnMouseWheel(UINT, short, CPoint);
+	afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 
@@ -124,7 +125,9 @@ private:
 
 private:
 	std::vector<PolygonalObject> _objects;
+
 	bool applyMat(const MatrixHomogeneous& mat, int ibj_idx);
+	void rotate(double rotate_angle);
 };
 
 #ifndef _DEBUG  // debug version in CGWorkView.cpp
