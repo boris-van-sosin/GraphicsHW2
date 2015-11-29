@@ -22,6 +22,13 @@
 
 typedef std::vector<PolygonalObject> model_t;
 
+class model_attr_t { // don't make this struct big
+public:
+	COLORREF color = RGB(0, 0, 255);
+	COLORREF normal_color = RGB(0, 255, 0);
+	unsigned int line_width = 1;
+};
+
 class CCGWorkView : public CView
 {
 protected: // create from serialization only
@@ -127,6 +134,12 @@ private:
 private:
 	std::vector<model_t> _models;
 	std::vector<BoundingBox> _bboxes;
+	std::vector<model_attr_t> _model_attr;
+
+	int glowing_object = -1; // -1 is none
+
+	CImage _pxl2obj; // to know the position of the objects on the screen
+					// there is 1 offset of the object index, because the bg is 0
 
 	//BoundingBox* _bbox;
 	bool applyMat(const MatrixHomogeneous& mat, int ibj_idx);

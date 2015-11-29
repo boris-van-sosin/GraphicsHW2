@@ -225,13 +225,24 @@ BOOL CCGWorkView::OnEraseBkgnd(CDC* pDC)
 }
 
 void CCGWorkView::OnMouseMove(UINT nFlags, CPoint point) {
-	// this is the handler of mouse move
+	COLORREF idx = _pxl2obj.GetPixel(point.x, point.y);
+	if (idx == 0) {
+		// background
+		if (glowing_object == -1)
+			return;
 
-	////////////////////////////
-	//if (!(nFlags & MK_LBUTTON))
-	//	return;
-	//int a = 8;
-	//Invalidate();
+		// unglow
+		_model_attr[glowing_object].line_width = 1;
+		glowing_object = -1;
+		Invalidate();
+		return;
+	}
+
+	idx--;
+
+	glowing_object = idx;
+	_model_attr[idx].line_width = 3;
+	Invalidate();
 }
 
 void CCGWorkView::rotate(double rotate_angle) {
@@ -376,7 +387,7 @@ void swap(int& x, int& y) {
 	y = z;
 }
 
-void innerDrawLine(CImage& img, int x0, int y0, int x1, int y1, COLORREF clr, unsigned int line_width = 1) {
+void innerDrawLine(CImage& img, int x0, int y0, int x1, int y1, COLORREF clr, unsigned int line_width) {
 	if (x0 > x1) {
 		swap(x0, x1);
 		swap(y0, y1);
@@ -467,6 +478,8 @@ void innerDrawLine(CImage& img, int x0, int y0, int x1, int y1, COLORREF clr, un
 		for (int i = 1; i < line_width; i++) {
 			ImageSetPixel(img, x0, y0 + i, clr);
 			ImageSetPixel(img, x0, y0 - i, clr);
+			ImageSetPixel(img, x0 + i, y0, clr);
+			ImageSetPixel(img, x0 - i, y0, clr);
 		}
 	}
 }
@@ -502,21 +515,21 @@ void DrawTestLines(CDC* pDC, CImage& img)
 			int j = 0;
 		}
 
-		innerDrawLine(img, points[i][0], points[i][1], points[i][2], points[i][3], RGB(255, 0, 0));
+		innerDrawLine(img, points[i][0], points[i][1], points[i][2], points[i][3], RGB(255, 0, 0), 1);
 	}
 }
 
-void DrawLineSegment(CImage& img, const Point3D& p0, const Point3D& p1, COLORREF clr)
+void DrawLineSegment(CImage& img, const Point3D& p0, const Point3D& p1, COLORREF clr, unsigned int line_width)
 {
-	innerDrawLine(img, p0.x, p0.y, p1.x, p1.y, clr);
+	innerDrawLine(img, p0.x, p0.y, p1.x, p1.y, clr, line_width);
 }
 
-void DrawLineSegment(CImage& img, const LineSegment& line, COLORREF clr)
+void DrawLineSegment(CImage& img, const LineSegment& line, COLORREF clr, unsigned int line_width)
 {
-	DrawLineSegment(img, line.p0, line.p1, clr);
+	DrawLineSegment(img, line.p0, line.p1, clr, line_width);
 }
 
-void DrawPolygon(CImage& img, const Polygon3D& poly, COLORREF clr)
+void DrawPolygon(CImage& img, const Polygon3D& poly, const model_attr_t& attr)
 {
 	if (poly.points.size() < 2)
 	{
@@ -526,23 +539,23 @@ void DrawPolygon(CImage& img, const Polygon3D& poly, COLORREF clr)
 	{
 		if (i + 1 != poly.points.end())
 		{
-			DrawLineSegment(img, *i, *(i + 1), clr);
+			DrawLineSegment(img, *i, *(i + 1), attr.color, attr.line_width);
 		}
 		else
 		{
-			DrawLineSegment(img, *i, poly.points.front(), clr);
+			DrawLineSegment(img, *i, poly.points.front(), attr.color, attr.line_width);
 		}
 	}
 }
 
-void DrawObject(CImage& img, const PolygonalObject& obj, COLORREF clr)
+void DrawObject(CImage& img, const PolygonalObject& obj, const model_attr_t& attr)
 {
 	for (std::vector<Polygon3D>::const_iterator i = obj.polygons.begin(); i != obj.polygons.end(); ++i)
 	{
-		DrawPolygon(img, *i, clr);
+		DrawPolygon(img, *i, attr);
 		// test:
-		std::pair<double, Point3D> p = i->AreaAndCentroid();
-		DrawLineSegment(img, LineSegment(p.second, p.second + ((i->Normal()) * 10)), RGB(0, 255, 0));
+		//std::pair<double, Point3D> p = i->AreaAndCentroid();
+		//DrawLineSegment(img, LineSegment(p.second, p.second + ((i->Normal()) * 10)), RGB(0, 255, 0), 1);
 		//
 	}
 }
@@ -559,6 +572,11 @@ void CCGWorkView::OnDraw(CDC* pDC)
 
 	int h = rect.bottom - rect.top;
 	int w = rect.right - rect.left;
+
+	if (!_pxl2obj.IsNull()) {
+		_pxl2obj.Destroy();
+	}
+	_pxl2obj.Create(w, h, 32);
 
 	CImage img;
 	img.Create(w, h, 32);
@@ -609,6 +627,7 @@ void CCGWorkView::OnFileLoad()
 		//delete _bbox;
 		//_bbox = new BoundingBox(BoundingBox::OfObjects(_objects));
 		_bboxes.push_back(BoundingBox(BoundingBox::OfObjects(_models.back())));
+		_model_attr.push_back(model_attr_t());
 		// Open the file and read it.
 		// Your code here...
 
@@ -812,9 +831,14 @@ void CCGWorkView::DrawScene(CImage& img)
 		MatrixHomogeneous m = Matrices::Translate(width*0.5, height*0.5, 0) * Matrices::Scale(min(height, width) / 4);// *mOrtho;
 
 		model_t& model = _models[i];
-		for (std::vector<PolygonalObject>::iterator i = model.begin(); i != model.end(); ++i)
+		const model_attr_t attr = _model_attr[i];
+		model_attr_t shadow_attr = attr;
+		for (std::vector<PolygonalObject>::iterator it = model.begin(); it != model.end(); ++it)
 		{
-			DrawObject(img, m*(*i), RGB(255, 0, 0));
+			DrawObject(img, m*(*it), attr);
+
+			shadow_attr.color = i + 1;
+			DrawObject(_pxl2obj, m*(*it), shadow_attr);
 		}
 	}
 }
