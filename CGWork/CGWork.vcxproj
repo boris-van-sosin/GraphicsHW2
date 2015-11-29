@@ -189,6 +189,7 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BrowseInformation Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</BrowseInformation>
     </ClCompile>
+    <ClCompile Include="Drawing.cpp" />
     <ClCompile Include="GeometricTransformations.cpp" />
     <ClCompile Include="Geometry.cpp" />
     <ClCompile Include="iritSkel.cpp" />
@@ -225,6 +226,7 @@
     <ClInclude Include="CGWork.h" />
     <ClInclude Include="CGWorkDoc.h" />
     <ClInclude Include="CGWorkView.h" />
+    <ClInclude Include="Drawing.h" />
     <ClInclude Include="GeometricTransformations.h" />
     <ClInclude Include="Geometry.h" />
     <ClInclude Include="IritAdapter.h" />
