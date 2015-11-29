@@ -124,6 +124,7 @@ private:
 
 private:
 	std::vector<PolygonalObject> _objects;
+	BoundingBox* _bbox;
 	bool applyMat(const MatrixHomogeneous& mat, int ibj_idx);
 };
 

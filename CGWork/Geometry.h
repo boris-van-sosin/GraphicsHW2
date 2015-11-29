@@ -119,6 +119,9 @@ public:
 	static BoundingBox OfObjects(const std::vector<PolygonalObject>& objs);
 
 public:
+	BoundingBox BoundingCube() const;
+
+public:
 	const double minX, maxX, minY, maxY, minZ, maxZ;
 
 private:

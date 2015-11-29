@@ -14,6 +14,7 @@ using std::endl;
 
 #include "Geometry.h"
 #include "GeometricTransformations.h"
+#include "Drawing.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -83,6 +84,7 @@ void auxSolidCone(GLdouble radius, GLdouble height) {
 // CCGWorkView construction/destruction
 
 CCGWorkView::CCGWorkView()
+	: _bbox(NULL)
 {
 	// Set default values
 	m_nAxis = ID_AXIS_X;
@@ -103,6 +105,7 @@ CCGWorkView::CCGWorkView()
 
 CCGWorkView::~CCGWorkView()
 {
+	delete _bbox;
 }
 
 
@@ -521,7 +524,9 @@ void CCGWorkView::OnFileLoad()
 		PngWrapper p;
 		CGSkelProcessIritDataFiles(m_strItdFileName, 1, _objects);
 		FlipYAxis();
-		FitSceneToWindow();
+		//FitSceneToWindow();
+		delete _bbox;
+		_bbox = new BoundingBox(BoundingBox::OfObjects(_objects));
 		// Open the file and read it.
 		// Your code here...
 
@@ -721,7 +726,7 @@ void CCGWorkView::FitSceneToWindow()
 	MatrixHomogeneous r = Matrices::Rotate(AXIS_X, M_PI / 8) * Matrices::Rotate(AXIS_Z, M_PI / 8);
 	for (std::vector<PolygonalObject>::iterator i = _objects.begin(); i != _objects.end(); ++i)
 	{
-		(*i) = r * (*i);
+		//(*i) = r * (*i);
 	}
 
 
@@ -741,8 +746,24 @@ void CCGWorkView::FitSceneToWindow()
 
 void CCGWorkView::DrawScene(CImage& img)
 {
+	if (_bbox == NULL)
+	{
+		return;
+	}
+
+	const int margin = 5;
+	RECT rect;
+	GetWindowRect(&rect);
+
+	int height = rect.bottom - rect.top - 2 * margin;
+	int width = rect.right - rect.left - 2 * margin;
+
+	const MatrixHomogeneous mPersp = PerspectiveWarpMatrix(_bbox->BoundingCube());
+	const MatrixHomogeneous mOrtho = OrthographicProjectMatrix(_bbox->BoundingCube());
+	MatrixHomogeneous m = Matrices::Scale(min(height / 2, width / 2)) * Matrices::Translate(1, 1, 1) * mOrtho;
 	for (std::vector<PolygonalObject>::iterator i = _objects.begin(); i != _objects.end(); ++i)
 	{
-		DrawObject(img, *i, RGB(255, 0, 0));
+
+		DrawObject(img, m*(*i), RGB(255, 0, 0));
 	}
 }

@@ -239,7 +239,7 @@ std::pair<double, Point3D> Polygon3D::AreaAndCentroid() const
 	Vector3D v = Vector3D::Zero;
 	Point3D p = Point3D::Zero;
 	const Vector3D n = Normal();
-	for (std::vector<Point3D>::const_iterator i = points.begin(); i != points.end(); ++i)
+	for (auto i = points.begin(); i != points.end(); ++i)
 	{
 		std::vector<Point3D>::const_iterator j = (i + 1 != points.end() ? (i + 1) : points.begin());
 		v += i->Cross(*j);
@@ -257,18 +257,8 @@ PolygonalObject::PolygonalObject(const std::vector<Polygon3D>& polygons_)
 {
 }
 
-/*BoundingBox::BoundingBox(const LineSegment& line)
-	: minX(fmin(line.p0.x, line.p1.x)),
-	maxX(fmax(line.p0.x, line.p1.x)),
-	minY(fmin(line.p0.y, line.p1.y)),
-	maxY(fmax(line.p0.y, line.p1.y)),
-	minZ(fmin(line.p0.z, line.p1.z)),
-	maxZ(fmax(line.p0.z, line.p1.z))
-{
-}*/
-
 BoundingBox::BoundingBox(double minX_, double maxX_, double minY_, double maxY_, double minZ_, double maxZ_)
-	: minX(minX_), maxX(maxX_), minY(minY_), maxY(maxY_), minZ(minZ_), maxZ(minZ_)
+	: minX(minX_), maxX(maxX_), minY(minY_), maxY(maxY_), minZ(minZ_), maxZ(maxZ_)
 {}
 
 BoundingBox::BoundingBox(const BoundingBox& other)
@@ -407,4 +397,17 @@ BoundingBox BoundingBox::join(const std::vector<BoundingBox>& boxes)
 		maxZ = fmax(maxZ, i->maxZ);
 	}
 	return BoundingBox(minX, maxX, minY, maxY, minZ, maxZ);
+}
+
+BoundingBox BoundingBox::BoundingCube() const
+{
+	const Point3D center((minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2);
+	const double maxSize = fmax(maxX - minX, fmax(maxY - minY, maxZ - minZ));
+	const double halfMaxSize = maxSize / 2;
+	return BoundingBox(center.x - halfMaxSize,
+					   center.x + halfMaxSize,
+					   center.y - halfMaxSize,
+					   center.y + halfMaxSize,
+					   center.z - halfMaxSize,
+					   center.z + halfMaxSize);
 }
