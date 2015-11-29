@@ -20,6 +20,8 @@
 #include "Geometry.h"
 #include "GeometricTransformations.h"
 
+typedef std::vector<PolygonalObject> model_t;
+
 class CCGWorkView : public CView
 {
 protected: // create from serialization only
@@ -119,14 +121,15 @@ protected:
 	DECLARE_MESSAGE_MAP()
 
 private:
-	void FlipYAxis();
+	void FlipYAxis(int obj_idx);
 	void FitSceneToWindow();
 	void DrawScene(CImage& img);
 
 private:
-	std::vector<PolygonalObject> _objects;
+	std::vector<model_t> _models;
+	std::vector<BoundingBox> _bboxes;
 
-	BoundingBox* _bbox;
+	//BoundingBox* _bbox;
 	bool applyMat(const MatrixHomogeneous& mat, int ibj_idx);
 	void rotate(double rotate_angle);
 };

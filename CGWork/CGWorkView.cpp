@@ -85,7 +85,7 @@ void auxSolidCone(GLdouble radius, GLdouble height) {
 // CCGWorkView construction/destruction
 
 CCGWorkView::CCGWorkView()
-	: _bbox(NULL)
+//	: _bbox(NULL)
 {
 	// Set default values
 	m_nAxis = ID_AXIS_X;
@@ -106,7 +106,7 @@ CCGWorkView::CCGWorkView()
 
 CCGWorkView::~CCGWorkView()
 {
-	delete _bbox;
+	//delete _bbox;
 }
 
 
@@ -276,17 +276,18 @@ afx_msg void CCGWorkView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags) {
 // Apply matrix on a model
 /////////////////////////////////////////////////////////////////////////////
 bool CCGWorkView::applyMat(const MatrixHomogeneous& mat, int ibj_idx) {
-	if (ibj_idx >= _objects.size()) {
+	if (ibj_idx >= _models.size()) {
 		return false;
 	}
+	/*
 	for (auto it = _objects.begin(); it != _objects.end(); ++it) {
 		(*it) = mat * (*it);
 	}
-	/*
-	for (auto it = _objects[ibj_idx].polygons.begin(); it != _objects[ibj_idx].polygons.end(); ++it) {
+	*/
+	model_t& model = _models[ibj_idx];
+	for (auto it = model.begin(); it != model.end(); ++it) {
 		(*it) = mat * (*it);
 	}
-	*/
 	return true;
 }
 
@@ -543,17 +544,18 @@ void CCGWorkView::OnFileLoad()
 	if (dlg.DoModal () == IDOK) {
 		m_strItdFileName = dlg.GetPathName();		// Full path and filename
 		PngWrapper p;
-		CGSkelProcessIritDataFiles(m_strItdFileName, 1, _objects);
-		FlipYAxis();
+		_models.push_back(model_t());
+		CGSkelProcessIritDataFiles(m_strItdFileName, 1, _models.back());
+		FlipYAxis(_models.size() - 1);
 		//FitSceneToWindow();
-		delete _bbox;
-		_bbox = new BoundingBox(BoundingBox::OfObjects(_objects));
+		//delete _bbox;
+		//_bbox = new BoundingBox(BoundingBox::OfObjects(_objects));
+		_bboxes.push_back(BoundingBox(BoundingBox::OfObjects(_models.back())));
 		// Open the file and read it.
 		// Your code here...
 
 		Invalidate();	// force a WM_PAINT for drawing.
 	} 
-
 }
 
 
@@ -724,10 +726,10 @@ void CCGWorkView::OnLightConstants()
 	Invalidate();
 }
 
-void CCGWorkView::FlipYAxis()
+void CCGWorkView::FlipYAxis(int obj_idx)
 {
 	MatrixHomogeneous flipY = Matrices::Flip(AXIS_Y);
-	for (std::vector<PolygonalObject>::iterator i = _objects.begin(); i != _objects.end(); ++i)
+	for (std::vector<PolygonalObject>::iterator i = _models[obj_idx].begin(); i != _models[obj_idx].end(); ++i)
 	{
 		(*i) = flipY * (*i);
 	}
@@ -735,6 +737,8 @@ void CCGWorkView::FlipYAxis()
 
 void CCGWorkView::FitSceneToWindow()
 {
+	// I commented it out since it doesn't work, and I am doing something else
+	/*
 	const int margin = 5;
 	RECT rect;
 	GetWindowRect(&rect);
@@ -763,15 +767,11 @@ void CCGWorkView::FitSceneToWindow()
 	{
 		(*i) = m * (*i);
 	}
+	*/
 }
 
 void CCGWorkView::DrawScene(CImage& img)
 {
-	if (_bbox == NULL)
-	{
-		return;
-	}
-
 	const int margin = 5;
 	RECT rect;
 	GetWindowRect(&rect);
@@ -779,12 +779,19 @@ void CCGWorkView::DrawScene(CImage& img)
 	int height = rect.bottom - rect.top - 2 * margin;
 	int width = rect.right - rect.left - 2 * margin;
 
-	const MatrixHomogeneous mPersp = PerspectiveWarpMatrix(_bbox->BoundingCube());
-	const MatrixHomogeneous mOrtho = OrthographicProjectMatrix(_bbox->BoundingCube());
-	MatrixHomogeneous m = Matrices::Scale(min(height / 2, width / 2)) * Matrices::Translate(1, 1, 1) * mOrtho;
-	for (std::vector<PolygonalObject>::iterator i = _objects.begin(); i != _objects.end(); ++i)
-	{
+	for (int i = 0; i < _models.size(); i++) {
+		const MatrixHomogeneous mPersp = PerspectiveWarpMatrix(_bboxes[i].BoundingCube());
+		//const MatrixHomogeneous mPersp = PerspectiveWarpMatrix(_bbox->BoundingCube());
 
-		DrawObject(img, m*(*i), RGB(255, 0, 0));
+		const MatrixHomogeneous mOrtho = OrthographicProjectMatrix(_bboxes[i].BoundingCube());
+		//const MatrixHomogeneous mOrtho = OrthographicProjectMatrix(_bbox->BoundingCube());
+
+		MatrixHomogeneous m = Matrices::Scale(min(height / 2, width / 2)) * Matrices::Translate(1, 1, 1) * mOrtho;
+
+		model_t& model = _models[i];
+		for (std::vector<PolygonalObject>::iterator i = model.begin(); i != model.end(); ++i)
+		{
+			DrawObject(img, m*(*i), RGB(255, 0, 0));
+		}
 	}
 }
