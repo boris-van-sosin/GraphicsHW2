@@ -68,7 +68,6 @@ BEGIN_MESSAGE_MAP(CCGWorkView, CView)
 	ON_COMMAND(ID_LIGHT_CONSTANTS, OnLightConstants)
 	ON_WM_MOUSEMOVE()
 	ON_WM_MOUSEWHEEL()
-	ON_WM_KEYDOWN()
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -85,7 +84,7 @@ void auxSolidCone(GLdouble radius, GLdouble height) {
 // CCGWorkView construction/destruction
 
 CCGWorkView::CCGWorkView()
-//	: _bbox(NULL)
+	: _bbox(NULL)
 {
 	// Set default values
 	m_nAxis = ID_AXIS_X;
@@ -106,7 +105,7 @@ CCGWorkView::CCGWorkView()
 
 CCGWorkView::~CCGWorkView()
 {
-	//delete _bbox;
+	delete _bbox;
 }
 
 
@@ -234,7 +233,9 @@ void CCGWorkView::OnMouseMove(UINT nFlags, CPoint point) {
 	//Invalidate();
 }
 
-void CCGWorkView::rotate(double rotate_angle) {
+BOOL CCGWorkView::OnMouseWheel(UINT flags, short zdelta, CPoint point) {
+	double rotate_angle = zdelta / WHEEL_DELTA;
+	rotate_angle /= 10;
 	Axis axis;
 	if (m_nAxis == ID_AXIS_X)
 		axis = AXIS_X;
@@ -244,7 +245,7 @@ void CCGWorkView::rotate(double rotate_angle) {
 		axis = AXIS_Z;
 
 	MatrixHomogeneous mat = Matrices::Rotate(axis, rotate_angle);
-
+	
 	applyMat(mat, 0);
 	Invalidate();
 }
@@ -314,18 +315,17 @@ afx_msg void CCGWorkView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags) {
 // Apply matrix on a model
 /////////////////////////////////////////////////////////////////////////////
 bool CCGWorkView::applyMat(const MatrixHomogeneous& mat, int ibj_idx) {
-	if (ibj_idx >= _models.size()) {
+	if (ibj_idx >= _objects.size()) {
 		return false;
 	}
-	/*
 	for (auto it = _objects.begin(); it != _objects.end(); ++it) {
 		(*it) = mat * (*it);
 	}
-	*/
-	model_t& model = _models[ibj_idx];
-	for (auto it = model.begin(); it != model.end(); ++it) {
+	/*
+	for (auto it = _objects[ibj_idx].polygons.begin(); it != _objects[ibj_idx].polygons.end(); ++it) {
 		(*it) = mat * (*it);
 	}
+	*/
 	return true;
 }
 
@@ -582,18 +582,17 @@ void CCGWorkView::OnFileLoad()
 	if (dlg.DoModal () == IDOK) {
 		m_strItdFileName = dlg.GetPathName();		// Full path and filename
 		PngWrapper p;
-		_models.push_back(model_t());
-		CGSkelProcessIritDataFiles(m_strItdFileName, 1, _models.back());
-		FlipYAxis(_models.size() - 1);
+		CGSkelProcessIritDataFiles(m_strItdFileName, 1, _objects);
+		FlipYAxis();
 		//FitSceneToWindow();
-		//delete _bbox;
-		//_bbox = new BoundingBox(BoundingBox::OfObjects(_objects));
-		_bboxes.push_back(BoundingBox(BoundingBox::OfObjects(_models.back())));
+		delete _bbox;
+		_bbox = new BoundingBox(BoundingBox::OfObjects(_objects));
 		// Open the file and read it.
 		// Your code here...
 
 		Invalidate();	// force a WM_PAINT for drawing.
 	} 
+
 }
 
 
@@ -764,10 +763,10 @@ void CCGWorkView::OnLightConstants()
 	Invalidate();
 }
 
-void CCGWorkView::FlipYAxis(int obj_idx)
+void CCGWorkView::FlipYAxis()
 {
 	MatrixHomogeneous flipY = Matrices::Flip(AXIS_Y);
-	for (std::vector<PolygonalObject>::iterator i = _models[obj_idx].begin(); i != _models[obj_idx].end(); ++i)
+	for (std::vector<PolygonalObject>::iterator i = _objects.begin(); i != _objects.end(); ++i)
 	{
 		(*i) = flipY * (*i);
 	}
@@ -775,8 +774,6 @@ void CCGWorkView::FlipYAxis(int obj_idx)
 
 void CCGWorkView::FitSceneToWindow()
 {
-	// I commented it out since it doesn't work, and I am doing something else
-	/*
 	const int margin = 5;
 	RECT rect;
 	GetWindowRect(&rect);
@@ -803,13 +800,17 @@ void CCGWorkView::FitSceneToWindow()
 	MatrixHomogeneous m = (scale * moveToTopLeft);
 	for (std::vector<PolygonalObject>::iterator i = _objects.begin(); i != _objects.end(); ++i)
 	{
-		(*i) = m * (*i);
+		//(*i) = m * (*i);
 	}
-	*/
 }
 
 void CCGWorkView::DrawScene(CImage& img)
 {
+	if (_bbox == NULL)
+	{
+		return;
+	}
+
 	const int margin = 5;
 	RECT rect;
 	GetWindowRect(&rect);
@@ -817,19 +818,12 @@ void CCGWorkView::DrawScene(CImage& img)
 	int height = rect.bottom - rect.top - 2 * margin;
 	int width = rect.right - rect.left - 2 * margin;
 
-	for (int i = 0; i < _models.size(); i++) {
-		const MatrixHomogeneous mPersp = PerspectiveWarpMatrix(_bboxes[i].BoundingCube());
-		//const MatrixHomogeneous mPersp = PerspectiveWarpMatrix(_bbox->BoundingCube());
+	const MatrixHomogeneous mPersp = PerspectiveWarpMatrix(_bbox->BoundingCube());
+	const MatrixHomogeneous mOrtho = OrthographicProjectMatrix(_bbox->BoundingCube());
+	MatrixHomogeneous m = Matrices::Translate(width*0.5, height*0.5, 0) * Matrices::Scale(min(height, width)/4) * mPersp;
+	for (std::vector<PolygonalObject>::iterator i = _objects.begin(); i != _objects.end(); ++i)
+	{
 
-		const MatrixHomogeneous mOrtho = OrthographicProjectMatrix(_bboxes[i].BoundingCube());
-		//const MatrixHomogeneous mOrtho = OrthographicProjectMatrix(_bbox->BoundingCube());
-
-		MatrixHomogeneous m = Matrices::Scale(min(height / 2, width / 2)) * Matrices::Translate(1, 1, 1) * mOrtho;
-
-		model_t& model = _models[i];
-		for (std::vector<PolygonalObject>::iterator i = model.begin(); i != model.end(); ++i)
-		{
-			DrawObject(img, m*(*i), RGB(255, 0, 0));
-		}
+		DrawObject(img, m*(*i), RGB(255, 0, 0));
 	}
 }

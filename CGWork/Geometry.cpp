@@ -141,7 +141,7 @@ HomogeneousPoint::HomogeneousPoint(double x_, double y_, double z_, double w_)
 }
 
 HomogeneousPoint::HomogeneousPoint(const HomogeneousPoint& other)
-	: HomogeneousPoint(other.x, other.y, other.z, 1)
+	: HomogeneousPoint(other.x, other.y, other.z, other.w)
 {
 }
 

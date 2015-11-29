@@ -20,8 +20,6 @@
 #include "Geometry.h"
 #include "GeometricTransformations.h"
 
-typedef std::vector<PolygonalObject> model_t;
-
 class CCGWorkView : public CView
 {
 protected: // create from serialization only
@@ -116,21 +114,19 @@ protected:
 	afx_msg void OnLightConstants();
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 	afx_msg BOOL OnMouseWheel(UINT, short, CPoint);
-	afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 
 private:
-	void FlipYAxis(int obj_idx);
+	void FlipYAxis();
 	void FitSceneToWindow();
 	void DrawScene(CImage& img);
 
 private:
-	std::vector<model_t> _models;
-	std::vector<BoundingBox> _bboxes;
-
-	//BoundingBox* _bbox;
+	std::vector<PolygonalObject> _objects;
+	BoundingBox* _bbox;
 	bool applyMat(const MatrixHomogeneous& mat, int ibj_idx);
+
 	void rotate(double rotate_angle);
 	void translate(const Axis& axis, double dist);
 };
