@@ -20,17 +20,19 @@
 #include "Geometry.h"
 #include "GeometricTransformations.h"
 
+typedef std::vector<PolygonalObject> model_t;
+
 class CCGWorkView : public CView
 {
 protected: // create from serialization only
 	CCGWorkView();
 	DECLARE_DYNCREATE(CCGWorkView)
 
-// Attributes
+	// Attributes
 public:
 	CCGWorkDoc* GetDocument();
 
-// Operations
+	// Operations
 public:
 
 private:
@@ -38,7 +40,7 @@ private:
 	int m_nAction;				// Rotate, Translate, Scale
 	int m_nView;				// Orthographic, perspective
 	bool m_bIsPerspective;			// is the view perspective
-	
+
 	CString m_strItdFileName;		// file name of IRIT data
 
 	int m_nLightShading;			// shading: Flat, Gouraud.
@@ -52,16 +54,16 @@ private:
 	LightParams m_ambientLight;		//ambient light (only RGB is used)
 
 
-// Overrides
+	// Overrides
 	// ClassWizard generated virtual function overrides
 	//{{AFX_VIRTUAL(CCGWorkView)
-	public:
+public:
 	virtual void OnDraw(CDC* pDC);  // overridden to draw this view
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
-	protected:
+protected:
 	//}}AFX_VIRTUAL
 
-// Implementation
+	// Implementation
 public:
 	virtual ~CCGWorkView();
 #ifdef _DEBUG
@@ -83,7 +85,7 @@ protected:
 	int m_WindowHeight;		// hold the windows height
 	double m_AspectRatio;		// hold the fixed Aspect Ration
 
-// Generated message map functions
+	// Generated message map functions
 protected:
 	//{{AFX_MSG(CCGWorkView)
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
@@ -114,23 +116,28 @@ protected:
 	afx_msg void OnLightConstants();
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 	afx_msg BOOL OnMouseWheel(UINT, short, CPoint);
+	afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 
 private:
-	void FlipYAxis();
-	void FitSceneToWindow();
+	void FlipYAxis(int obj_idx);
 	void DrawScene(CImage& img);
 
 private:
-	std::vector<PolygonalObject> _objects;
-	BoundingBox* _bbox;
+	std::vector<model_t> _models;
+	std::vector<BoundingBox> _bboxes;
+
+	//BoundingBox* _bbox;
 	bool applyMat(const MatrixHomogeneous& mat, int ibj_idx);
+	void rotate(double rotate_angle);
 };
 
 #ifndef _DEBUG  // debug version in CGWorkView.cpp
 inline CCGWorkDoc* CCGWorkView::GetDocument()
-   { return (CCGWorkDoc*)m_pDocument; }
+{
+	return (CCGWorkDoc*)m_pDocument;
+}
 #endif
 
 /////////////////////////////////////////////////////////////////////////////
