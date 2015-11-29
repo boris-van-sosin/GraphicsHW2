@@ -68,28 +68,29 @@ BEGIN_MESSAGE_MAP(CCGWorkView, CView)
 	ON_COMMAND(ID_LIGHT_CONSTANTS, OnLightConstants)
 	ON_WM_MOUSEMOVE()
 	ON_WM_MOUSEWHEEL()
+	ON_WM_KEYDOWN()
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
 
 // A patch to fix GLaux disappearance from VS2005 to VS2008
 void auxSolidCone(GLdouble radius, GLdouble height) {
-        GLUquadric *quad = gluNewQuadric();
-        gluQuadricDrawStyle(quad, GLU_FILL);
-        gluCylinder(quad, radius, 0.0, height, 20, 20);
-        gluDeleteQuadric(quad);
+	GLUquadric *quad = gluNewQuadric();
+	gluQuadricDrawStyle(quad, GLU_FILL);
+	gluCylinder(quad, radius, 0.0, height, 20, 20);
+	gluDeleteQuadric(quad);
 }
 
 /////////////////////////////////////////////////////////////////////////////
 // CCGWorkView construction/destruction
 
 CCGWorkView::CCGWorkView()
-	: _bbox(NULL)
+//	: _bbox(NULL)
 {
 	// Set default values
 	m_nAxis = ID_AXIS_X;
 	m_nAction = ID_ACTION_ROTATE;
-	m_nView = ID_VIEW_ORTHOGRAPHIC;	
+	m_nView = ID_VIEW_ORTHOGRAPHIC;
 	m_bIsPerspective = false;
 
 	m_nLightShading = ID_LIGHT_SHADING_FLAT;
@@ -100,12 +101,12 @@ CCGWorkView::CCGWorkView()
 	m_nMaterialCosineFactor = 32;
 
 	//init the first light to be enabled
-	m_lights[LIGHT_ID_1].enabled=true;
+	m_lights[LIGHT_ID_1].enabled = true;
 }
 
 CCGWorkView::~CCGWorkView()
 {
-	delete _bbox;
+	//delete _bbox;
 }
 
 
@@ -150,7 +151,7 @@ BOOL CCGWorkView::PreCreateWindow(CREATESTRUCT& cs)
 
 
 
-int CCGWorkView::OnCreate(LPCREATESTRUCT lpCreateStruct) 
+int CCGWorkView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
 	if (CView::OnCreate(lpCreateStruct) == -1)
 		return -1;
@@ -166,7 +167,7 @@ BOOL CCGWorkView::InitializeCGWork()
 {
 	m_pDC = new CClientDC(this);
 
-	if ( NULL == m_pDC ) { // failure to get DC
+	if (NULL == m_pDC) { // failure to get DC
 		::AfxMessageBox(_T("Couldn't get a valid DC."));
 		return FALSE;
 	}
@@ -179,11 +180,11 @@ BOOL CCGWorkView::InitializeCGWork()
 // CCGWorkView message handlers
 
 
-void CCGWorkView::OnSize(UINT nType, int cx, int cy) 
+void CCGWorkView::OnSize(UINT nType, int cx, int cy)
 {
 	CView::OnSize(nType, cx, cy);
 
-	if ( 0 >= cx || 0 >= cy ) {
+	if (0 >= cx || 0 >= cy) {
 		return;
 	}
 
@@ -193,13 +194,13 @@ void CCGWorkView::OnSize(UINT nType, int cx, int cy)
 
 	// compute the aspect ratio
 	// this will keep all dimension scales equal
-	m_AspectRatio = (GLdouble)m_WindowWidth/(GLdouble)m_WindowHeight;
+	m_AspectRatio = (GLdouble)m_WindowWidth / (GLdouble)m_WindowHeight;
 }
 
 
 BOOL CCGWorkView::SetupViewingFrustum(void)
 {
-    return TRUE;
+	return TRUE;
 }
 
 
@@ -214,7 +215,7 @@ BOOL CCGWorkView::SetupViewingOrthoConstAspect(void)
 
 
 
-BOOL CCGWorkView::OnEraseBkgnd(CDC* pDC) 
+BOOL CCGWorkView::OnEraseBkgnd(CDC* pDC)
 {
 	// Windows will clear the window with the background color every time your window 
 	// is redrawn, and then CGWork will clear the viewport with its own background color.
@@ -233,9 +234,7 @@ void CCGWorkView::OnMouseMove(UINT nFlags, CPoint point) {
 	//Invalidate();
 }
 
-BOOL CCGWorkView::OnMouseWheel(UINT flags, short zdelta, CPoint point) {
-	double rotate_angle = zdelta / WHEEL_DELTA;
-	rotate_angle /= 10;
+void CCGWorkView::rotate(double rotate_angle) {
 	Axis axis;
 	if (m_nAxis == ID_AXIS_X)
 		axis = AXIS_X;
@@ -245,7 +244,7 @@ BOOL CCGWorkView::OnMouseWheel(UINT flags, short zdelta, CPoint point) {
 		axis = AXIS_Z;
 
 	MatrixHomogeneous mat = Matrices::Rotate(axis, rotate_angle);
-	
+
 	applyMat(mat, 0);
 	Invalidate();
 }
@@ -278,6 +277,7 @@ BOOL CCGWorkView::OnMouseWheel(UINT flags, short zdelta, CPoint point) {
 		dist = -dist;
 		translate(axis, dist);
 	}
+
 
 	return true;
 }
@@ -315,17 +315,18 @@ afx_msg void CCGWorkView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags) {
 // Apply matrix on a model
 /////////////////////////////////////////////////////////////////////////////
 bool CCGWorkView::applyMat(const MatrixHomogeneous& mat, int ibj_idx) {
-	if (ibj_idx >= _objects.size()) {
+	if (ibj_idx >= _models.size()) {
 		return false;
 	}
-	for (auto it = _objects.begin(); it != _objects.end(); ++it) {
-		(*it) = mat * (*it);
-	}
 	/*
-	for (auto it = _objects[ibj_idx].polygons.begin(); it != _objects[ibj_idx].polygons.end(); ++it) {
-		(*it) = mat * (*it);
+	for (auto it = _objects.begin(); it != _objects.end(); ++it) {
+	(*it) = mat * (*it);
 	}
 	*/
+	model_t& model = _models[ibj_idx];
+	for (auto it = model.begin(); it != model.end(); ++it) {
+		(*it) = mat * (*it);
+	}
 	return true;
 }
 
@@ -363,7 +364,7 @@ void inline ImageSetPixel(CImage& img, int x, int y, COLORREF clr)
 		return;
 	}
 
-	BYTE* pos = (BYTE*) img.GetPixelAddress(x, y);
+	BYTE* pos = (BYTE*)img.GetPixelAddress(x, y);
 	*pos = blue;
 	*(pos + 1) = green;
 	*(pos + 2) = red;
@@ -404,10 +405,10 @@ void innerDrawLine(CImage& img, int x0, int y0, int x1, int y1, COLORREF clr) {
 		dy = -dy;
 	}
 
-	if (dx > 0 && dy >= 0 && dy<=dx) {
+	if (dx > 0 && dy >= 0 && dy <= dx) {
 
 		int err = 2 * dy - dx;
-		int horizontal = 2 * dy, diagonal = 2*(dy - dx);
+		int horizontal = 2 * dy, diagonal = 2 * (dy - dx);
 		if (!swapXY)
 		{
 			ImageSetPixel(img, x0, y0, clr);
@@ -444,7 +445,7 @@ void innerDrawLine(CImage& img, int x0, int y0, int x1, int y1, COLORREF clr) {
 			}
 		}
 	}
-	else if (dx==0 && dy==0)
+	else if (dx == 0 && dy == 0)
 	{
 		ImageSetPixel(img, x0, y0, clr);
 	}
@@ -531,7 +532,7 @@ void CCGWorkView::OnDraw(CDC* pDC)
 	CCGWorkDoc* pDoc = GetDocument();
 	ASSERT_VALID(pDoc);
 	if (!pDoc)
-	    return;
+		return;
 
 	RECT rect;
 	GetWindowRect(&rect);
@@ -551,12 +552,12 @@ void CCGWorkView::OnDraw(CDC* pDC)
 /////////////////////////////////////////////////////////////////////////////
 // CCGWorkView CGWork Finishing and clearing...
 
-void CCGWorkView::OnDestroy() 
+void CCGWorkView::OnDestroy()
 {
 	CView::OnDestroy();
 
 	// delete the DC
-	if ( m_pDC ) {
+	if (m_pDC) {
 		delete m_pDC;
 	}
 }
@@ -573,26 +574,26 @@ void CCGWorkView::RenderScene() {
 }
 
 
-void CCGWorkView::OnFileLoad() 
+void CCGWorkView::OnFileLoad()
 {
-	TCHAR szFilters[] = _T ("IRIT Data Files (*.itd)|*.itd|All Files (*.*)|*.*||");
+	TCHAR szFilters[] = _T("IRIT Data Files (*.itd)|*.itd|All Files (*.*)|*.*||");
 
-	CFileDialog dlg(TRUE, _T("itd"), _T("*.itd"), OFN_FILEMUSTEXIST | OFN_HIDEREADONLY ,szFilters);
+	CFileDialog dlg(TRUE, _T("itd"), _T("*.itd"), OFN_FILEMUSTEXIST | OFN_HIDEREADONLY, szFilters);
 
-	if (dlg.DoModal () == IDOK) {
+	if (dlg.DoModal() == IDOK) {
 		m_strItdFileName = dlg.GetPathName();		// Full path and filename
 		PngWrapper p;
-		CGSkelProcessIritDataFiles(m_strItdFileName, 1, _objects);
-		FlipYAxis();
-		//FitSceneToWindow();
-		delete _bbox;
-		_bbox = new BoundingBox(BoundingBox::OfObjects(_objects));
+		_models.push_back(model_t());
+		CGSkelProcessIritDataFiles(m_strItdFileName, 1, _models.back());
+		FlipYAxis(_models.size() - 1);
+		//delete _bbox;
+		//_bbox = new BoundingBox(BoundingBox::OfObjects(_objects));
+		_bboxes.push_back(BoundingBox(BoundingBox::OfObjects(_models.back())));
 		// Open the file and read it.
 		// Your code here...
 
 		Invalidate();	// force a WM_PAINT for drawing.
-	} 
-
+	}
 }
 
 
@@ -604,26 +605,26 @@ void CCGWorkView::OnFileLoad()
 // Note: that all the following Message Handlers act in a similar way.
 // Each control or command has two functions associated with it.
 
-void CCGWorkView::OnViewOrthographic() 
+void CCGWorkView::OnViewOrthographic()
 {
 	m_nView = ID_VIEW_ORTHOGRAPHIC;
 	m_bIsPerspective = false;
 	Invalidate();		// redraw using the new view.
 }
 
-void CCGWorkView::OnUpdateViewOrthographic(CCmdUI* pCmdUI) 
+void CCGWorkView::OnUpdateViewOrthographic(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(m_nView == ID_VIEW_ORTHOGRAPHIC);
 }
 
-void CCGWorkView::OnViewPerspective() 
+void CCGWorkView::OnViewPerspective()
 {
 	m_nView = ID_VIEW_PERSPECTIVE;
 	m_bIsPerspective = true;
 	Invalidate();
 }
 
-void CCGWorkView::OnUpdateViewPerspective(CCmdUI* pCmdUI) 
+void CCGWorkView::OnUpdateViewPerspective(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(m_nView == ID_VIEW_PERSPECTIVE);
 }
@@ -633,32 +634,32 @@ void CCGWorkView::OnUpdateViewPerspective(CCmdUI* pCmdUI)
 
 // ACTION HANDLERS ///////////////////////////////////////////
 
-void CCGWorkView::OnActionRotate() 
+void CCGWorkView::OnActionRotate()
 {
 	m_nAction = ID_ACTION_ROTATE;
 }
 
-void CCGWorkView::OnUpdateActionRotate(CCmdUI* pCmdUI) 
+void CCGWorkView::OnUpdateActionRotate(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(m_nAction == ID_ACTION_ROTATE);
 }
 
-void CCGWorkView::OnActionTranslate() 
+void CCGWorkView::OnActionTranslate()
 {
 	m_nAction = ID_ACTION_TRANSLATE;
 }
 
-void CCGWorkView::OnUpdateActionTranslate(CCmdUI* pCmdUI) 
+void CCGWorkView::OnUpdateActionTranslate(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(m_nAction == ID_ACTION_TRANSLATE);
 }
 
-void CCGWorkView::OnActionScale() 
+void CCGWorkView::OnActionScale()
 {
 	m_nAction = ID_ACTION_SCALE;
 }
 
-void CCGWorkView::OnUpdateActionScale(CCmdUI* pCmdUI) 
+void CCGWorkView::OnUpdateActionScale(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(m_nAction == ID_ACTION_SCALE);
 }
@@ -672,7 +673,7 @@ void CCGWorkView::OnUpdateActionScale(CCmdUI* pCmdUI)
 // Gets calles when the X button is pressed or when the Axis->X menu is selected.
 // The only thing we do here is set the ChildView member variable m_nAxis to the 
 // selected axis.
-void CCGWorkView::OnAxisX() 
+void CCGWorkView::OnAxisX()
 {
 	m_nAxis = ID_AXIS_X;
 }
@@ -681,29 +682,29 @@ void CCGWorkView::OnAxisX()
 // The control is responsible for its redrawing.
 // It sets itself disabled when the action is a Scale action.
 // It sets itself Checked if the current axis is the X axis.
-void CCGWorkView::OnUpdateAxisX(CCmdUI* pCmdUI) 
+void CCGWorkView::OnUpdateAxisX(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(m_nAxis == ID_AXIS_X);
 }
 
 
-void CCGWorkView::OnAxisY() 
+void CCGWorkView::OnAxisY()
 {
 	m_nAxis = ID_AXIS_Y;
 }
 
-void CCGWorkView::OnUpdateAxisY(CCmdUI* pCmdUI) 
+void CCGWorkView::OnUpdateAxisY(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(m_nAxis == ID_AXIS_Y);
 }
 
 
-void CCGWorkView::OnAxisZ() 
+void CCGWorkView::OnAxisZ()
 {
 	m_nAxis = ID_AXIS_Z;
 }
 
-void CCGWorkView::OnUpdateAxisZ(CCmdUI* pCmdUI) 
+void CCGWorkView::OnUpdateAxisZ(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(m_nAxis == ID_AXIS_Z);
 }
@@ -719,98 +720,61 @@ void CCGWorkView::OnUpdateAxisZ(CCmdUI* pCmdUI)
 
 // LIGHT SHADING HANDLERS ///////////////////////////////////////////
 
-void CCGWorkView::OnLightShadingFlat() 
+void CCGWorkView::OnLightShadingFlat()
 {
 	m_nLightShading = ID_LIGHT_SHADING_FLAT;
 }
 
-void CCGWorkView::OnUpdateLightShadingFlat(CCmdUI* pCmdUI) 
+void CCGWorkView::OnUpdateLightShadingFlat(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(m_nLightShading == ID_LIGHT_SHADING_FLAT);
 }
 
 
-void CCGWorkView::OnLightShadingGouraud() 
+void CCGWorkView::OnLightShadingGouraud()
 {
 	m_nLightShading = ID_LIGHT_SHADING_GOURAUD;
 }
 
-void CCGWorkView::OnUpdateLightShadingGouraud(CCmdUI* pCmdUI) 
+void CCGWorkView::OnUpdateLightShadingGouraud(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(m_nLightShading == ID_LIGHT_SHADING_GOURAUD);
 }
 
 // LIGHT SETUP HANDLER ///////////////////////////////////////////
 
-void CCGWorkView::OnLightConstants() 
+void CCGWorkView::OnLightConstants()
 {
 	CLightDialog dlg;
 
-	for (int id=LIGHT_ID_1;id<MAX_LIGHT;id++)
-	{	    
-	    dlg.SetDialogData((LightID)id,m_lights[id]);
-	}
-	dlg.SetDialogData(LIGHT_ID_AMBIENT,m_ambientLight);
-
-	if (dlg.DoModal() == IDOK) 
+	for (int id = LIGHT_ID_1; id<MAX_LIGHT; id++)
 	{
-	    for (int id=LIGHT_ID_1;id<MAX_LIGHT;id++)
-	    {
-		m_lights[id] = dlg.GetDialogData((LightID)id);
-	    }
-	    m_ambientLight = dlg.GetDialogData(LIGHT_ID_AMBIENT);
-	}	
+		dlg.SetDialogData((LightID)id, m_lights[id]);
+	}
+	dlg.SetDialogData(LIGHT_ID_AMBIENT, m_ambientLight);
+
+	if (dlg.DoModal() == IDOK)
+	{
+		for (int id = LIGHT_ID_1; id<MAX_LIGHT; id++)
+		{
+			m_lights[id] = dlg.GetDialogData((LightID)id);
+		}
+		m_ambientLight = dlg.GetDialogData(LIGHT_ID_AMBIENT);
+	}
 	Invalidate();
 }
 
-void CCGWorkView::FlipYAxis()
+void CCGWorkView::FlipYAxis(int obj_idx)
 {
 	MatrixHomogeneous flipY = Matrices::Flip(AXIS_Y);
-	for (std::vector<PolygonalObject>::iterator i = _objects.begin(); i != _objects.end(); ++i)
+	for (std::vector<PolygonalObject>::iterator i = _models[obj_idx].begin(); i != _models[obj_idx].end(); ++i)
 	{
 		(*i) = flipY * (*i);
 	}
 }
 
-void CCGWorkView::FitSceneToWindow()
-{
-	const int margin = 5;
-	RECT rect;
-	GetWindowRect(&rect);
-
-	int height = rect.bottom - rect.top - 2*margin;
-	int width = rect.right - rect.left - 2 * margin;
-
-	double minWindowDim = min(height, width);
-
-	MatrixHomogeneous r = Matrices::Rotate(AXIS_X, M_PI / 8) * Matrices::Rotate(AXIS_Z, M_PI / 8);
-	for (std::vector<PolygonalObject>::iterator i = _objects.begin(); i != _objects.end(); ++i)
-	{
-		//(*i) = r * (*i);
-	}
-
-
-	BoundingBox bbox = BoundingBox::OfObjects(_objects);
-	double maxBBoxDim = max(bbox.maxX - bbox.minX, max(bbox.maxY - bbox.minY, bbox.maxZ - bbox.minZ));
-
-	double resizeRatio = minWindowDim / maxBBoxDim;
-
-	MatrixHomogeneous scale = Matrices::Scale(resizeRatio);
-	MatrixHomogeneous moveToTopLeft = Matrices::Translate(-bbox.minX, -bbox.minY, -bbox.minZ);
-	MatrixHomogeneous m = (scale * moveToTopLeft);
-	for (std::vector<PolygonalObject>::iterator i = _objects.begin(); i != _objects.end(); ++i)
-	{
-		//(*i) = m * (*i);
-	}
-}
-
 void CCGWorkView::DrawScene(CImage& img)
 {
-	if (_bbox == NULL)
-	{
-		return;
-	}
-
 	const int margin = 5;
 	RECT rect;
 	GetWindowRect(&rect);
@@ -818,12 +782,19 @@ void CCGWorkView::DrawScene(CImage& img)
 	int height = rect.bottom - rect.top - 2 * margin;
 	int width = rect.right - rect.left - 2 * margin;
 
-	const MatrixHomogeneous mPersp = PerspectiveWarpMatrix(_bbox->BoundingCube());
-	const MatrixHomogeneous mOrtho = OrthographicProjectMatrix(_bbox->BoundingCube());
-	MatrixHomogeneous m = Matrices::Translate(width*0.5, height*0.5, 0) * Matrices::Scale(min(height, width)/4) * mPersp;
-	for (std::vector<PolygonalObject>::iterator i = _objects.begin(); i != _objects.end(); ++i)
-	{
+	for (int i = 0; i < _models.size(); i++) {
+		const MatrixHomogeneous mPersp = PerspectiveWarpMatrix(_bboxes[i].BoundingCube());
+		//const MatrixHomogeneous mPersp = PerspectiveWarpMatrix(_bbox->BoundingCube());
 
-		DrawObject(img, m*(*i), RGB(255, 0, 0));
+		const MatrixHomogeneous mOrtho = OrthographicProjectMatrix(_bboxes[i].BoundingCube());
+		//const MatrixHomogeneous mOrtho = OrthographicProjectMatrix(_bbox->BoundingCube());
+
+		MatrixHomogeneous m = Matrices::Translate(width*0.5, height*0.5, 0) * Matrices::Scale(min(height, width) / 4) * mPersp;
+
+		model_t& model = _models[i];
+		for (std::vector<PolygonalObject>::iterator i = model.begin(); i != model.end(); ++i)
+		{
+			DrawObject(img, m*(*i), RGB(255, 0, 0));
+		}
 	}
 }
