@@ -124,6 +124,7 @@ protected:
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 	afx_msg BOOL OnMouseWheel(UINT, short, CPoint);
 	afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
+	afx_msg void OnLButtonDown(UINT nHitTest, CPoint point);
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 
@@ -137,12 +138,13 @@ private:
 	std::vector<model_attr_t> _model_attr;
 
 	int glowing_object = -1; // -1 is none
+	int active_object = 0;
 
 	CImage _pxl2obj; // to know the position of the objects on the screen
 					// there is 1 offset of the object index, because the bg is 0
 
 	//BoundingBox* _bbox;
-	bool applyMat(const MatrixHomogeneous& mat, int ibj_idx);
+	bool applyMat(const MatrixHomogeneous& mat);
 
 	void rotate(double rotate_angle);
 	void translate(const Axis& axis, double dist);

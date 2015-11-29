@@ -69,6 +69,7 @@ BEGIN_MESSAGE_MAP(CCGWorkView, CView)
 	ON_WM_MOUSEMOVE()
 	ON_WM_MOUSEWHEEL()
 	ON_WM_KEYDOWN()
+	ON_WM_LBUTTONDOWN()
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -256,14 +257,14 @@ void CCGWorkView::rotate(double rotate_angle) {
 
 	MatrixHomogeneous mat = Matrices::Rotate(axis, rotate_angle);
 
-	applyMat(mat, 0);
+	applyMat(mat);
 	Invalidate();
 }
 
 void CCGWorkView::translate(const Axis& axis,double dist) {
 	MatrixHomogeneous mat = Matrices::Translate(axis == AXIS_X ? dist : 0, axis == AXIS_Y ? dist : 0, axis == AXIS_Z ? dist : 0);
 
-	applyMat(mat, 0);
+	applyMat(mat);
 	Invalidate();
 }
 
@@ -322,11 +323,17 @@ afx_msg void CCGWorkView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags) {
 	}
 }
 
+afx_msg void CCGWorkView::OnLButtonDown(UINT nHitTest, CPoint point) {
+	if (glowing_object == -1)
+		return;
+	active_object = glowing_object;
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // Apply matrix on a model
 /////////////////////////////////////////////////////////////////////////////
-bool CCGWorkView::applyMat(const MatrixHomogeneous& mat, int ibj_idx) {
-	if (ibj_idx >= _models.size()) {
+bool CCGWorkView::applyMat(const MatrixHomogeneous& mat) {
+	if (active_object >= _models.size()) {
 		return false;
 	}
 	/*
@@ -334,7 +341,7 @@ bool CCGWorkView::applyMat(const MatrixHomogeneous& mat, int ibj_idx) {
 	(*it) = mat * (*it);
 	}
 	*/
-	model_t& model = _models[ibj_idx];
+	model_t& model = _models[active_object];
 	for (auto it = model.begin(); it != model.end(); ++it) {
 		(*it) = mat * (*it);
 	}
