@@ -53,6 +53,12 @@ public:
 		{
 			res[i] = _rows[i] * vec;
 		}
+		//
+		if (D == 4 && res[3] == 0)
+		{
+			int k = 6;
+		}
+		//
 		return res;
 	}
 

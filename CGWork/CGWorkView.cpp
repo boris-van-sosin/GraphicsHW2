@@ -740,7 +740,7 @@ void CCGWorkView::FitSceneToWindow()
 	MatrixHomogeneous m = (scale * moveToTopLeft);
 	for (std::vector<PolygonalObject>::iterator i = _objects.begin(); i != _objects.end(); ++i)
 	{
-		(*i) = m * (*i);
+		//(*i) = m * (*i);
 	}
 }
 
@@ -760,7 +760,7 @@ void CCGWorkView::DrawScene(CImage& img)
 
 	const MatrixHomogeneous mPersp = PerspectiveWarpMatrix(_bbox->BoundingCube());
 	const MatrixHomogeneous mOrtho = OrthographicProjectMatrix(_bbox->BoundingCube());
-	MatrixHomogeneous m = Matrices::Scale(min(height / 2, width / 2)) * Matrices::Translate(1, 1, 1) * mOrtho;
+	MatrixHomogeneous m = Matrices::Translate(width*0.5, height*0.5, 0) * Matrices::Scale(min(height, width)/4) * mPersp;
 	for (std::vector<PolygonalObject>::iterator i = _objects.begin(); i != _objects.end(); ++i)
 	{
 
