@@ -249,23 +249,61 @@ void CCGWorkView::rotate(double rotate_angle) {
 	Invalidate();
 }
 
+void CCGWorkView::translate(const Axis& axis,double dist) {
+	MatrixHomogeneous mat = Matrices::Translate(axis == AXIS_X ? dist : 0, axis == AXIS_Y ? dist : 0, axis == AXIS_Z ? dist : 0);
+
+	applyMat(mat, 0);
+	Invalidate();
+}
+
 BOOL CCGWorkView::OnMouseWheel(UINT flags, short zdelta, CPoint point) {
-	double rotate_angle = zdelta / WHEEL_DELTA;
-	rotate_angle /= 10;
+	Axis axis;
+	if (m_nAxis == ID_AXIS_X)
+		axis = AXIS_X;
+	if (m_nAxis == ID_AXIS_Y)
+		axis = AXIS_Y;
+	if (m_nAxis == ID_AXIS_Z)
+		axis = AXIS_Z;
 	
-	rotate(rotate_angle);
+	if (m_nAction == ID_ACTION_ROTATE) {
+		double rotate_angle = zdelta / WHEEL_DELTA;
+		rotate_angle /= 10;
+
+		rotate(rotate_angle);
+	}
+	if (m_nAction == ID_ACTION_TRANSLATE) {
+		double dist = zdelta / WHEEL_DELTA;
+		dist /= 10;
+		dist = -dist;
+		translate(axis, dist);
+	}
 
 	return true;
 }
 
 afx_msg void CCGWorkView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags) {
 
+	double rotate_gran = 1000;
+	double move_gran = 5000;
+
 	switch (nChar) {
 	case 90: // z
-		rotate(-(double)nChar * (double)nRepCnt / 1000.0);
+		rotate(-(double)nChar * (double)nRepCnt / rotate_gran);
 		break;
 	case 88: // x
-		rotate((double)nChar * (double)nRepCnt / 1000.0);
+		rotate((double)nChar * (double)nRepCnt / rotate_gran);
+		break;
+	case 87: // w
+		translate(AXIS_Y, -(double)nChar * (double)nRepCnt / move_gran);
+		break;
+	case 65: // a
+		translate(AXIS_X, -(double)nChar * (double)nRepCnt / move_gran);
+		break;
+	case 83: // s
+		translate(AXIS_Y, (double)nChar * (double)nRepCnt / move_gran);
+		break;
+	case 68: // d
+		translate(AXIS_X, (double)nChar * (double)nRepCnt / move_gran);
 		break;
 	default:
 		break;

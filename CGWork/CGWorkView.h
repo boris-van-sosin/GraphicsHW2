@@ -132,6 +132,7 @@ private:
 	//BoundingBox* _bbox;
 	bool applyMat(const MatrixHomogeneous& mat, int ibj_idx);
 	void rotate(double rotate_angle);
+	void translate(const Axis& axis, double dist);
 };
 
 #ifndef _DEBUG  // debug version in CGWorkView.cpp
