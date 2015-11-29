@@ -809,7 +809,7 @@ void CCGWorkView::DrawScene(CImage& img)
 		const MatrixHomogeneous mOrtho = OrthographicProjectMatrix(_bboxes[i].BoundingCube());
 		//const MatrixHomogeneous mOrtho = OrthographicProjectMatrix(_bbox->BoundingCube());
 
-		MatrixHomogeneous m = Matrices::Translate(width*0.5, height*0.5, 0) * Matrices::Scale(min(height, width) / 4) * mOrtho;
+		MatrixHomogeneous m = Matrices::Translate(width*0.5, height*0.5, 0) * Matrices::Scale(min(height, width) / 4);// *mOrtho;
 
 		model_t& model = _models[i];
 		for (std::vector<PolygonalObject>::iterator i = model.begin(); i != model.end(); ++i)
