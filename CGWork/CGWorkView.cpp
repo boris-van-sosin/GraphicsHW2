@@ -376,7 +376,7 @@ void swap(int& x, int& y) {
 	y = z;
 }
 
-void innerDrawLine(CImage& img, int x0, int y0, int x1, int y1, COLORREF clr) {
+void innerDrawLine(CImage& img, int x0, int y0, int x1, int y1, COLORREF clr, unsigned int line_width = 1) {
 	if (x0 > x1) {
 		swap(x0, x1);
 		swap(y0, y1);
@@ -412,10 +412,18 @@ void innerDrawLine(CImage& img, int x0, int y0, int x1, int y1, COLORREF clr) {
 		if (!swapXY)
 		{
 			ImageSetPixel(img, x0, y0, clr);
+			for (int i = 1; i < line_width; i++) {
+				ImageSetPixel(img, x0, y0 + i, clr);
+				ImageSetPixel(img, x0, y0 - i, clr);
+			}
 		}
 		else
 		{
 			ImageSetPixel(img, y0, x0, clr);
+			for (int i = 1; i < line_width; i++) {
+				ImageSetPixel(img, y0 + i, x0, clr);
+				ImageSetPixel(img, y0 - i, x0, clr);
+			}
 		}
 		int y = y0;
 
@@ -438,16 +446,28 @@ void innerDrawLine(CImage& img, int x0, int y0, int x1, int y1, COLORREF clr) {
 			if (!swapXY)
 			{
 				ImageSetPixel(img, x, y, clr);
+				for (int i = 1; i < line_width; i++) {
+					ImageSetPixel(img, x, y + i, clr);
+					ImageSetPixel(img, x, y - i, clr);
+				}
 			}
 			else
 			{
 				ImageSetPixel(img, y, x, clr);
+				for (int i = 1; i < line_width; i++) {
+					ImageSetPixel(img, y + i, x, clr);
+					ImageSetPixel(img, y - i, x, clr);
+				}
 			}
 		}
 	}
 	else if (dx == 0 && dy == 0)
 	{
 		ImageSetPixel(img, x0, y0, clr);
+		for (int i = 1; i < line_width; i++) {
+			ImageSetPixel(img, x0, y0 + i, clr);
+			ImageSetPixel(img, x0, y0 - i, clr);
+		}
 	}
 }
 // temp code end
