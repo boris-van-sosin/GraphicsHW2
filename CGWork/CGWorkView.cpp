@@ -274,6 +274,12 @@ void CCGWorkView::translate(const Axis& axis,double dist) {
 	Invalidate();
 }
 
+void CCGWorkView::scale(const Axis& axis, double factor) {
+	MatrixHomogeneous mat = Matrices::Scale(axis == AXIS_X ? factor : 1, axis == AXIS_Y ? factor : 1, axis == AXIS_Z ? factor : 1);
+	applyMat(mat);
+	Invalidate();
+}
+
 BOOL CCGWorkView::OnMouseWheel(UINT flags, short zdelta, CPoint point) {
 	Axis axis;
 	if (m_nAxis == ID_AXIS_X)
@@ -294,6 +300,12 @@ BOOL CCGWorkView::OnMouseWheel(UINT flags, short zdelta, CPoint point) {
 		dist /= 10;
 		dist = -dist;
 		translate(axis, dist);
+	}
+	if (m_nAction == ID_ACTION_SCALE) {
+		double factor = zdelta / WHEEL_DELTA;
+		factor *= 1.1;
+		factor = factor < 0 ? -1 / factor : factor;
+		scale(axis, factor);
 	}
 
 
