@@ -36,9 +36,12 @@ END_MESSAGE_MAP()
 // CChooseColorDlg message handlers
 void CChooseColorDlg::OnClrModel() {
 	CColorDialog dlg(local_param.model_color);
-	dlg.DoModal();
-	COLORREF clr = dlg.GetColor();
-	local_param.model_color = clr;
+	if (dlg.DoModal() == IDOK)
+	{
+		COLORREF clr = dlg.GetColor();
+		local_param.model_color = clr;
+		local_param.model_force_color = true;
+	}
 }
 
 void CChooseColorDlg::OnOk() {

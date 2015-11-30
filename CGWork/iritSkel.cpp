@@ -315,6 +315,7 @@ namespace IritAdapter
 		IPVertexStruct* v = p->PVertex;
 		while (v != NULL)
 		{
+			// assume 3D. no indication in structure...
 			IPAttributeStruct* vertexAttrRGB = AttrFindAttribute(v->Attr, "rgb");
 			if (vertexAttrRGB != NULL)
 			{
@@ -326,7 +327,7 @@ namespace IritAdapter
 			{
 				vertices.push_back(Point3D(v->Coord[0], v->Coord[1], v->Coord[2]));
 			}
-			// assume 3D. no indication in structure...
+			
 			
 			v = v->Pnext;
 		}

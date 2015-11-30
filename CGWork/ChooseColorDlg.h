@@ -6,6 +6,7 @@
 class Choose_color_param_t {
 public:
 	COLORREF model_color;
+	bool model_force_color;
 	COLORREF normal_color;
 };
 

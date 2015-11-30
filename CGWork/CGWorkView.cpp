@@ -118,6 +118,7 @@ CCGWorkView::~CCGWorkView()
 	//delete _bbox;
 }
 
+const COLORREF CCGWorkView::DefaultModelColor(RGB(0, 0, 255));
 
 /////////////////////////////////////////////////////////////////////////////
 // CCGWorkView diagnostics
@@ -565,7 +566,7 @@ void DrawLineSegment(CImage& img, const LineSegment& line, COLORREF clr, unsigne
 	DrawLineSegment(img, line.p0, line.p1, clr, line_width);
 }
 
-void DrawPolygon(CImage& img, const Polygon3D& poly, const model_attr_t& attr)
+void DrawPolygon(CImage& img, const Polygon3D& poly, const model_attr_t& attr, COLORREF objColor, bool objColorValid)
 {
 	if (poly.points.size() < 2)
 	{
@@ -573,13 +574,31 @@ void DrawPolygon(CImage& img, const Polygon3D& poly, const model_attr_t& attr)
 	}
 	for (std::vector<Point3D>::const_iterator i = poly.points.begin(); i != poly.points.end(); ++i)
 	{
+		COLORREF actualColor = CCGWorkView::DefaultModelColor;
+		if (attr.forceColor)
+		{
+			actualColor = attr.color;
+		}
+		else if (i->colorValid)
+		{
+			actualColor = i->color;
+		}
+		else if (poly.colorValid)
+		{
+			actualColor = poly.color;
+		}
+		else if (objColorValid)
+		{
+			actualColor = objColor;
+		}
+
 		if (i + 1 != poly.points.end())
 		{
-			DrawLineSegment(img, *i, *(i + 1), attr.color, attr.line_width);
+			DrawLineSegment(img, *i, *(i + 1), actualColor, attr.line_width);
 		}
 		else
 		{
-			DrawLineSegment(img, *i, poly.points.front(), attr.color, attr.line_width);
+			DrawLineSegment(img, *i, poly.points.front(), actualColor, attr.line_width);
 		}
 	}
 }
@@ -588,11 +607,7 @@ void DrawObject(CImage& img, const PolygonalObject& obj, const model_attr_t& att
 {
 	for (std::vector<Polygon3D>::const_iterator i = obj.polygons.begin(); i != obj.polygons.end(); ++i)
 	{
-		DrawPolygon(img, *i, attr);
-		// test:
-		//std::pair<double, Point3D> p = i->AreaAndCentroid();
-		//DrawLineSegment(img, LineSegment(p.second, p.second + ((i->Normal()) * 10)), RGB(0, 255, 0), 1);
-		//
+		DrawPolygon(img, *i, attr, obj.color, obj.colorValid);
 	}
 }
 
@@ -807,13 +822,16 @@ void CCGWorkView::OnChooseColors()
 	if (active_object >= _models.size())
 		return;
 	param.model_color = _model_attr[active_object].color;
+	param.model_force_color = _model_attr[active_object].forceColor;
 	param.normal_color = _model_attr[active_object].normal_color;
 	CChooseColorDlg dlg(&param);
-	dlg.DoModal();
-
-	_model_attr[active_object].color = param.model_color;
-	_model_attr[active_object].normal_color = param.normal_color;
-	Invalidate();
+	if (dlg.DoModal() == IDOK)
+	{
+		_model_attr[active_object].forceColor = param.model_force_color;
+		_model_attr[active_object].color = param.model_color;
+		_model_attr[active_object].normal_color = param.normal_color;
+		Invalidate();
+	}
 }
 
 // OPTIONS HANDLERS ///////////////////////////////////////////

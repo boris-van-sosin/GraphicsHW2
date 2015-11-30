@@ -60,6 +60,7 @@ public:
 		}
 		//
 		res.color = vec.color;
+		res.colorValid = vec.colorValid;
 		return res;
 	}
 

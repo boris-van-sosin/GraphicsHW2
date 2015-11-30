@@ -17,7 +17,7 @@ Point3D::Point3D(double x_, double y_, double z_)
 }
 
 Point3D::Point3D(double x_, double y_, double z_, COLORREF color_, bool valid)
-	: x(x_), y(y_), z(z_), color(RGB(255, 255, 255)), colorValid(valid)
+	: x(x_), y(y_), z(z_), color(color_), colorValid(valid)
 {
 }
 

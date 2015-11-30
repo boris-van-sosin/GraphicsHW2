@@ -27,6 +27,7 @@ class model_attr_t { // don't make this struct big
 public:
 	COLORREF color = RGB(0, 0, 255);
 	COLORREF normal_color = RGB(0, 255, 0);
+	bool forceColor = false;
 	unsigned int line_width = 1;
 };
 
@@ -81,6 +82,7 @@ public:
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 
+	static const COLORREF DefaultModelColor;
 protected:
 	BOOL InitializeCGWork();
 	BOOL SetupViewingFrustum(void);
