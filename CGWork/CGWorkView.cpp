@@ -822,13 +822,12 @@ void CCGWorkView::DrawScene(CImage& img)
 	int width = rect.right - rect.left - 2 * margin;
 
 	for (int i = 0; i < _models.size(); i++) {
-		const MatrixHomogeneous mPersp = PerspectiveWarpMatrix(_bboxes[i].BoundingCube());
-		//const MatrixHomogeneous mPersp = PerspectiveWarpMatrix(_bbox->BoundingCube());
+		const BoundingBox bCube = _bboxes[i].BoundingCube();
+		const MatrixHomogeneous mPersp = PerspectiveWarpMatrix(bCube);
 
-		const MatrixHomogeneous mOrtho = OrthographicProjectMatrix(_bboxes[i].BoundingCube());
-		//const MatrixHomogeneous mOrtho = OrthographicProjectMatrix(_bbox->BoundingCube());
-
-		MatrixHomogeneous m = Matrices::Translate(width*0.5, height*0.5, 0) * Matrices::Scale(min(height, width) / 4);// *mOrtho;
+		MatrixHomogeneous m = m_bIsPerspective ?
+			(Matrices::Translate(width*0.5, height*0.5, 0) * Matrices::Scale(min(width, height)) * mPersp)
+			: (Matrices::Translate(width*0.5, height*0.5, 0) * Matrices::Scale(0.5*min(width, height)) * ScaleAndCenter(bCube));
 
 		model_t& model = _models[i];
 		const model_attr_t attr = _model_attr[i];
