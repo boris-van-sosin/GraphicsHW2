@@ -48,7 +48,7 @@ private:
 	int m_nAction;				// Rotate, Translate, Scale
 	int m_nView;				// Orthographic, perspective
 	bool m_bIsPerspective;			// is the view perspective
-	bool _displayNormals;
+	bool _displayPolygonNormals, _displayVertexNormals;
 	COLORREF _normalsColor;
 
 	CString m_strItdFileName;		// file name of IRIT data
@@ -127,6 +127,9 @@ protected:
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 	afx_msg BOOL OnMouseWheel(UINT, short, CPoint);
 	afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
+	afx_msg void OnTogglePolygonNormals();
+	afx_msg void OnToggleVertexNormals();
+
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 

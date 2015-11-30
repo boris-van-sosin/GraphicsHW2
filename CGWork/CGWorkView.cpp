@@ -61,6 +61,8 @@ BEGIN_MESSAGE_MAP(CCGWorkView, CView)
 	ON_UPDATE_COMMAND_UI(ID_AXIS_Y, OnUpdateAxisY)
 	ON_COMMAND(ID_AXIS_Z, OnAxisZ)
 	ON_UPDATE_COMMAND_UI(ID_AXIS_Z, OnUpdateAxisZ)
+	ON_COMMAND(ID_POLYGON_NORMALS, OnTogglePolygonNormals)
+	ON_COMMAND(ID_VERTEX_NORMALS, OnToggleVertexNormals)
 	ON_COMMAND(ID_LIGHT_SHADING_FLAT, OnLightShadingFlat)
 	ON_UPDATE_COMMAND_UI(ID_LIGHT_SHADING_FLAT, OnUpdateLightShadingFlat)
 	ON_COMMAND(ID_LIGHT_SHADING_GOURAUD, OnLightShadingGouraud)
@@ -103,7 +105,8 @@ CCGWorkView::CCGWorkView()
 	//init the first light to be enabled
 	m_lights[LIGHT_ID_1].enabled = true;
 
-	_displayNormals = true;
+	_displayPolygonNormals = true;
+	_displayVertexNormals = false;
 	_normalsColor = RGB(0, 255, 0);
 }
 
@@ -764,7 +767,17 @@ void CCGWorkView::OnUpdateAxisZ(CCmdUI* pCmdUI)
 }
 
 
+void CCGWorkView::OnTogglePolygonNormals()
+{
+	_displayPolygonNormals = !_displayPolygonNormals;
+	Invalidate();
+}
 
+void CCGWorkView::OnToggleVertexNormals()
+{
+	_displayVertexNormals = !_displayVertexNormals;
+	Invalidate();
+}
 
 
 // OPTIONS HANDLERS ///////////////////////////////////////////
@@ -859,12 +872,15 @@ void CCGWorkView::DrawScene(CImage& img)
 			DrawObject(_pxl2obj, mScale*(*it), shadow_attr);
 		}
 
-		if (_displayNormals)
+		if (_displayPolygonNormals)
 		{
 			for (auto j = _polygonNormals[i].begin(); j != _polygonNormals[i].end(); ++j)
 			{
 				DrawLineSegment(img, TransformNormal(mScale, j->p0, j->p1, 10), _normalsColor, 1);
 			}
+		}
+		if (_displayVertexNormals)
+		{
 			for (auto j = _vertexNormals[i].begin(); j != _vertexNormals[i].end(); ++j)
 			{
 				DrawLineSegment(img, TransformNormal(mScale, j->p0, j->p1, 10), _normalsColor, 1);
@@ -888,7 +904,7 @@ void CCGWorkView::ComputeNormals(const model_t& objs, NormalList& polygonNormals
 		for (auto j = i->polygons.begin(); j != i->polygons.end(); ++j)
 		{
 			std::pair<double, Point3D> areaAndCentroid = j->AreaAndCentroid();
-			polygonNormals.push_back(LineSegment(areaAndCentroid.second, j->Normal()));
+			polygonNormals.push_back(LineSegment(areaAndCentroid.second, -(j->Normal())));
 		}
 	}
 }
