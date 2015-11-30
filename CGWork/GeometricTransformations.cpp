@@ -85,10 +85,10 @@ LineSegment operator*(const MatrixHomogeneous& m, const LineSegment& l)
 	return LineSegment(Point3D(m * HomogeneousPoint(l.p0)), Point3D(m * HomogeneousPoint(l.p1)));
 }
 
-LineSegment TransformNormal(const MatrixHomogeneous& m, const Point3D& origin, const Vector3D& direction, double scalingFactor)
+LineSegment TransformNormal(const MatrixHomogeneous& m, const Point3D& origin, const Vector3D& endpoint, double scalingFactor)
 {
 	const Point3D originTr(m * HomogeneousPoint(origin));
-	const Point3D endpointTr(m * HomogeneousPoint(origin + direction));
+	const Point3D endpointTr(m * HomogeneousPoint(endpoint));
 	const Vector3D directionDisp = (endpointTr - originTr).Normalized() * scalingFactor;
 	return LineSegment(originTr, originTr + directionDisp);
 }

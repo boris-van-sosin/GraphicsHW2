@@ -958,7 +958,7 @@ void CCGWorkView::ComputeNormals(const model_t& objs, NormalList& polygonNormals
 		for (auto j = i->polygons.begin(); j != i->polygons.end(); ++j)
 		{
 			std::pair<double, Point3D> areaAndCentroid = j->AreaAndCentroid();
-			polygonNormals.push_back(LineSegment(areaAndCentroid.second, -(j->Normal())));
+			polygonNormals.push_back(LineSegment(areaAndCentroid.second, areaAndCentroid.second - (j->Normal())));
 		}
 	}
 }
