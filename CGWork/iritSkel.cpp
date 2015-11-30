@@ -315,11 +315,31 @@ namespace IritAdapter
 		IPVertexStruct* v = p->PVertex;
 		while (v != NULL)
 		{
+			IPAttributeStruct* vertexAttrRGB = AttrFindAttribute(v->Attr, "rgb");
+			if (vertexAttrRGB != NULL)
+			{
+				int vr, vg, vb;
+				sscanf_s(vertexAttrRGB->U.Str, "%d,%d,%d", &vr, &vg, &vb);
+				vertices.push_back(Point3D(v->Coord[0], v->Coord[1], v->Coord[2], RGB(vr, vg, vb)));
+			}
+			else
+			{
+				vertices.push_back(Point3D(v->Coord[0], v->Coord[1], v->Coord[2]));
+			}
 			// assume 3D. no indication in structure...
-			vertices.push_back(Point3D(v->Coord[0], v->Coord[1], v->Coord[2]));
+			
 			v = v->Pnext;
 		}
-		return Polygon3D(vertices);
+		IPAttributeStruct* polyAttrRGB = AttrFindAttribute(p->Attr, "rgb");
+		if (polyAttrRGB != NULL)
+		{
+			int pr, pg, pb;
+			sscanf_s(polyAttrRGB->U.Str, "%d,%d,%d", &pr, &pg, &pb);
+			return Polygon3D(vertices, RGB(pr,pg,pb));
+		}
+		{
+			return Polygon3D(vertices);
+		}
 	}
 
 	PolygonalObject ConvertSingleObject(IPObjectStruct* iritObjects)
@@ -335,7 +355,16 @@ namespace IritAdapter
 			currPolys.push_back(ConvertPolygon(currPoly));
 			currPoly = currPoly->Pnext;
 		}
-		return PolygonalObject(currPolys);
+		IPAttributeStruct* attrRGB = AttrFindAttribute(iritObjects->Attr, "rgb");
+		if (attrRGB != NULL)
+		{
+			int r, g, b;
+			sscanf_s(attrRGB->U.Str, "%d,%d,%d", &r, g, &b);
+			return PolygonalObject(currPolys, RGB(r, g, b));
+		}
+		{
+			return PolygonalObject(currPolys);
+		}
 	}
 
 	std::vector<PolygonalObject> Convert(IPObjectStruct* iritObjects)

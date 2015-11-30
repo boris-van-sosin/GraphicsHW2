@@ -2,28 +2,38 @@
 #include <math.h>
 
 Point3D::Point3D()
-	: x(0.0), y(0.0), z(0.0)
+	: x(0.0), y(0.0), z(0.0), color(RGB(255, 255, 255))
+{
+}
+
+Point3D::Point3D(double x_, double y_, double z_, COLORREF color_)
+	: Point3D(x_, y_, z_, color_, true)
 {
 }
 
 Point3D::Point3D(double x_, double y_, double z_)
-	: x(x_), y(y_), z(z_)
+	: Point3D(x_, y_, z_, RGB(255, 255, 255), false)
+{
+}
+
+Point3D::Point3D(double x_, double y_, double z_, COLORREF color_, bool valid)
+	: x(x_), y(y_), z(z_), color(RGB(255, 255, 255)), colorValid(valid)
 {
 }
 
 Point3D::Point3D(const Point3D& other)
-	: Point3D(other.x, other.y, other.z)
+	: Point3D(other.x, other.y, other.z, other.color, other.colorValid)
 {
 }
 
 Point3D::Point3D(const HomogeneousPoint& h)
-	: Point3D(h.x / h.w, h.y / h.w, h.z / h.w)
+	: Point3D(h.x / h.w, h.y / h.w, h.z / h.w, h.color, h.colorValid)
 {
 }
 
 Point3D Point3D::operator+(const Point3D& other) const
 {
-	return Point3D(x + other.x, y + other.y, z + other.z);
+	return Point3D(x + other.x, y + other.y, z + other.z, color, colorValid);
 }
 
 Point3D& Point3D::operator+=(const Point3D& other)
@@ -45,12 +55,12 @@ Point3D& Point3D::operator-=(const Point3D& other)
 
 Point3D Point3D::operator-(const Point3D& other) const
 {
-	return Point3D(x - other.x, y - other.y, z - other.z);
+	return Point3D(x - other.x, y - other.y, z - other.z, color, colorValid);
 }
 
 Point3D Point3D::operator-() const
 {
-	return Point3D(-x, -y, -z);
+	return Point3D(-x, -y, -z, colorValid);
 }
 
 double Point3D::operator*(const Point3D& other) const
@@ -60,19 +70,20 @@ double Point3D::operator*(const Point3D& other) const
 
 Point3D Point3D::operator*(double s) const
 {
-	return Point3D(x*s, y*s, z*s);
+	return Point3D(x*s, y*s, z*s, color, colorValid);
 }
 
 Point3D Point3D::operator/(double s) const
 {
-	return Point3D(x/s, y/s, z/s);
+	return Point3D(x / s, y / s, z / s, color, colorValid);
 }
 
 Point3D Point3D::Cross(const Point3D& other) const
 {
 	return Point3D(y*other.z - z*other.y,
 		z*other.x - x*other.z,
-		x*other.y - y*other.x);
+		x*other.y - y*other.x,
+		color, colorValid);
 }
 
 double Point3D::Norm() const
@@ -125,28 +136,45 @@ const double& Point3D::operator[](size_t i) const
 
 Point3D operator*(double s, const Point3D& p)
 {
-	return Point3D(p.x*s, p.y*s, p.z*s);
+	if (p.colorValid)
+	{
+		return Point3D(p.x*s, p.y*s, p.z*s, p.color);
+	}
+	else
+	{
+		return Point3D(p.x*s, p.y*s, p.z*s);
+	}
 }
 
 const Point3D Point3D::Zero;
 
 HomogeneousPoint::HomogeneousPoint()
-	: HomogeneousPoint(0, 0, 0, 1)
+	: HomogeneousPoint(0, 0, 0, 1, RGB(255,255,255), false)
+{
+}
+
+HomogeneousPoint::HomogeneousPoint(double x_, double y_, double z_, double w_, COLORREF color_, bool valid)
+	: x(x_), y(y_), z(z_), w(w_), color(color_), colorValid(valid)
+{
+}
+
+HomogeneousPoint::HomogeneousPoint(double x_, double y_, double z_, double w_, COLORREF color_)
+	: HomogeneousPoint(x_, y_, z_, w_, color_, true)
 {
 }
 
 HomogeneousPoint::HomogeneousPoint(double x_, double y_, double z_, double w_)
-	: x(x_), y(y_), z(z_), w(w_)
+	: HomogeneousPoint(x_, y_, z_, w_, RGB(255, 255, 255), false)
 {
 }
 
 HomogeneousPoint::HomogeneousPoint(const HomogeneousPoint& other)
-	: HomogeneousPoint(other.x, other.y, other.z, other.w)
+	: HomogeneousPoint(other.x, other.y, other.z, other.w, other.color, other.colorValid)
 {
 }
 
 HomogeneousPoint::HomogeneousPoint(const Point3D& p)
-	: HomogeneousPoint(p.x, p.y, p.z, 1)
+	: HomogeneousPoint(p.x, p.y, p.z, 1, p.color, p.colorValid)
 {
 }
 
@@ -199,10 +227,23 @@ LineSegment::LineSegment(const Point3D& p0_, const Point3D& p1_)
 {
 }
 
-Polygon3D::Polygon3D() {}
+Polygon3D::Polygon3D()
+	: Polygon3D(std::vector<Point3D>(), RGB(255, 25, 255), false)
+{
+}
+
+Polygon3D::Polygon3D(const std::vector<Point3D>& points_, COLORREF color_, bool valid)
+	: points(points_), color(color_), colorValid(valid)
+{
+}
 
 Polygon3D::Polygon3D(const std::vector<Point3D>& points_)
-	: points(points_)
+	: Polygon3D(points_, RGB(255, 25, 255), false)
+{
+}
+
+Polygon3D::Polygon3D(const std::vector<Point3D>& points_, COLORREF color_)
+	: Polygon3D(points_, color_, true)
 {
 }
 
@@ -250,10 +291,23 @@ std::pair<double, Point3D> Polygon3D::AreaAndCentroid() const
 	return std::pair<double, Point3D>(area, p / (area * 6));
 }
 
-PolygonalObject::PolygonalObject() {}
+PolygonalObject::PolygonalObject(const std::vector<Polygon3D>& polygons_, COLORREF color_, bool valid)
+	: polygons(polygons_), color(color_), colorValid(valid)
+{
+}
+
+PolygonalObject::PolygonalObject()
+	: PolygonalObject(std::vector<Polygon3D>(), RGB(255, 255, 255), false)
+{
+}
+
+PolygonalObject::PolygonalObject(const std::vector<Polygon3D>& polygons_, COLORREF color_)
+	: PolygonalObject(polygons_, color_, true)
+{
+}
 
 PolygonalObject::PolygonalObject(const std::vector<Polygon3D>& polygons_)
-	: polygons(polygons_)
+	: PolygonalObject(polygons_, RGB(255, 255, 255), false)
 {
 }
 

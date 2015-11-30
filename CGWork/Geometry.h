@@ -2,6 +2,7 @@
 #define GEOMETRY_H
 
 #include <vector>
+#include <atlimage.h>
 
 #define GEOMETRIC_COMPUTATION_ESPILON 1e-10
 
@@ -14,6 +15,7 @@ class Point3D
 public:
 	Point3D();
 	Point3D(double x_, double y_, double z_);
+	Point3D(double x_, double y_, double z_, COLORREF color_);
 	Point3D(const Point3D& other);
 	explicit Point3D(const HomogeneousPoint& h);
 
@@ -37,7 +39,12 @@ public:
 
 public:
 	double x, y, z;
+	COLORREF color;
+	bool colorValid;
 	static const Point3D Zero;
+
+private:
+	Point3D(double x_, double y_, double z_, COLORREF color_, bool valid);
 };
 
 Point3D operator*(double s, const Point3D& p);
@@ -48,7 +55,8 @@ class HomogeneousPoint
 {
 public:
 	HomogeneousPoint();
-	HomogeneousPoint(double x_, double y_, double z_, double w_=1.0);
+	HomogeneousPoint(double x_, double y_, double z_, double w_ = 1.0);
+	HomogeneousPoint(double x_, double y_, double z_, double w_, COLORREF color_);
 	HomogeneousPoint(const HomogeneousPoint& other);
 	explicit HomogeneousPoint(const Point3D& p);
 
@@ -59,22 +67,18 @@ public:
 
 public:
 	double x, y, z, w;
+	COLORREF color;
+	bool colorValid;
 	static const HomogeneousPoint Zeros;
 	static const HomogeneousPoint ZerosWithW1;
+private:
+	HomogeneousPoint(double x_, double y_, double z_, double w_, COLORREF color_, bool valid);
 };
 
 class LineSegment
 {
 public:
 	LineSegment(const Point3D& p0_, const Point3D& p1_);
-
-	//int Octant() const;
-	/*
-	321
-	4*0
-	567
-	*/
-
 	Point3D p0, p1;
 };
 
@@ -83,12 +87,17 @@ class Polygon3D
 public:
 	Polygon3D();
 	Polygon3D(const std::vector<Point3D>& points_);
+	Polygon3D(const std::vector<Point3D>& points_, COLORREF color_);
 
 	std::vector<LineSegment> Edges() const;
 	Vector3D Normal() const;
 	std::pair<double, Point3D> AreaAndCentroid() const;
 
 	std::vector<Point3D> points;
+	COLORREF color;
+	bool colorValid;
+private:
+	Polygon3D(const std::vector<Point3D>& points_, COLORREF color_, bool valid);
 };
 
 class PolygonalObject
@@ -96,8 +105,13 @@ class PolygonalObject
 public:
 	PolygonalObject();
 	PolygonalObject(const std::vector<Polygon3D>& polygons_);
+	PolygonalObject(const std::vector<Polygon3D>& polygons_, COLORREF color);
 
 	std::vector<Polygon3D> polygons;
+	COLORREF color;
+	bool colorValid;
+private:
+	PolygonalObject(const std::vector<Polygon3D>& polygons_, COLORREF color_, bool valid);
 };
 
 class EmptyBoundingBoxException {};

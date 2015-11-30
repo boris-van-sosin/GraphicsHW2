@@ -59,6 +59,7 @@ public:
 			int k = 6;
 		}
 		//
+		res.color = vec.color;
 		return res;
 	}
 
