@@ -21,6 +21,7 @@
 #include "GeometricTransformations.h"
 
 typedef std::vector<PolygonalObject> model_t;
+typedef std::vector<LineSegment> NormalList;
 
 class model_attr_t { // don't make this struct big
 public:
@@ -47,6 +48,8 @@ private:
 	int m_nAction;				// Rotate, Translate, Scale
 	int m_nView;				// Orthographic, perspective
 	bool m_bIsPerspective;			// is the view perspective
+	bool _displayPolygonNormals, _displayVertexNormals;
+	COLORREF _normalsColor;
 
 	CString m_strItdFileName;		// file name of IRIT data
 
@@ -125,15 +128,21 @@ protected:
 	afx_msg BOOL OnMouseWheel(UINT, short, CPoint);
 	afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
 	afx_msg void OnLButtonDown(UINT nHitTest, CPoint point);
+	afx_msg void OnTogglePolygonNormals();
+	afx_msg void OnToggleVertexNormals();
+
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 
 private:
 	void FlipYAxis(int obj_idx);
+	static void ComputeNormals(const model_t& objs, NormalList& polygonNormals, NormalList& vertexNormals);
 	void DrawScene(CImage& img);
 
 private:
 	std::vector<model_t> _models;
+	std::vector<NormalList> _polygonNormals;
+	std::vector<NormalList> _vertexNormals;
 	std::vector<BoundingBox> _bboxes;
 	std::vector<model_attr_t> _model_attr;
 

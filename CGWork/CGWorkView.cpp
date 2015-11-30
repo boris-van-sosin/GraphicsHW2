@@ -61,6 +61,8 @@ BEGIN_MESSAGE_MAP(CCGWorkView, CView)
 	ON_UPDATE_COMMAND_UI(ID_AXIS_Y, OnUpdateAxisY)
 	ON_COMMAND(ID_AXIS_Z, OnAxisZ)
 	ON_UPDATE_COMMAND_UI(ID_AXIS_Z, OnUpdateAxisZ)
+	ON_COMMAND(ID_POLYGON_NORMALS, OnTogglePolygonNormals)
+	ON_COMMAND(ID_VERTEX_NORMALS, OnToggleVertexNormals)
 	ON_COMMAND(ID_LIGHT_SHADING_FLAT, OnLightShadingFlat)
 	ON_UPDATE_COMMAND_UI(ID_LIGHT_SHADING_FLAT, OnUpdateLightShadingFlat)
 	ON_COMMAND(ID_LIGHT_SHADING_GOURAUD, OnLightShadingGouraud)
@@ -103,6 +105,10 @@ CCGWorkView::CCGWorkView()
 
 	//init the first light to be enabled
 	m_lights[LIGHT_ID_1].enabled = true;
+
+	_displayPolygonNormals = true;
+	_displayVertexNormals = false;
+	_normalsColor = RGB(0, 255, 0);
 }
 
 CCGWorkView::~CCGWorkView()
@@ -342,7 +348,16 @@ bool CCGWorkView::applyMat(const MatrixHomogeneous& mat) {
 	}
 	*/
 	model_t& model = _models[active_object];
+
 	for (auto it = model.begin(); it != model.end(); ++it) {
+		(*it) = mat * (*it);
+	}
+	for (auto it = _polygonNormals[obj_idx].begin(); it != _polygonNormals[obj_idx].end(); ++it)
+	{
+		(*it) = mat * (*it);
+	}
+	for (auto it = _vertexNormals[obj_idx].begin(); it != _vertexNormals[obj_idx].end(); ++it)
+	{
 		(*it) = mat * (*it);
 	}
 	return true;
@@ -630,9 +645,13 @@ void CCGWorkView::OnFileLoad()
 		PngWrapper p;
 		_models.push_back(model_t());
 		CGSkelProcessIritDataFiles(m_strItdFileName, 1, _models.back());
-		FlipYAxis(_models.size() - 1);
-		//delete _bbox;
-		//_bbox = new BoundingBox(BoundingBox::OfObjects(_objects));
+		
+		_polygonNormals.push_back(NormalList());
+		_vertexNormals.push_back(NormalList());
+		ComputeNormals(_models.back(), _polygonNormals.back(), _vertexNormals.back());
+
+		//FlipYAxis(_models.size() - 1);
+
 		_bboxes.push_back(BoundingBox(BoundingBox::OfObjects(_models.back())));
 		_model_attr.push_back(model_attr_t());
 		// Open the file and read it.
@@ -756,7 +775,17 @@ void CCGWorkView::OnUpdateAxisZ(CCmdUI* pCmdUI)
 }
 
 
+void CCGWorkView::OnTogglePolygonNormals()
+{
+	_displayPolygonNormals = !_displayPolygonNormals;
+	Invalidate();
+}
 
+void CCGWorkView::OnToggleVertexNormals()
+{
+	_displayVertexNormals = !_displayVertexNormals;
+	Invalidate();
+}
 
 
 // OPTIONS HANDLERS ///////////////////////////////////////////
@@ -829,23 +858,61 @@ void CCGWorkView::DrawScene(CImage& img)
 	int width = rect.right - rect.left - 2 * margin;
 
 	for (int i = 0; i < _models.size(); i++) {
-		const MatrixHomogeneous mPersp = PerspectiveWarpMatrix(_bboxes[i].BoundingCube());
-		//const MatrixHomogeneous mPersp = PerspectiveWarpMatrix(_bbox->BoundingCube());
+		const BoundingBox bCube = _bboxes[i].BoundingCube();
+		const MatrixHomogeneous mPersp = PerspectiveWarpMatrix(bCube);
 
-		const MatrixHomogeneous mOrtho = OrthographicProjectMatrix(_bboxes[i].BoundingCube());
-		//const MatrixHomogeneous mOrtho = OrthographicProjectMatrix(_bbox->BoundingCube());
+		MatrixHomogeneous m = m_bIsPerspective ?
+			mPersp : (Matrices::Flip(AXIS_Y) * ScaleAndCenter(bCube));
 
-		MatrixHomogeneous m = Matrices::Translate(width*0.5, height*0.5, 0) * Matrices::Scale(min(height, width) / 4);// *mOrtho;
+		const BoundingBox displayBox = (m * _bboxes[i]).BoundingCube();
+
+		const double scalingFactor = 0.05 * min(width, height) * (displayBox.maxX - displayBox.minX);
+
+		MatrixHomogeneous mScale = Matrices::Translate(width*0.5, height*0.5, 0)*Matrices::Scale(scalingFactor) * m;
 
 		model_t& model = _models[i];
 		const model_attr_t attr = _model_attr[i];
 		model_attr_t shadow_attr = attr;
 		for (std::vector<PolygonalObject>::iterator it = model.begin(); it != model.end(); ++it)
 		{
-			DrawObject(img, m*(*it), attr);
-
+			DrawObject(img, mScale*(*it), attr);
 			shadow_attr.color = i + 1;
-			DrawObject(_pxl2obj, m*(*it), shadow_attr);
+			DrawObject(_pxl2obj, mScale*(*it), shadow_attr);
+		}
+
+		if (_displayPolygonNormals)
+		{
+			for (auto j = _polygonNormals[i].begin(); j != _polygonNormals[i].end(); ++j)
+			{
+				DrawLineSegment(img, TransformNormal(mScale, j->p0, j->p1, 10), _normalsColor, 1);
+			}
+		}
+		if (_displayVertexNormals)
+		{
+			for (auto j = _vertexNormals[i].begin(); j != _vertexNormals[i].end(); ++j)
+			{
+				DrawLineSegment(img, TransformNormal(mScale, j->p0, j->p1, 10), _normalsColor, 1);
+			}
+		}
+	}
+}
+
+void CCGWorkView::ComputeNormals(const model_t& objs, NormalList& polygonNormals, NormalList& vertexNormals)
+{
+	polygonNormals.clear();
+	vertexNormals.clear();
+	if (objs.empty())
+	{
+		return;
+	}
+	polygonNormals.reserve(objs.front().polygons.size() * objs.size());
+	vertexNormals.reserve(objs.size() * objs.front().polygons.size() * objs.front().polygons.front().points.size());
+	for (auto i = objs.begin(); i != objs.end(); ++i)
+	{
+		for (auto j = i->polygons.begin(); j != i->polygons.end(); ++j)
+		{
+			std::pair<double, Point3D> areaAndCentroid = j->AreaAndCentroid();
+			polygonNormals.push_back(LineSegment(areaAndCentroid.second, -(j->Normal())));
 		}
 	}
 }

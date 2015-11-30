@@ -57,6 +57,42 @@ PolygonalObject operator*(const MatrixHomogeneous& m, const PolygonalObject& obj
 	return PolygonalObject(polygons);
 }
 
+BoundingBox operator*(const Matrix3D& m, const BoundingBox& bbox)
+{
+	Point3D corners[] = {
+		m * Point3D(bbox.minX, bbox.minY, bbox.minZ),
+		m * Point3D(bbox.maxX, bbox.maxY, bbox.maxZ)
+	};
+	return BoundingBox::OfLineSegmnet(LineSegment(corners[0], corners[1]));
+}
+
+BoundingBox operator*(const MatrixHomogeneous& m, const BoundingBox& bbox)
+{
+	Point3D corners[] = {
+		Point3D(m * HomogeneousPoint(bbox.minX, bbox.minY, bbox.minZ)),
+		Point3D(m * HomogeneousPoint(bbox.maxX, bbox.maxY, bbox.maxZ))
+	};
+	return BoundingBox::OfLineSegmnet(LineSegment(corners[0], corners[1]));
+}
+
+LineSegment operator*(const Matrix3D& m, const LineSegment& l)
+{
+	return LineSegment(m * l.p0, m * l.p1);
+}
+
+LineSegment operator*(const MatrixHomogeneous& m, const LineSegment& l)
+{
+	return LineSegment(Point3D(m * HomogeneousPoint(l.p0)), Point3D(m * HomogeneousPoint(l.p1)));
+}
+
+LineSegment TransformNormal(const MatrixHomogeneous& m, const Point3D& origin, const Vector3D& direction, double scalingFactor)
+{
+	const Point3D originTr(m * HomogeneousPoint(origin));
+	const Point3D endpointTr(m * HomogeneousPoint(origin + direction));
+	const Vector3D directionDisp = (endpointTr - originTr).Normalized() * scalingFactor;
+	return LineSegment(originTr, originTr + directionDisp);
+}
+
 namespace Matrices
 {
 	MatrixHomogeneous Scale(double x, double y, double z)

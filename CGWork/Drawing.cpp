@@ -1,6 +1,6 @@
 #include "Drawing.h"
 
-MatrixHomogeneous ScaleAndCenter(const BoundingBox boundingCube)
+MatrixHomogeneous ScaleAndCenter(const BoundingBox& boundingCube)
 {
 	const double right = boundingCube.maxX;
 	const double left = boundingCube.minX;
@@ -17,32 +17,49 @@ MatrixHomogeneous ScaleAndCenter(const BoundingBox boundingCube)
 	return MatrixHomogeneous(rows);
 }
 
-MatrixHomogeneous PerspectiveWarpMatrix(const BoundingBox boundingCube)
+MatrixHomogeneous PerspectiveWarpMatrix(const BoundingBox& boundingCube)
 {
-	const double far = -boundingCube.maxZ*3;
-	const double near = -boundingCube.minZ*3;
-	const double alpha = (near + far) / (far - near);
-	//const double d = -near * 2;
-	//const double a = -far * 2;
-	const double beta = 2 * near*far / (near - far);
+
+	const double right = boundingCube.maxX * 4;
+	const double left = boundingCube.minX * 4;
+	const double bottom = boundingCube.minY * 4;
+	const double top = boundingCube.maxY * 4;
+	const double depth = boundingCube.maxZ - boundingCube.minZ;
+	const double near = depth;
+	const double far = near + 2 * (depth);
+
+	const double fH = top - bottom;
+	const double fW = right - left;
+
+	const double h = 2 * near / fH;
+	const double w = 2 * near / fW;
+	const double q = far / (far - near);
+
 	HomogeneousPoint rows[] = {
-		HomogeneousPoint(1, 0, 0, 0),
-		HomogeneousPoint(0, 1, 0, 0),
-		HomogeneousPoint(0, 0, alpha, beta),
-		HomogeneousPoint(0, 0, -1, 0)
+		HomogeneousPoint(w, 0, 0, 0),
+		HomogeneousPoint(0, h, 0, 0),
+		HomogeneousPoint(0, 0, q, 1),
+		HomogeneousPoint(0, 0, -q*near, 0)
 	};
 
-	//return MatrixHomogeneous(rows) * ScaleAndCenter(boundingCube);
+	const double clippingMargin = depth * 0.1;
+
+	const double near2 = 1 - clippingMargin;
+	const double far2 = near + depth + clippingMargin;
+	const double q2 = far2 / (far2 - near2);
+
+	//return MatrixHomogeneous(rows) * Matrices::Translate(0, 0, boundingCube.minZ + near + depth*0.5);
 	HomogeneousPoint rows2[] = {
-		HomogeneousPoint(1, 0, 0, 0),
-		HomogeneousPoint(0, 1, 0, 0),
-		HomogeneousPoint(0, 0, 1, 0),
-		HomogeneousPoint(0, 0, 1, 0)
+		HomogeneousPoint(3, 0, 0, 0),
+		HomogeneousPoint(0, 3, 0, 0),
+		HomogeneousPoint(0, 0, q, 1),
+		HomogeneousPoint(0, 0, -q*near2, 0)
 	};
+
 	return MatrixHomogeneous(rows2) * Matrices::Translate(0, 0, 2) * ScaleAndCenter(boundingCube);
 }
 
-MatrixHomogeneous OrthographicProjectMatrix(const BoundingBox boundingCube)
+MatrixHomogeneous OrthographicProjectMatrix(const BoundingBox& boundingCube)
 {
 	HomogeneousPoint rows[4] = {
 		HomogeneousPoint(1, 0, 0, 0),
