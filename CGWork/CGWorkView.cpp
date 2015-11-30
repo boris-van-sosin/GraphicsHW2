@@ -803,8 +803,16 @@ void CCGWorkView::OnToggleVertexNormals()
 
 void CCGWorkView::OnChooseColors()
 {
-	CChooseColorDlg dlg;
+	Choose_color_param_t param;
+	if (active_object >= _models.size())
+		return;
+	param.model_color = _model_attr[active_object].color;
+	param.normal_color = _model_attr[active_object].normal_color;
+	CChooseColorDlg dlg(&param);
 	dlg.DoModal();
+
+	_model_attr[active_object].color = param.model_color;
+	_model_attr[active_object].normal_color = param.normal_color;
 	Invalidate();
 }
 
