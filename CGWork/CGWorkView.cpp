@@ -352,11 +352,11 @@ bool CCGWorkView::applyMat(const MatrixHomogeneous& mat) {
 	for (auto it = model.begin(); it != model.end(); ++it) {
 		(*it) = mat * (*it);
 	}
-	for (auto it = _polygonNormals[obj_idx].begin(); it != _polygonNormals[obj_idx].end(); ++it)
+	for (auto it = _polygonNormals[active_object].begin(); it != _polygonNormals[active_object].end(); ++it)
 	{
 		(*it) = mat * (*it);
 	}
-	for (auto it = _vertexNormals[obj_idx].begin(); it != _vertexNormals[obj_idx].end(); ++it)
+	for (auto it = _vertexNormals[active_object].begin(); it != _vertexNormals[active_object].end(); ++it)
 	{
 		(*it) = mat * (*it);
 	}
