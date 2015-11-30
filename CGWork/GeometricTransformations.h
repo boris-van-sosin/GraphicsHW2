@@ -115,6 +115,12 @@ Polygon3D operator*(const Matrix3D& m, const Polygon3D& poly);
 Polygon3D operator*(const MatrixHomogeneous& m, const Polygon3D& poly);
 PolygonalObject operator*(const Matrix3D& m, const PolygonalObject& obj);
 PolygonalObject operator*(const MatrixHomogeneous& m, const PolygonalObject& obj);
+BoundingBox operator*(const Matrix3D& m, const BoundingBox& bbox);
+BoundingBox operator*(const MatrixHomogeneous& m, const BoundingBox& bbox);
+LineSegment operator*(const Matrix3D& m, const LineSegment& l);
+LineSegment operator*(const MatrixHomogeneous& m, const LineSegment& l);
+
+LineSegment TransformNormal(const MatrixHomogeneous& m, const Point3D& origin, const Vector3D& direction, double scalingFactor = 1.0);
 
 const Matrix3D ZerosMatrix3D;
 const Matrix3D UnitMatrix3D = ToMatrix3D(Vector3D(1, 0, 0), Vector3D(0, 1, 0), Vector3D(0, 0, 1));

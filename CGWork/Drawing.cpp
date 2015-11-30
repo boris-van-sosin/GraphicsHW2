@@ -42,7 +42,21 @@ MatrixHomogeneous PerspectiveWarpMatrix(const BoundingBox& boundingCube)
 		HomogeneousPoint(0, 0, -q*near, 0)
 	};
 
-	return MatrixHomogeneous(rows) * Matrices::Translate(0, 0, boundingCube.minZ + near + depth*0.5);
+	const double clippingMargin = depth * 0.1;
+
+	const double near2 = 1 - clippingMargin;
+	const double far2 = near + depth + clippingMargin;
+	const double q2 = far2 / (far2 - near2);
+
+	//return MatrixHomogeneous(rows) * Matrices::Translate(0, 0, boundingCube.minZ + near + depth*0.5);
+	HomogeneousPoint rows2[] = {
+		HomogeneousPoint(3, 0, 0, 0),
+		HomogeneousPoint(0, 3, 0, 0),
+		HomogeneousPoint(0, 0, q, 1),
+		HomogeneousPoint(0, 0, -q*near2, 0)
+	};
+
+	return MatrixHomogeneous(rows2) * Matrices::Translate(0, 0, 2) * ScaleAndCenter(boundingCube);
 }
 
 MatrixHomogeneous OrthographicProjectMatrix(const BoundingBox& boundingCube)
