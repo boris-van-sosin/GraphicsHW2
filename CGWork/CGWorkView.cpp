@@ -906,6 +906,7 @@ void CCGWorkView::DrawScene(CImage& img)
 	for (int i = 0; i < _models.size(); i++) {
 		const BoundingBox bCube = _bboxes[i].BoundingCube();
 		const MatrixHomogeneous mPersp = PerspectiveWarpMatrix(bCube);
+		const COLORREF normalsColor = _model_attr[i].normal_color;
 
 		MatrixHomogeneous m = m_bIsPerspective ?
 			mPersp : (Matrices::Flip(AXIS_Y) * ScaleAndCenter(bCube));
@@ -930,14 +931,14 @@ void CCGWorkView::DrawScene(CImage& img)
 		{
 			for (auto j = _polygonNormals[i].begin(); j != _polygonNormals[i].end(); ++j)
 			{
-				DrawLineSegment(img, TransformNormal(mScale, j->p0, j->p1, 10), _normalsColor, 1);
+				DrawLineSegment(img, TransformNormal(mScale, j->p0, j->p1, 10), normalsColor, 1);
 			}
 		}
 		if (_displayVertexNormals)
 		{
 			for (auto j = _vertexNormals[i].begin(); j != _vertexNormals[i].end(); ++j)
 			{
-				DrawLineSegment(img, TransformNormal(mScale, j->p0, j->p1, 10), _normalsColor, 1);
+				DrawLineSegment(img, TransformNormal(mScale, j->p0, j->p1, 10), normalsColor, 1);
 			}
 		}
 	}
