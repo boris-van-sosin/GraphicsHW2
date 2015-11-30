@@ -29,6 +29,7 @@ void CChooseColorDlg::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(CChooseColorDlg, CDialogEx)
 	ON_COMMAND(IDC_CLR_MODEL, OnClrModel)
+	ON_COMMAND(IDC_CLR_RESET_TO_FILE, OnClrToFile)
 	ON_COMMAND(IDOK, OnOk)
 END_MESSAGE_MAP()
 
@@ -42,6 +43,10 @@ void CChooseColorDlg::OnClrModel() {
 		local_param.model_color = clr;
 		local_param.model_force_color = true;
 	}
+}
+
+void CChooseColorDlg::OnClrToFile() {
+	local_param.model_force_color = false;
 }
 
 void CChooseColorDlg::OnOk() {

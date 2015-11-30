@@ -27,6 +27,7 @@ protected:
 	Choose_color_param_t* input_param;
 
 	void OnClrModel();
+	void OnClrToFile();
 	void OnOk();
 	DECLARE_MESSAGE_MAP()
 };

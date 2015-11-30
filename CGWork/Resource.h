@@ -38,6 +38,8 @@
 #define IDC_BUTTON2                     1041
 #define IDC_CLR_VERTEX                  1041
 #define IDC_MATERIAL_SPECULAR           1042
+#define IDC_CLR_RESET_TOF_ILE           1042
+#define IDC_CLR_RESET_TO_FILE           1042
 #define ID_FILE_LOAD                    32771
 #define ID_VIEW_ORTHOGRAPHIC            32772
 #define ID_VIEW_PERSPECTIVE             32773
@@ -67,7 +69,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        140
 #define _APS_NEXT_COMMAND_VALUE         32807
-#define _APS_NEXT_CONTROL_VALUE         1042
+#define _APS_NEXT_CONTROL_VALUE         1043
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
