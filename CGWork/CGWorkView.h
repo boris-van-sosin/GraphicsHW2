@@ -130,6 +130,7 @@ protected:
 	afx_msg void OnLButtonDown(UINT nHitTest, CPoint point);
 	afx_msg void OnTogglePolygonNormals();
 	afx_msg void OnToggleVertexNormals();
+	afx_msg void OnChooseColors();
 
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()

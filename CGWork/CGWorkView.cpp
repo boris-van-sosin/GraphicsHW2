@@ -15,6 +15,7 @@ using std::endl;
 #include "Geometry.h"
 #include "GeometricTransformations.h"
 #include "Drawing.h"
+#include "ChooseColorDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -63,6 +64,7 @@ BEGIN_MESSAGE_MAP(CCGWorkView, CView)
 	ON_UPDATE_COMMAND_UI(ID_AXIS_Z, OnUpdateAxisZ)
 	ON_COMMAND(ID_POLYGON_NORMALS, OnTogglePolygonNormals)
 	ON_COMMAND(ID_VERTEX_NORMALS, OnToggleVertexNormals)
+	ON_COMMAND(ID_CHOOSE_COLORS, OnChooseColors)
 	ON_COMMAND(ID_LIGHT_SHADING_FLAT, OnLightShadingFlat)
 	ON_UPDATE_COMMAND_UI(ID_LIGHT_SHADING_FLAT, OnUpdateLightShadingFlat)
 	ON_COMMAND(ID_LIGHT_SHADING_GOURAUD, OnLightShadingGouraud)
@@ -799,6 +801,12 @@ void CCGWorkView::OnToggleVertexNormals()
 	Invalidate();
 }
 
+void CCGWorkView::OnChooseColors()
+{
+	CChooseColorDlg dlg;
+	dlg.DoModal();
+	Invalidate();
+}
 
 // OPTIONS HANDLERS ///////////////////////////////////////////
 
