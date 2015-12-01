@@ -28,6 +28,8 @@ public:
 	COLORREF normal_color = RGB(0, 255, 0);
 	bool forceColor = false;
 	unsigned int line_width = 1;
+	bool displayBBox = false;
+	bool displaySubObjectBBox = false;
 };
 
 class CCGWorkView : public CView
@@ -146,6 +148,9 @@ private:
 	std::vector<Normals::NormalList> _vertexNormals;
 	std::vector<BoundingBox> _bboxes;
 	std::vector<model_attr_t> _model_attr;
+
+	std::vector<PolygonalObject> _modelBoundingBoxes;
+	std::vector<model_t> _subObjectBoundingBoxes;
 
 	int glowing_object = -1; // -1 is none
 	int active_object = 0;

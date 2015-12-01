@@ -683,6 +683,11 @@ void CCGWorkView::OnFileLoad()
 
 		_bboxes.push_back(BoundingBox(BoundingBox::OfObjects(_models.back())));
 		_model_attr.push_back(model_attr_t());
+		
+		_modelBoundingBoxes.push_back(BoundingBox::OfObjects(_models.back()).ToObject());
+		
+		_subObjectBoundingBoxes.push_back(model_t());
+		
 		// Open the file and read it.
 		// Your code here...
 

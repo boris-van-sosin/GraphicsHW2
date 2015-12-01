@@ -467,6 +467,70 @@ BoundingBox BoundingBox::BoundingCube() const
 					   center.z + halfMaxSize);
 }
 
+PolygonalObject BoundingBox::ToObject() const
+{
+	const Point3D corners[] = {
+		Point3D(minX, minY, minZ),
+		Point3D(minX, minY, maxZ),
+		Point3D(minX, maxY, minZ),
+		Point3D(minX, maxY, maxZ),
+
+		Point3D(maxX, minY, minZ),
+		Point3D(maxX, minY, maxZ),
+		Point3D(maxX, maxY, minZ),
+		Point3D(maxX, maxY, maxZ),
+	};
+
+	Polygon3D sides[6]; // bottom, top, left, right, front, back;
+	//bottom
+	sides[0].points.push_back(corners[0]);
+	sides[0].points.push_back(corners[1]);
+	sides[0].points.push_back(corners[5]);
+	sides[0].points.push_back(corners[4]);
+
+	//top
+	sides[1].points.push_back(corners[2]);
+	sides[1].points.push_back(corners[3]);
+	sides[1].points.push_back(corners[6]);
+	sides[1].points.push_back(corners[7]);
+
+	//left
+	sides[2].points.push_back(corners[0]);
+	sides[2].points.push_back(corners[1]);
+	sides[2].points.push_back(corners[3]);
+	sides[2].points.push_back(corners[2]);
+
+	///right
+	sides[3].points.push_back(corners[4]);
+	sides[3].points.push_back(corners[5]);
+	sides[3].points.push_back(corners[6]);
+	sides[3].points.push_back(corners[7]);
+
+	//front
+	sides[4].points.push_back(corners[0]);
+	sides[4].points.push_back(corners[2]);
+	sides[4].points.push_back(corners[6]);
+	sides[4].points.push_back(corners[4]);
+
+	//back
+	sides[5].points.push_back(corners[1]);
+	sides[5].points.push_back(corners[3]);
+	sides[5].points.push_back(corners[5]);
+	sides[5].points.push_back(corners[7]);
+
+	return PolygonalObject(std::vector<Polygon3D>(sides, sides + 6));
+}
+
+std::vector<PolygonalObject> BoundingBox::BoundingBoxObjectsOfSubObjects(const std::vector<PolygonalObject>& objs)
+{
+	std::vector<PolygonalObject> res;
+	res.reserve(objs.size());
+	for (auto i = objs.begin(); i != objs.end(); ++i)
+	{
+		res.push_back(OfObject(*i).ToObject());
+	}
+}
+
 struct HashAndComparePoint3D
 {
 	size_t operator()(const Point3D& p) const
