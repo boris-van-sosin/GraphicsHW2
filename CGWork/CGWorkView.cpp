@@ -848,6 +848,9 @@ void CCGWorkView::OnChooseColors()
 		_model_attr[active_object].forceColor = param.model_force_color;
 		_model_attr[active_object].color = param.model_color;
 		_model_attr[active_object].normal_color = param.normal_color;
+		_model_attr[active_object].model_bbox_color = param.model_bbox_color;
+		_model_attr[active_object].subObj_bbox_color = param.subObj_bbox_color;
+
 		Invalidate();
 	}
 }
@@ -1002,14 +1005,14 @@ void CCGWorkView::DrawScene(CImage& img)
 		if (attr.displayBBox)
 		{
 			model_attr_t bboxAttr;
-			bboxAttr.color = RGB(255,0,0); // fix later
+			bboxAttr.color = _model_attr[i].model_bbox_color;
 			bboxAttr.forceColor = true;
 			DrawObject(img, mScale*(_modelBoundingBoxes[i]), bboxAttr);
 		}
 		if (attr.displaySubObjectBBox)
 		{
 			model_attr_t bboxAttr;
-			bboxAttr.color = RGB(255, 0, 0); // fix later
+			bboxAttr.color = _model_attr[i].subObj_bbox_color;
 			bboxAttr.forceColor = true;
 			for (auto j = _subObjectBoundingBoxes[i].begin(); j != _subObjectBoundingBoxes[i].end(); ++j)
 			{

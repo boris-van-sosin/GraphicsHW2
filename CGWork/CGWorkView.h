@@ -26,6 +26,8 @@ class model_attr_t { // don't make this struct big
 public:
 	COLORREF color = RGB(0, 0, 255);
 	COLORREF normal_color = RGB(0, 255, 0);
+	COLORREF model_bbox_color = RGB(255, 0, 0);
+	COLORREF subObj_bbox_color = RGB(255, 0, 0);
 	bool forceColor = false;
 	unsigned int line_width = 1;
 	bool displayBBox = false;

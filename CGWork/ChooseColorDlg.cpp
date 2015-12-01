@@ -31,6 +31,8 @@ BEGIN_MESSAGE_MAP(CChooseColorDlg, CDialogEx)
 	ON_COMMAND(IDC_CLR_MODEL, OnClrModel)
 	ON_COMMAND(IDC_CLR_NORMAL, OnClrNormal)
 	ON_COMMAND(IDC_CLR_RESET_TO_FILE, OnClrToFile)
+	ON_COMMAND(IDC_CLR_MODEL_BBOX, OnClrModelBBox)
+	ON_COMMAND(IDC_CLR_SUB_BBOX, OnClrSubObjBBox)
 	ON_COMMAND(IDOK, OnOk)
 END_MESSAGE_MAP()
 
@@ -63,4 +65,24 @@ void CChooseColorDlg::OnClrToFile() {
 void CChooseColorDlg::OnOk() {
 	*input_param = local_param;
 	CDialog::OnOK();
+}
+
+void CChooseColorDlg::OnClrModelBBox()
+{
+	CColorDialog dlg(local_param.model_bbox_color);
+	if (dlg.DoModal() == IDOK)
+	{
+		COLORREF clr = dlg.GetColor();
+		local_param.model_bbox_color = clr;
+	}
+}
+
+void CChooseColorDlg::OnClrSubObjBBox()
+{
+	CColorDialog dlg(local_param.subObj_bbox_color);
+	if (dlg.DoModal() == IDOK)
+	{
+		COLORREF clr = dlg.GetColor();
+		local_param.subObj_bbox_color = clr;
+	}
 }

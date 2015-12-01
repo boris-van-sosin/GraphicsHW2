@@ -41,6 +41,8 @@
 #define IDC_CLR_RESET_TOF_ILE           1042
 #define IDC_CLR_RESET_TO_FILE           1042
 #define IDC_CLR_NORMAL                  1043
+#define IDC_CLR_MODEL_BBOX              1044
+#define IDC_CLR_SUB_BBOX                1045
 #define ID_FILE_LOAD                    32771
 #define ID_VIEW_ORTHOGRAPHIC            32772
 #define ID_VIEW_PERSPECTIVE             32773
@@ -64,8 +66,8 @@
 #define ID_POLYGON_NORMALS              32803
 #define ID_CHOOSE_COLORS                32806
 #define ID_TOGGLE_ALL_MODEL_BBOX        32811
-#define ID_TOGGLE_MODEL_BBOX            32814
 #define ID_TOGGLE_SUB_BBOX              32813
+#define ID_TOGGLE_MODEL_BBOX            32814
 #define ID_TOGGLE_ALL_SUB_BBOX          32815
 
 // Next default values for new objects

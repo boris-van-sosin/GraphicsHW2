@@ -241,6 +241,8 @@ BEGIN
     PUSHBUTTON      "Choose Model Color",IDC_CLR_MODEL,27,26,83,14
     PUSHBUTTON      "Choose Normals Color",IDC_CLR_NORMAL,27,55,83,14
     PUSHBUTTON      "Use File Color",IDC_CLR_RESET_TO_FILE,119,26,82,14
+    PUSHBUTTON      "Choose Model\r\nBounding Box Color",IDC_CLR_MODEL_BBOX,27,81,83,23,BS_MULTILINE
+    PUSHBUTTON      "Choose Sub-Object\r\nBounding Box Color",IDC_CLR_SUB_BBOX,27,111,83,23,BS_MULTILINE
 END
 
 
