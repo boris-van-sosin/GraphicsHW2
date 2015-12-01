@@ -64,6 +64,10 @@ BEGIN_MESSAGE_MAP(CCGWorkView, CView)
 	ON_UPDATE_COMMAND_UI(ID_AXIS_Z, OnUpdateAxisZ)
 	ON_COMMAND(ID_POLYGON_NORMALS, OnTogglePolygonNormals)
 	ON_COMMAND(ID_VERTEX_NORMALS, OnToggleVertexNormals)
+	ON_COMMAND(ID_TOGGLE_MODEL_BBOX, OnToggleModelBBox)
+	ON_COMMAND(ID_TOGGLE_SUB_BBOX, OnToggleSubObjBBox)
+	ON_COMMAND(ID_TOGGLE_ALL_MODEL_BBOX, OnToggleAllModelBBox)
+	ON_COMMAND(ID_TOGGLE_ALL_SUB_BBOX, OnToggleAllSubObjBBox)
 	ON_COMMAND(ID_CHOOSE_COLORS, OnChooseColors)
 	ON_COMMAND(ID_LIGHT_SHADING_FLAT, OnLightShadingFlat)
 	ON_UPDATE_COMMAND_UI(ID_LIGHT_SHADING_FLAT, OnUpdateLightShadingFlat)
@@ -108,8 +112,9 @@ CCGWorkView::CCGWorkView()
 	//init the first light to be enabled
 	m_lights[LIGHT_ID_1].enabled = true;
 
-	_displayPolygonNormals = true;
+	_displayPolygonNormals = false;
 	_displayVertexNormals = false;
+	_dummyDisplayModelBBox = _dummyDisplaySubObjBBox = false;
 	_normalsColor = RGB(0, 255, 0);
 }
 
@@ -846,6 +851,45 @@ void CCGWorkView::OnChooseColors()
 		Invalidate();
 	}
 }
+
+void CCGWorkView::OnToggleModelBBox()
+{
+	if (active_object >= 0)
+	{
+		_model_attr[active_object].displayBBox = !_model_attr[active_object].displayBBox;
+		Invalidate();
+	}
+}
+
+void CCGWorkView::OnToggleSubObjBBox()
+{
+	if (active_object >= 0)
+	{
+		_model_attr[active_object].displaySubObjectBBox = !_model_attr[active_object].displaySubObjectBBox;
+		Invalidate();
+	}
+}
+
+void CCGWorkView::OnToggleAllModelBBox()
+{
+	_dummyDisplayModelBBox = !_dummyDisplayModelBBox;
+	for (auto i = _model_attr.begin(); i != _model_attr.end(); ++i)
+	{
+		i->displayBBox = _dummyDisplayModelBBox;
+	}
+	Invalidate();
+}
+
+void CCGWorkView::OnToggleAllSubObjBBox()
+{
+	_dummyDisplaySubObjBBox = !_dummyDisplaySubObjBBox;
+	for (auto i = _model_attr.begin(); i != _model_attr.end(); ++i)
+	{
+		i->displaySubObjectBBox = _dummyDisplaySubObjBBox;
+	}
+	Invalidate();
+}
+
 
 // OPTIONS HANDLERS ///////////////////////////////////////////
 

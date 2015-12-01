@@ -51,6 +51,7 @@ private:
 	int m_nView;				// Orthographic, perspective
 	bool m_bIsPerspective;			// is the view perspective
 	bool _displayPolygonNormals, _displayVertexNormals;
+	bool _dummyDisplayModelBBox, _dummyDisplaySubObjBBox;
 	COLORREF _normalsColor;
 
 	CString m_strItdFileName;		// file name of IRIT data
@@ -134,6 +135,10 @@ protected:
 	afx_msg void OnTogglePolygonNormals();
 	afx_msg void OnToggleVertexNormals();
 	afx_msg void OnChooseColors();
+	afx_msg void OnToggleModelBBox();
+	afx_msg void OnToggleSubObjBBox();
+	afx_msg void OnToggleAllModelBBox();
+	afx_msg void OnToggleAllSubObjBBox();
 
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
