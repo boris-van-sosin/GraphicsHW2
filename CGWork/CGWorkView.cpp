@@ -460,7 +460,7 @@ void innerDrawLine(CImage& img, int x0, int y0, int x1, int y1, COLORREF clr, un
 		if (!swapXY)
 		{
 			ImageSetPixel(img, x0, y0, clr);
-			for (int i = 1; i < line_width; i++) {
+			for (unsigned int i = 1; i < line_width; i++) {
 				ImageSetPixel(img, x0, y0 + i, clr);
 				ImageSetPixel(img, x0, y0 - i, clr);
 			}
@@ -468,7 +468,7 @@ void innerDrawLine(CImage& img, int x0, int y0, int x1, int y1, COLORREF clr, un
 		else
 		{
 			ImageSetPixel(img, y0, x0, clr);
-			for (int i = 1; i < line_width; i++) {
+			for (unsigned int i = 1; i < line_width; i++) {
 				ImageSetPixel(img, y0 + i, x0, clr);
 				ImageSetPixel(img, y0 - i, x0, clr);
 			}
@@ -494,7 +494,7 @@ void innerDrawLine(CImage& img, int x0, int y0, int x1, int y1, COLORREF clr, un
 			if (!swapXY)
 			{
 				ImageSetPixel(img, x, y, clr);
-				for (int i = 1; i < line_width; i++) {
+				for (unsigned int i = 1; i < line_width; i++) {
 					ImageSetPixel(img, x, y + i, clr);
 					ImageSetPixel(img, x, y - i, clr);
 				}
@@ -502,7 +502,7 @@ void innerDrawLine(CImage& img, int x0, int y0, int x1, int y1, COLORREF clr, un
 			else
 			{
 				ImageSetPixel(img, y, x, clr);
-				for (int i = 1; i < line_width; i++) {
+				for (unsigned int i = 1; i < line_width; i++) {
 					ImageSetPixel(img, y + i, x, clr);
 					ImageSetPixel(img, y - i, x, clr);
 				}
@@ -512,7 +512,7 @@ void innerDrawLine(CImage& img, int x0, int y0, int x1, int y1, COLORREF clr, un
 	else if (dx == 0 && dy == 0)
 	{
 		ImageSetPixel(img, x0, y0, clr);
-		for (int i = 1; i < line_width; i++) {
+		for (unsigned int i = 1; i < line_width; i++) {
 			ImageSetPixel(img, x0, y0 + i, clr);
 			ImageSetPixel(img, x0, y0 - i, clr);
 			ImageSetPixel(img, x0 + i, y0, clr);
@@ -903,7 +903,7 @@ void CCGWorkView::DrawScene(CImage& img)
 	int height = rect.bottom - rect.top - 2 * margin;
 	int width = rect.right - rect.left - 2 * margin;
 
-	for (int i = 0; i < _models.size(); i++) {
+	for (size_t i = 0; i < _models.size(); i++) {
 		const BoundingBox bCube = _bboxes[i].BoundingCube();
 		const MatrixHomogeneous mPersp = PerspectiveWarpMatrix(bCube);
 		const COLORREF normalsColor = _model_attr[i].normal_color;

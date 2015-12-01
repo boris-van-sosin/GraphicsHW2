@@ -4,7 +4,7 @@
 #include <vector>
 #include <atlimage.h>
 
-#define GEOMETRIC_COMPUTATION_ESPILON 1e-10
+#define GEOMETRIC_COMPUTATION_EPSILON 1e-10
 
 class HomogeneousPoint;
 
