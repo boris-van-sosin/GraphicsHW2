@@ -375,6 +375,14 @@ bool CCGWorkView::applyMat(const MatrixHomogeneous& mat) {
 	{
 		(*it) = mat * (*it);
 	}
+
+	_modelBoundingBoxes[active_object] = mat * _modelBoundingBoxes[active_object];
+	for (auto it = _subObjectBoundingBoxes[active_object].begin(); it != _subObjectBoundingBoxes[active_object].end(); ++it)
+	{
+		(*it) = mat * (*it);
+	}
+
+
 	return true;
 }
 
@@ -686,7 +694,7 @@ void CCGWorkView::OnFileLoad()
 		
 		_modelBoundingBoxes.push_back(BoundingBox::OfObjects(_models.back()).ToObject());
 		
-		_subObjectBoundingBoxes.push_back(model_t());
+		_subObjectBoundingBoxes.push_back(BoundingBox::BoundingBoxObjectsOfSubObjects(_models.back()));
 		
 		// Open the file and read it.
 		// Your code here...
@@ -944,6 +952,23 @@ void CCGWorkView::DrawScene(CImage& img)
 			for (auto j = _vertexNormals[i].begin(); j != _vertexNormals[i].end(); ++j)
 			{
 				DrawLineSegment(img, TransformNormal(mScale, j->p0, j->p1, 10), normalsColor, 1);
+			}
+		}
+		if (attr.displayBBox)
+		{
+			model_attr_t bboxAttr;
+			bboxAttr.color = RGB(255,0,0); // fix later
+			bboxAttr.forceColor = true;
+			DrawObject(img, mScale*(_modelBoundingBoxes[i]), bboxAttr);
+		}
+		if (attr.displaySubObjectBBox)
+		{
+			model_attr_t bboxAttr;
+			bboxAttr.color = RGB(255, 0, 0); // fix later
+			bboxAttr.forceColor = true;
+			for (auto j = _subObjectBoundingBoxes[i].begin(); j != _subObjectBoundingBoxes[i].end(); ++j)
+			{
+				DrawObject(img, mScale*(*j), bboxAttr);
 			}
 		}
 	}
