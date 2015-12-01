@@ -937,6 +937,7 @@ void CCGWorkView::DrawScene(CImage& img)
 		{
 			DrawObject(img, mScale*(*it), attr);
 			shadow_attr.color = i + 1;
+			shadow_attr.forceColor = true;
 			DrawObject(_pxl2obj, mScale*(*it), shadow_attr);
 		}
 
