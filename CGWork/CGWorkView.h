@@ -21,7 +21,6 @@
 #include "GeometricTransformations.h"
 
 typedef std::vector<PolygonalObject> model_t;
-typedef std::vector<LineSegment> NormalList;
 
 class model_attr_t { // don't make this struct big
 public:
@@ -139,13 +138,12 @@ protected:
 
 private:
 	void FlipYAxis(int obj_idx);
-	static void ComputeNormals(const model_t& objs, NormalList& polygonNormals, NormalList& vertexNormals);
 	void DrawScene(CImage& img);
 
 private:
 	std::vector<model_t> _models;
-	std::vector<NormalList> _polygonNormals;
-	std::vector<NormalList> _vertexNormals;
+	std::vector<Normals::NormalList> _polygonNormals;
+	std::vector<Normals::NormalList> _vertexNormals;
 	std::vector<BoundingBox> _bboxes;
 	std::vector<model_attr_t> _model_attr;
 

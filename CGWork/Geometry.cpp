@@ -465,3 +465,23 @@ BoundingBox BoundingBox::BoundingCube() const
 					   center.z - halfMaxSize,
 					   center.z + halfMaxSize);
 }
+
+void Normals::ComputeNormals(const std::vector<PolygonalObject>& objs, NormalList& polygonNormals, NormalList& vertexNormals)
+{
+	polygonNormals.clear();
+	vertexNormals.clear();
+	if (objs.empty())
+	{
+		return;
+	}
+	polygonNormals.reserve(objs.front().polygons.size() * objs.size());
+	vertexNormals.reserve(objs.size() * objs.front().polygons.size() * objs.front().polygons.front().points.size());
+	for (auto i = objs.begin(); i != objs.end(); ++i)
+	{
+		for (auto j = i->polygons.begin(); j != i->polygons.end(); ++j)
+		{
+			std::pair<double, Point3D> areaAndCentroid = j->AreaAndCentroid();
+			polygonNormals.push_back(LineSegment(areaAndCentroid.second, areaAndCentroid.second - (j->Normal())));
+		}
+	}
+}

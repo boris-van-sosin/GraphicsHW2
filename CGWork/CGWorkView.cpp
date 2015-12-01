@@ -675,9 +675,9 @@ void CCGWorkView::OnFileLoad()
 		_models.push_back(model_t());
 		CGSkelProcessIritDataFiles(m_strItdFileName, 1, _models.back());
 		
-		_polygonNormals.push_back(NormalList());
-		_vertexNormals.push_back(NormalList());
-		ComputeNormals(_models.back(), _polygonNormals.back(), _vertexNormals.back());
+		_polygonNormals.push_back(Normals::NormalList());
+		_vertexNormals.push_back(Normals::NormalList());
+		Normals::ComputeNormals(_models.back(), _polygonNormals.back(), _vertexNormals.back());
 
 		//FlipYAxis(_models.size() - 1);
 
@@ -940,26 +940,6 @@ void CCGWorkView::DrawScene(CImage& img)
 			{
 				DrawLineSegment(img, TransformNormal(mScale, j->p0, j->p1, 10), normalsColor, 1);
 			}
-		}
-	}
-}
-
-void CCGWorkView::ComputeNormals(const model_t& objs, NormalList& polygonNormals, NormalList& vertexNormals)
-{
-	polygonNormals.clear();
-	vertexNormals.clear();
-	if (objs.empty())
-	{
-		return;
-	}
-	polygonNormals.reserve(objs.front().polygons.size() * objs.size());
-	vertexNormals.reserve(objs.size() * objs.front().polygons.size() * objs.front().polygons.front().points.size());
-	for (auto i = objs.begin(); i != objs.end(); ++i)
-	{
-		for (auto j = i->polygons.begin(); j != i->polygons.end(); ++j)
-		{
-			std::pair<double, Point3D> areaAndCentroid = j->AreaAndCentroid();
-			polygonNormals.push_back(LineSegment(areaAndCentroid.second, areaAndCentroid.second - (j->Normal())));
 		}
 	}
 }

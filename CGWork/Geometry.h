@@ -142,4 +142,10 @@ private:
 	static BoundingBox join(const std::vector<BoundingBox>& boxes);
 };
 
+namespace Normals
+{
+	typedef std::vector<LineSegment> NormalList;
+	void ComputeNormals(const std::vector<PolygonalObject>& objs, NormalList& polygonNormals, NormalList& vertexNormals);
+}
+
 #endif
