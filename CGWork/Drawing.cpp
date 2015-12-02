@@ -78,12 +78,10 @@ MatrixHomogeneous ScaleAndCenter(const BoundingBox& boundingCube)
 	return MatrixHomogeneous(rows);
 }
 
-PerspectiveData PerspectiveWarpMatrix(const BoundingBox& boundingCube)
+PerspectiveData PerspectiveWarpMatrix(const BoundingBox& boundingCube, double n, double f)
 {
-	const double depth = boundingCube.maxZ - boundingCube.minZ;
-	const double clippingMargin = depth * 0.1;
-	const double near2 = 1 - clippingMargin;
-	const double far2 = near2 + depth + clippingMargin;
+	const double near2 = n;
+	const double far2 = f;
 	const double q2 = far2 / (far2 - near2);
 
 	//return MatrixHomogeneous(rows) * Matrices::Translate(0, 0, boundingCube.minZ + near + depth*0.5);
@@ -99,6 +97,15 @@ PerspectiveData PerspectiveWarpMatrix(const BoundingBox& boundingCube)
 		MatrixHomogeneous(rows2),
 		ClippingPlane(0, 0, 1, -near2),
 		ClippingPlane(0, 0, -1, -far2));
+}
+
+PerspectiveData PerspectiveWarpMatrix(const BoundingBox& boundingCube)
+{
+	const double depth = boundingCube.maxZ - boundingCube.minZ;
+	const double clippingMargin = depth * 0.1;
+	const double nearPlane = 1 - clippingMargin;
+	const double farPlane = nearPlane + depth + clippingMargin;
+	return PerspectiveWarpMatrix(boundingCube, nearPlane, farPlane);
 }
 
 MatrixHomogeneous OrthographicProjectMatrix(const BoundingBox& boundingCube)

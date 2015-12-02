@@ -163,6 +163,8 @@ private:
 	int glowing_object = -1; // -1 is none
 	int active_object = 0;
 
+	double _nearClippingPlane = 0.9, _farClippingPlane = 2.1;
+
 	int _polygonFineness = 20;
 
 	CImage _pxl2obj; // to know the position of the objects on the screen

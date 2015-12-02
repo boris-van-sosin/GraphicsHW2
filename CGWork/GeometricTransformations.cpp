@@ -33,7 +33,14 @@ Polygon3D operator*(const Matrix3D& m, const Polygon3D& poly)
 	{
 		points.push_back(mh * (*i));
 	}
-	return Polygon3D(points);
+	if (poly.colorValid)
+	{
+		return Polygon3D(points, poly.color);
+	}
+	else
+	{
+		return Polygon3D(points);
+	}
 }
 
 Polygon3D operator*(const MatrixHomogeneous& m, const Polygon3D& poly)
@@ -44,7 +51,14 @@ Polygon3D operator*(const MatrixHomogeneous& m, const Polygon3D& poly)
 	{
 		points.push_back(m * (*i));
 	}
-	return Polygon3D(points);
+	if (poly.colorValid)
+	{
+		return Polygon3D(points, poly.color);
+	}
+	else
+	{
+		return Polygon3D(points);
+	}
 }
 
 PolygonalObject operator*(const Matrix3D& m, const PolygonalObject& obj)
@@ -55,7 +69,14 @@ PolygonalObject operator*(const Matrix3D& m, const PolygonalObject& obj)
 	{
 		polygons.push_back(m * (*i));
 	}
-	return PolygonalObject(polygons);
+	if (obj.colorValid)
+	{
+		return PolygonalObject(polygons, obj.color);
+	}
+	else
+	{
+		return PolygonalObject(polygons);
+	}
 }
 
 PolygonalObject operator*(const MatrixHomogeneous& m, const PolygonalObject& obj)
@@ -66,7 +87,14 @@ PolygonalObject operator*(const MatrixHomogeneous& m, const PolygonalObject& obj
 	{
 		polygons.push_back(m * (*i));
 	}
-	return PolygonalObject(polygons);
+	if (obj.colorValid)
+	{
+		return PolygonalObject(polygons, obj.color);
+	}
+	else
+	{
+		return PolygonalObject(polygons);
+	}
 }
 
 BoundingBox operator*(const Matrix3D& m, const BoundingBox& bbox)

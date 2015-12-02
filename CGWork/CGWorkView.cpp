@@ -1026,12 +1026,15 @@ void CCGWorkView::OnSettings()
 {
 	GeneralSettings s;
 	s._polygonFineness = _polygonFineness;
-	s._nearClippingPlane = 1.0;
-	s._farClippingPlane = 2.0;
+	s._nearClippingPlane = _nearClippingPlane;
+	s._farClippingPlane = _farClippingPlane;
 	CClippingDlg dlg(s);
 	if (dlg.DoModal() == IDOK)
 	{
 		_polygonFineness = s._polygonFineness;
+		_nearClippingPlane = s._nearClippingPlane;
+		_farClippingPlane = s._farClippingPlane;
+		Invalidate();
 	}
 }
 
@@ -1106,13 +1109,14 @@ void CCGWorkView::DrawScene(CImage& img)
 
 	for (size_t i = 0; i < _models.size(); i++) {
 		const BoundingBox bCube = _bboxes[i].BoundingCube();
-		const PerspectiveData perspData = PerspectiveWarpMatrix(bCube);
-		//const MatrixHomogeneous& mPersp = perspData.first;
+		const PerspectiveData perspData = PerspectiveWarpMatrix(bCube, _nearClippingPlane, _farClippingPlane);
+
 		const COLORREF normalsColor = _model_attr[i].normal_color;
 
-		MatrixHomogeneous mMoveToView = Matrices::Flip(AXIS_Y) *
+		MatrixHomogeneous mMoveToView = 
 			(m_bIsPerspective ?
-			perspData.ScaleAndMoveToView : ScaleAndCenter(bCube));
+			(Matrices::Flip(AXIS_X)*perspData.ScaleAndMoveToView) :
+			(Matrices::Flip(AXIS_Y)*ScaleAndCenter(bCube)));
 
 		MatrixHomogeneous mProj = 
 			(m_bIsPerspective ?
@@ -1121,7 +1125,7 @@ void CCGWorkView::DrawScene(CImage& img)
 		const BoundingBox displayBox = ((mProj*mMoveToView) * _bboxes[i]).BoundingCube();
 
 		const double scalingFactor = 0.25 * min(width, height) /
-			(m_bIsPerspective ? (bCube.maxX - bCube.minX) : (displayBox.maxX - displayBox.minX));
+			((displayBox.maxX - displayBox.minX));
 
 		const MatrixHomogeneous mScale = Matrices::Translate(width*0.5, height*0.5, 0)*Matrices::Scale(scalingFactor);
 

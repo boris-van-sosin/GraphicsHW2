@@ -30,5 +30,6 @@ struct PerspectiveData
 MatrixHomogeneous ScaleAndCenter(const BoundingBox& boundingCube);
 PerspectiveData PerspectiveWarpMatrix(const BoundingBox& boundingCube);
 MatrixHomogeneous OrthographicProjectMatrix(const BoundingBox& boundingCube);
+PerspectiveData PerspectiveWarpMatrix(const BoundingBox& boundingCube, double n, double f);
 
 #endif
