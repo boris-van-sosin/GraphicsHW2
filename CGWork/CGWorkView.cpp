@@ -570,6 +570,11 @@ void DrawTestLines(CDC* pDC, CImage& img)
 
 void DrawLineSegment(CImage& img, const Point3D& p0, const Point3D& p1, COLORREF clr, unsigned int line_width, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0))
 {
+	if (isnan(p0.x) || isnan(p0.y) || isnan(p1.x) || isnan(p1.y) ||
+		fabs(p0.x) > 1e6 || fabs(p0.y) > 1e6 || fabs(p1.x) > 1e6 || fabs(p1.y) > 1e6)
+	{
+		return;
+	}
 	if (clip)
 	{
 		const double clipValue0 = cp.Apply(p0);
@@ -647,11 +652,13 @@ void DrawPolygon(CImage& img, const Polygon3D& poly, const model_attr_t& attr, C
 	}
 }
 
-LineSegment ApplyClippingAndViewMatrix(const HomogeneousPoint& p0, const HomogeneousPoint& p1, const MatrixHomogeneous& mFirst, const MatrixHomogeneous& mTotal, const ClippingPlane& cp)
+LineSegment ApplyClippingAndViewMatrix(const HomogeneousPoint& p0, const HomogeneousPoint& p1, const MatrixHomogeneous& mFirst, const MatrixHomogeneous& mSecond, const MatrixHomogeneous& mTotal, const ClippingPlane& cp)
 {
 	const double clipValue0 = cp.Apply(mFirst * p0);
 	const double clipValue1 = cp.Apply(mFirst * p1);
 	const double test = cp.Apply(0, 0, 0.9);
+	double test20 = p0.z * 2 + 2;
+	double test21 = p1.z * 2 + 2;
 
 	if (clipValue0 < 0 && clipValue1 < 0)
 	{
@@ -659,13 +666,13 @@ LineSegment ApplyClippingAndViewMatrix(const HomogeneousPoint& p0, const Homogen
 	}
 	else if (clipValue0 < 0)
 	{
-		const HomogeneousPoint clippingPoint = HomogeneousPoint(cp.Intersection(Point3D(p0), Point3D(p1)));
-		return LineSegment(mTotal*clippingPoint, mTotal*p1);
+		const HomogeneousPoint clippingPoint = HomogeneousPoint(cp.Intersection(Point3D(mFirst * p0), Point3D(mFirst * p1)));
+		return LineSegment(mSecond*clippingPoint, mTotal*p1);
 	}
 	else if (clipValue1 < 0)
 	{
-		const HomogeneousPoint clippingPoint = HomogeneousPoint(cp.Intersection(Point3D(p0), Point3D(p1)));
-		return LineSegment(mTotal*p0, mTotal*clippingPoint);
+		const HomogeneousPoint clippingPoint = HomogeneousPoint(cp.Intersection(Point3D(mFirst * p0), Point3D(mFirst * p1)));
+		return LineSegment(mTotal*p0, mSecond*clippingPoint);
 	}
 	else
 	{
@@ -673,7 +680,7 @@ LineSegment ApplyClippingAndViewMatrix(const HomogeneousPoint& p0, const Homogen
 	}
 }
 
-void DrawPolygon(CImage& img, const Polygon3D& poly, const MatrixHomogeneous& mFirst, const MatrixHomogeneous& mTotal, const model_attr_t& attr, COLORREF objColor, bool objColorValid, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0))
+void DrawPolygon(CImage& img, const Polygon3D& poly, const MatrixHomogeneous& mFirst, const MatrixHomogeneous& mSecond, const MatrixHomogeneous& mTotal, const model_attr_t& attr, COLORREF objColor, bool objColorValid, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0))
 {
 	if (poly.points.size() < 2)
 	{
@@ -704,7 +711,7 @@ void DrawPolygon(CImage& img, const Polygon3D& poly, const MatrixHomogeneous& mF
 		{
 			if (clip)
 			{
-				DrawLineSegment(img, ApplyClippingAndViewMatrix(*i, *(i + 1), mFirst, mTotal, cp), actualColor, attr.line_width);
+				DrawLineSegment(img, ApplyClippingAndViewMatrix(*i, *(i + 1), mFirst, mSecond, mTotal, cp), actualColor, attr.line_width);
 			}
 			else
 			{
@@ -715,7 +722,7 @@ void DrawPolygon(CImage& img, const Polygon3D& poly, const MatrixHomogeneous& mF
 		{
 			if (clip)
 			{
-				DrawLineSegment(img, ApplyClippingAndViewMatrix(*i, poly.points.front(), mFirst, mTotal, cp), actualColor, attr.line_width);
+				DrawLineSegment(img, ApplyClippingAndViewMatrix(*i, poly.points.front(), mFirst, mSecond, mTotal, cp), actualColor, attr.line_width);
 			}
 			else
 			{
@@ -733,11 +740,11 @@ void DrawObject(CImage& img, const PolygonalObject& obj, const model_attr_t& att
 	}
 }
 
-void DrawObject(CImage& img, const PolygonalObject& obj, const MatrixHomogeneous& mFirst, const MatrixHomogeneous& mTotal, const model_attr_t& attr, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0))
+void DrawObject(CImage& img, const PolygonalObject& obj, const MatrixHomogeneous& mFirst, const MatrixHomogeneous& mSecond, const MatrixHomogeneous& mTotal, const model_attr_t& attr, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0))
 {
 	for (std::vector<Polygon3D>::const_iterator i = obj.polygons.begin(); i != obj.polygons.end(); ++i)
 	{
-		DrawPolygon(img, *i, mFirst, mTotal, attr, obj.color, obj.colorValid, clip, cp);
+		DrawPolygon(img, *i, mFirst, mSecond, mTotal, attr, obj.color, obj.colorValid, clip, cp);
 	}
 }
 
@@ -1108,17 +1115,18 @@ void CCGWorkView::DrawScene(CImage& img)
 		const MatrixHomogeneous mScale = Matrices::Translate(width*0.5, height*0.5, 0)*Matrices::Scale(scalingFactor);
 
 		const MatrixHomogeneous mFirst = mMoveToView;
-		const MatrixHomogeneous mTotal = mScale * mProj * mFirst;
+		const MatrixHomogeneous mSecond = mScale * mProj;
+		const MatrixHomogeneous mTotal = mSecond * mFirst;
 
 		model_t& model = _models[i];
 		const model_attr_t attr = _model_attr[i];
 		model_attr_t shadow_attr = attr;
 		for (std::vector<PolygonalObject>::iterator it = model.begin(); it != model.end(); ++it)
 		{
-			DrawObject(img, *it, mFirst, mTotal, attr, m_bIsPerspective, perspData.NearPlane);
+			DrawObject(img, *it, mFirst, mSecond, mTotal, attr, m_bIsPerspective, perspData.NearPlane);
 			shadow_attr.color = i + 1;
 			shadow_attr.forceColor = true;
-			DrawObject(_pxl2obj, *it, mFirst, mTotal, shadow_attr, m_bIsPerspective, perspData.NearPlane);
+			DrawObject(_pxl2obj, *it, mFirst, mSecond, mTotal, shadow_attr, m_bIsPerspective, perspData.NearPlane);
 		}
 
 		if (_displayPolygonNormals)
@@ -1140,7 +1148,7 @@ void CCGWorkView::DrawScene(CImage& img)
 			model_attr_t bboxAttr;
 			bboxAttr.color = _model_attr[i].model_bbox_color;
 			bboxAttr.forceColor = true;
-			DrawObject(img, _modelBoundingBoxes[i], mFirst, mTotal, bboxAttr, m_bIsPerspective, perspData.NearPlane);
+			DrawObject(img, _modelBoundingBoxes[i], mFirst, mSecond, mTotal, bboxAttr, m_bIsPerspective, perspData.NearPlane);
 		}
 		if (attr.displaySubObjectBBox)
 		{
@@ -1149,7 +1157,7 @@ void CCGWorkView::DrawScene(CImage& img)
 			bboxAttr.forceColor = true;
 			for (auto j = _subObjectBoundingBoxes[i].begin(); j != _subObjectBoundingBoxes[i].end(); ++j)
 			{
-				DrawObject(img, *j, mFirst, mTotal, bboxAttr, m_bIsPerspective, perspData.NearPlane);
+				DrawObject(img, *j, mFirst, mSecond, mTotal, bboxAttr, m_bIsPerspective, perspData.NearPlane);
 			}
 		}
 	}

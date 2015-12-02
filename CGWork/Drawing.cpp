@@ -35,15 +35,15 @@ Point3D ClippingPlane::Intersection(const Point3D& p0, const Point3D& p1) const
 	Point3D pb;
 	if (z != 0)
 	{
-		pb = Point3D(0, 0, -z);
+		pb = Point3D(0, 0, -c/z);
 	}
 	else if (y != 0)
 	{
-		pb = Point3D(0, 0, -y);
+		pb = Point3D(0, 0, -c/y);
 	}
 	else if (x != 0)
 	{
-		pb = Point3D(0, 0, -x);
+		pb = Point3D(0, 0, -c/x);
 	}
 
 	const Point3D normal(x, y, z);
@@ -97,8 +97,8 @@ PerspectiveData PerspectiveWarpMatrix(const BoundingBox& boundingCube)
 	return PerspectiveData(
 		Matrices::Translate(0, 0, 2) * ScaleAndCenter(boundingCube),
 		MatrixHomogeneous(rows2),
-		ClippingPlane(0, 0, 1, near2),
-		ClippingPlane(0, 0, -1, far2));
+		ClippingPlane(0, 0, 1, -near2),
+		ClippingPlane(0, 0, -1, -far2));
 }
 
 MatrixHomogeneous OrthographicProjectMatrix(const BoundingBox& boundingCube)
