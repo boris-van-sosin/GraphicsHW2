@@ -16,6 +16,7 @@ using std::endl;
 #include "GeometricTransformations.h"
 #include "Drawing.h"
 #include "ChooseColorDlg.h"
+#include "ClippingDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -69,6 +70,7 @@ BEGIN_MESSAGE_MAP(CCGWorkView, CView)
 	ON_COMMAND(ID_TOGGLE_ALL_MODEL_BBOX, OnToggleAllModelBBox)
 	ON_COMMAND(ID_TOGGLE_ALL_SUB_BBOX, OnToggleAllSubObjBBox)
 	ON_COMMAND(ID_CHOOSE_COLORS, OnChooseColors)
+	ON_COMMAND(ID_GENERAL_SETTINGS, OnSettings)
 	ON_COMMAND(ID_LIGHT_SHADING_FLAT, OnLightShadingFlat)
 	ON_UPDATE_COMMAND_UI(ID_LIGHT_SHADING_FLAT, OnUpdateLightShadingFlat)
 	ON_COMMAND(ID_LIGHT_SHADING_GOURAUD, OnLightShadingGouraud)
@@ -1020,6 +1022,18 @@ void CCGWorkView::OnToggleAllSubObjBBox()
 	Invalidate();
 }
 
+void CCGWorkView::OnSettings()
+{
+	GeneralSettings s;
+	s._polygonFineness = _polygonFineness;
+	s._nearClippingPlane = 1.0;
+	s._farClippingPlane = 2.0;
+	CClippingDlg dlg(s);
+	if (dlg.DoModal() == IDOK)
+	{
+		_polygonFineness = s._polygonFineness;
+	}
+}
 
 // OPTIONS HANDLERS ///////////////////////////////////////////
 

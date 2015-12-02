@@ -74,6 +74,7 @@
 #define ID_TOGGLE_MODEL_BBOX            32814
 #define ID_TOGGLE_ALL_SUB_BBOX          32815
 #define ID_BUTTON32817                  32817
+#define ID_GENERAL_SETTINGS             32817
 
 // Next default values for new objects
 // 
