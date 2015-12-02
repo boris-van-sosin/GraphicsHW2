@@ -12,25 +12,37 @@ MatrixHomogeneous ToMatrixHomogeneous(const HomogeneousPoint& r0, const Homogene
 	return MatrixHomogeneous(rows);
 }
 
+MatrixHomogeneous ToMatrixHomogeneous(const Matrix3D& m)
+{
+	HomogeneousPoint cols[] = {
+		HomogeneousPoint(m * Point3D(1, 0, 0)),
+		HomogeneousPoint(m * Point3D(0, 1, 0)),
+		HomogeneousPoint(m * Point3D(0, 0, 1)),
+		HomogeneousPoint::ZerosWithW1
+	};
+	cols[0][3] = cols[1][3] = cols[2][3] = 0;
+	return MatrixHomogeneous(cols).Transposed();
+}
+
 Polygon3D operator*(const Matrix3D& m, const Polygon3D& poly)
 {
-	std::vector<Point3D> points;
+	const MatrixHomogeneous mh = ToMatrixHomogeneous(m);
+	std::vector<HomogeneousPoint> points;
 	points.reserve(poly.points.size());
-	for (std::vector<Point3D>::const_iterator i = poly.points.begin(); i != poly.points.end(); ++i)
+	for (auto i = poly.points.begin(); i != poly.points.end(); ++i)
 	{
-		points.push_back(m * (*i));
+		points.push_back(mh * (*i));
 	}
 	return Polygon3D(points);
 }
 
 Polygon3D operator*(const MatrixHomogeneous& m, const Polygon3D& poly)
 {
-	std::vector<Point3D> points;
+	std::vector<HomogeneousPoint> points;
 	points.reserve(poly.points.size());
-	for (std::vector<Point3D>::const_iterator i = poly.points.begin(); i != poly.points.end(); ++i)
+	for (auto i = poly.points.begin(); i != poly.points.end(); ++i)
 	{
-		HomogeneousPoint p(*i);
-		points.push_back(Point3D(m * p));
+		points.push_back(m * (*i));
 	}
 	return Polygon3D(points);
 }
@@ -59,38 +71,40 @@ PolygonalObject operator*(const MatrixHomogeneous& m, const PolygonalObject& obj
 
 BoundingBox operator*(const Matrix3D& m, const BoundingBox& bbox)
 {
-	Point3D corners[] = {
-		m * Point3D(bbox.minX, bbox.minY, bbox.minZ),
-		m * Point3D(bbox.maxX, bbox.maxY, bbox.maxZ)
+	const MatrixHomogeneous mh = ToMatrixHomogeneous(m);
+	HomogeneousPoint corners[] = {
+		mh * HomogeneousPoint(bbox.minX, bbox.minY, bbox.minZ),
+		mh * HomogeneousPoint(bbox.maxX, bbox.maxY, bbox.maxZ)
 	};
 	return BoundingBox::OfLineSegmnet(LineSegment(corners[0], corners[1]));
 }
 
 BoundingBox operator*(const MatrixHomogeneous& m, const BoundingBox& bbox)
 {
-	Point3D corners[] = {
-		Point3D(m * HomogeneousPoint(bbox.minX, bbox.minY, bbox.minZ)),
-		Point3D(m * HomogeneousPoint(bbox.maxX, bbox.maxY, bbox.maxZ))
+	HomogeneousPoint corners[] = {
+		HomogeneousPoint(m * HomogeneousPoint(bbox.minX, bbox.minY, bbox.minZ)),
+		HomogeneousPoint(m * HomogeneousPoint(bbox.maxX, bbox.maxY, bbox.maxZ))
 	};
 	return BoundingBox::OfLineSegmnet(LineSegment(corners[0], corners[1]));
 }
 
 LineSegment operator*(const Matrix3D& m, const LineSegment& l)
 {
-	return LineSegment(m * l.p0, m * l.p1);
+	const MatrixHomogeneous mh = ToMatrixHomogeneous(m);
+	return LineSegment(mh * l.p0, mh * l.p1);
 }
 
 LineSegment operator*(const MatrixHomogeneous& m, const LineSegment& l)
 {
-	return LineSegment(Point3D(m * HomogeneousPoint(l.p0)), Point3D(m * HomogeneousPoint(l.p1)));
+	return LineSegment(m * HomogeneousPoint(l.p0), m * HomogeneousPoint(l.p1));
 }
 
-LineSegment TransformNormal(const MatrixHomogeneous& m, const Point3D& origin, const Vector3D& endpoint, double scalingFactor)
+LineSegment TransformNormal(const MatrixHomogeneous& m, const LineSegment& l, double scalingFactor)
 {
-	const Point3D originTr(m * HomogeneousPoint(origin));
-	const Point3D endpointTr(m * HomogeneousPoint(endpoint));
+	const Point3D originTr(m * l.p0);
+	const Point3D endpointTr(m * l.p1);
 	const Vector3D directionDisp = (endpointTr - originTr).Normalized() * scalingFactor;
-	return LineSegment(originTr, originTr + directionDisp);
+	return LineSegment(HomogeneousPoint(originTr), HomogeneousPoint(originTr + directionDisp));
 }
 
 namespace Matrices

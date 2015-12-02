@@ -78,26 +78,26 @@ private:
 class LineSegment
 {
 public:
-	LineSegment(const Point3D& p0_, const Point3D& p1_);
-	Point3D p0, p1;
+	LineSegment(const HomogeneousPoint& p0_, const HomogeneousPoint& p1_);
+	HomogeneousPoint p0, p1;
 };
 
 class Polygon3D
 {
 public:
 	Polygon3D();
-	Polygon3D(const std::vector<Point3D>& points_);
-	Polygon3D(const std::vector<Point3D>& points_, COLORREF color_);
+	Polygon3D(const std::vector<HomogeneousPoint>& points_);
+	Polygon3D(const std::vector<HomogeneousPoint>& points_, COLORREF color_);
 
 	std::vector<LineSegment> Edges() const;
 	Vector3D Normal() const;
-	std::pair<double, Point3D> AreaAndCentroid() const;
+	std::pair<double, HomogeneousPoint> AreaAndCentroid() const;
 
-	std::vector<Point3D> points;
+	std::vector<HomogeneousPoint> points;
 	COLORREF color;
 	bool colorValid;
 private:
-	Polygon3D(const std::vector<Point3D>& points_, COLORREF color_, bool valid);
+	Polygon3D(const std::vector<HomogeneousPoint>& points_, COLORREF color_, bool valid);
 };
 
 class PolygonalObject

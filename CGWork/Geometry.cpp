@@ -223,27 +223,27 @@ double HomogeneousPoint::operator*(const HomogeneousPoint& other) const
 const HomogeneousPoint HomogeneousPoint::Zeros(0, 0, 0, 0);
 const HomogeneousPoint HomogeneousPoint::ZerosWithW1(0, 0, 0, 1);
 
-LineSegment::LineSegment(const Point3D& p0_, const Point3D& p1_)
+LineSegment::LineSegment(const HomogeneousPoint& p0_, const HomogeneousPoint& p1_)
 	: p0(p0_), p1(p1_)
 {
 }
 
 Polygon3D::Polygon3D()
-	: Polygon3D(std::vector<Point3D>(), RGB(255, 25, 255), false)
+	: Polygon3D(std::vector<HomogeneousPoint>(), RGB(255, 25, 255), false)
 {
 }
 
-Polygon3D::Polygon3D(const std::vector<Point3D>& points_, COLORREF color_, bool valid)
+Polygon3D::Polygon3D(const std::vector<HomogeneousPoint>& points_, COLORREF color_, bool valid)
 	: points(points_), color(color_), colorValid(valid)
 {
 }
 
-Polygon3D::Polygon3D(const std::vector<Point3D>& points_)
+Polygon3D::Polygon3D(const std::vector<HomogeneousPoint>& points_)
 	: Polygon3D(points_, RGB(255, 25, 255), false)
 {
 }
 
-Polygon3D::Polygon3D(const std::vector<Point3D>& points_, COLORREF color_)
+Polygon3D::Polygon3D(const std::vector<HomogeneousPoint>& points_, COLORREF color_)
 	: Polygon3D(points_, color_, true)
 {
 }
@@ -263,9 +263,9 @@ Vector3D Polygon3D::Normal() const
 {
 	for (size_t i = 0; i < points.size(); ++i)
 	{
-		const Point3D& p0 = points[i];
-		const Point3D& p1 = points[(i + 1) % points.size()];
-		const Point3D& p2 = points[(i + 2) % points.size()];
+		const Point3D& p0 = Point3D(points[i]);
+		const Point3D& p1 = Point3D( points[(i + 1) % points.size()]);
+		const Point3D& p2 = Point3D(points[(i + 2) % points.size()]);
 		Vector3D n = (p1 - p0).Cross(p2 - p1); // with the point order
 		if (n.SquareNorm() > GEOMETRIC_COMPUTATION_EPSILON)
 		{
@@ -276,20 +276,27 @@ Vector3D Polygon3D::Normal() const
 	return Point3D::Zero;
 }
 
-std::pair<double, Point3D> Polygon3D::AreaAndCentroid() const
+std::pair<double, HomogeneousPoint> Polygon3D::AreaAndCentroid() const
 {
+	if (points.empty())
+	{
+		return std::pair<double, HomogeneousPoint>(0, HomogeneousPoint::Zeros);
+	}
 	Vector3D v = Vector3D::Zero;
 	Point3D p = Point3D::Zero;
 	const Vector3D n = Normal();
+	const Point3D first = Point3D(points.front());
 	for (auto i = points.begin(); i != points.end(); ++i)
 	{
-		std::vector<Point3D>::const_iterator j = (i + 1 != points.end() ? (i + 1) : points.begin());
-		v += i->Cross(*j);
+		std::vector<HomogeneousPoint>::const_iterator j = (i + 1 != points.end() ? (i + 1) : points.begin());
+		const Point3D ip(*i);
+		const Point3D jp(*j);
+		v += ip.Cross(jp);
 
-		p += (points.front() + *i + *j) * ((*i - points.front()).Cross(*j - points.front()) * n);
+		p += (first + ip + jp) * ((ip - first).Cross(jp - first) * n);
 	}
 	double area = fabs((v *n) / 2.0);
-	return std::pair<double, Point3D>(area, p / (area * 6));
+	return std::pair<double, HomogeneousPoint>(area, HomogeneousPoint(p / (area * 6)));
 }
 
 PolygonalObject::PolygonalObject(const std::vector<Polygon3D>& polygons_, COLORREF color_, bool valid)
@@ -332,7 +339,9 @@ BoundingBox::BoundingBox(const BoundingBox& b1, const BoundingBox& b2)
 
 BoundingBox BoundingBox::OfLineSegmnet(const LineSegment& line)
 {
-	return BoundingBox(fmin(line.p0.x, line.p1.x), fmax(line.p0.x, line.p1.x), fmin(line.p0.y, line.p1.y), fmax(line.p0.y, line.p1.y), fmin(line.p0.z, line.p1.z), fmax(line.p0.z, line.p1.z));
+	const Point3D p0(line.p0);
+	const Point3D p1(line.p1);
+	return BoundingBox(fmin(p0.x, p1.x), fmax(p0.x, p1.x), fmin(p0.y, p1.y), fmax(p0.y, p1.y), fmin(p0.z, p1.z), fmax(p0.z, p1.z));
 }
 
 BoundingBox BoundingBox::OfLineSegmnets(const std::vector<LineSegment>& lines)
@@ -469,16 +478,16 @@ BoundingBox BoundingBox::BoundingCube() const
 
 PolygonalObject BoundingBox::ToObject() const
 {
-	const Point3D corners[] = {
-		Point3D(minX, minY, minZ),
-		Point3D(minX, minY, maxZ),
-		Point3D(minX, maxY, minZ),
-		Point3D(minX, maxY, maxZ),
+	const HomogeneousPoint corners[] = {
+		HomogeneousPoint(minX, minY, minZ),
+		HomogeneousPoint(minX, minY, maxZ),
+		HomogeneousPoint(minX, maxY, minZ),
+		HomogeneousPoint(minX, maxY, maxZ),
 
-		Point3D(maxX, minY, minZ),
-		Point3D(maxX, minY, maxZ),
-		Point3D(maxX, maxY, minZ),
-		Point3D(maxX, maxY, maxZ),
+		HomogeneousPoint(maxX, minY, minZ),
+		HomogeneousPoint(maxX, minY, maxZ),
+		HomogeneousPoint(maxX, maxY, minZ),
+		HomogeneousPoint(maxX, maxY, maxZ),
 	};
 
 	Polygon3D sides[4]; // bottom, top, left, right. no need for front and back
@@ -554,20 +563,20 @@ void Normals::ComputeNormals(const std::vector<PolygonalObject>& objs, NormalLis
 	{
 		for (auto j = i->polygons.begin(); j != i->polygons.end(); ++j)
 		{
-			std::pair<double, Point3D> areaAndCentroid = j->AreaAndCentroid();
+			const std::pair<double, HomogeneousPoint> areaAndCentroid = j->AreaAndCentroid();
 			const Vector3D currPolygonNormal = j->Normal();
-			polygonNormals.push_back(LineSegment(areaAndCentroid.second, areaAndCentroid.second - currPolygonNormal));
+			polygonNormals.push_back(LineSegment(areaAndCentroid.second, HomogeneousPoint(Point3D(areaAndCentroid.second) - currPolygonNormal)));
 			
 			polygonAreas.push_back(areaAndCentroid.first);
 			for (auto v = j->points.begin(); v != j->points.end(); ++v)
 			{
-				if (vertexMap.find(*v) == vertexMap.end())
+				if (vertexMap.find(Point3D(*v)) == vertexMap.end())
 				{
-					vertexMap[*v] = currPolygonNormal * areaAndCentroid.first;
+					vertexMap[Point3D(*v)] = currPolygonNormal * areaAndCentroid.first;
 				}
 				else
 				{
-					vertexMap[*v] += currPolygonNormal * areaAndCentroid.first;
+					vertexMap[Point3D(*v)] += currPolygonNormal * areaAndCentroid.first;
 				}
 			}
 		}
@@ -577,6 +586,6 @@ void Normals::ComputeNormals(const std::vector<PolygonalObject>& objs, NormalLis
 	for (auto i = vertexMap.begin(); i != vertexMap.end(); ++i)
 	{
 		const Vector3D direction = i->second.Normalized();
-		vertexNormals.push_back(LineSegment(i->first, i->first - direction));
+		vertexNormals.push_back(LineSegment(HomogeneousPoint(i->first), HomogeneousPoint(i->first - direction)));
 	}
 }

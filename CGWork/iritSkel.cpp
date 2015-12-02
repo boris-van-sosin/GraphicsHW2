@@ -311,7 +311,7 @@ namespace IritAdapter
 {
 	Polygon3D ConvertPolygon(IPPolygonStruct* p)
 	{
-		std::vector<Point3D> vertices;
+		std::vector<HomogeneousPoint> vertices;
 		IPVertexStruct* v = p->PVertex;
 		while (v != NULL)
 		{
@@ -321,11 +321,11 @@ namespace IritAdapter
 			{
 				int vr, vg, vb;
 				sscanf_s(vertexAttrRGB->U.Str, "%d,%d,%d", &vr, &vg, &vb);
-				vertices.push_back(Point3D(v->Coord[0], v->Coord[1], v->Coord[2], RGB(vr, vg, vb)));
+				vertices.push_back(HomogeneousPoint(v->Coord[0], v->Coord[1], v->Coord[2], 1.0, RGB(vr, vg, vb)));
 			}
 			else
 			{
-				vertices.push_back(Point3D(v->Coord[0], v->Coord[1], v->Coord[2]));
+				vertices.push_back(HomogeneousPoint(v->Coord[0], v->Coord[1], v->Coord[2]));
 			}
 			
 			

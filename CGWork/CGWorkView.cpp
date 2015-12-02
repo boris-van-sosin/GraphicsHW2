@@ -574,6 +574,12 @@ void DrawLineSegment(CImage& img, const Point3D& p0, const Point3D& p1, COLORREF
 	innerDrawLine(img, p0.x, p0.y, p1.x, p1.y, clr, line_width);
 }
 
+void DrawLineSegment(CImage& img, const HomogeneousPoint& p0, const HomogeneousPoint& p1, COLORREF clr, unsigned int line_width)
+{
+	// add clipping check
+	DrawLineSegment(img, Point3D(p0), Point3D(p1), clr, line_width);
+}
+
 void DrawLineSegment(CImage& img, const LineSegment& line, COLORREF clr, unsigned int line_width)
 {
 	DrawLineSegment(img, line.p0, line.p1, clr, line_width);
@@ -585,7 +591,7 @@ void DrawPolygon(CImage& img, const Polygon3D& poly, const model_attr_t& attr, C
 	{
 		return;
 	}
-	for (std::vector<Point3D>::const_iterator i = poly.points.begin(); i != poly.points.end(); ++i)
+	for (auto i = poly.points.begin(); i != poly.points.end(); ++i)
 	{
 		COLORREF actualColor = CCGWorkView::DefaultModelColor;
 		if (attr.forceColor)
@@ -1000,14 +1006,14 @@ void CCGWorkView::DrawScene(CImage& img)
 		{
 			for (auto j = _polygonNormals[i].begin(); j != _polygonNormals[i].end(); ++j)
 			{
-				DrawLineSegment(img, TransformNormal(mScale, j->p0, j->p1, 10), normalsColor, 1);
+				DrawLineSegment(img, TransformNormal(mScale, *j, 10), normalsColor, 1);
 			}
 		}
 		if (_displayVertexNormals)
 		{
 			for (auto j = _vertexNormals[i].begin(); j != _vertexNormals[i].end(); ++j)
 			{
-				DrawLineSegment(img, TransformNormal(mScale, j->p0, j->p1, 10), normalsColor, 1);
+				DrawLineSegment(img, TransformNormal(mScale, *j, 10), normalsColor, 1);
 			}
 		}
 		if (attr.displayBBox)

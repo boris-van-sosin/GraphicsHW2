@@ -111,6 +111,7 @@ typedef MatrixBase<Vector3D, 3> Matrix3D;
 typedef MatrixBase<HomogeneousPoint, 4> MatrixHomogeneous;
 
 Matrix3D ToMatrix3D(const Vector3D& r0, const Vector3D& r1, const Vector3D& r2);
+MatrixHomogeneous ToMatrixHomogeneous(const Matrix3D& m);
 MatrixHomogeneous ToMatrixHomogeneous(const HomogeneousPoint& r0, const HomogeneousPoint& r1, const HomogeneousPoint& r2, const HomogeneousPoint& r3);
 
 Polygon3D operator*(const Matrix3D& m, const Polygon3D& poly);
@@ -122,7 +123,7 @@ BoundingBox operator*(const MatrixHomogeneous& m, const BoundingBox& bbox);
 LineSegment operator*(const Matrix3D& m, const LineSegment& l);
 LineSegment operator*(const MatrixHomogeneous& m, const LineSegment& l);
 
-LineSegment TransformNormal(const MatrixHomogeneous& m, const Point3D& origin, const Vector3D& direction, double scalingFactor = 1.0);
+LineSegment TransformNormal(const MatrixHomogeneous& m, const LineSegment& l, double scalingFactor = 1.0);
 
 const Matrix3D ZerosMatrix3D;
 const Matrix3D UnitMatrix3D = ToMatrix3D(Vector3D(1, 0, 0), Vector3D(0, 1, 0), Vector3D(0, 0, 1));
