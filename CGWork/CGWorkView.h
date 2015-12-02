@@ -168,7 +168,7 @@ private:
 
 	int glowing_object = -1; // -1 is none
 	int active_object = 0;
-	bool _in_object_view = true;	// in what wview to apply the matrix? object or view?
+	bool _in_object_view = false;	// in what wview to apply the matrix? object or view?
 
 	double _nearClippingPlane = 0.9, _farClippingPlane = 2.1;
 
