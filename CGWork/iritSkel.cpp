@@ -371,6 +371,10 @@ namespace IritAdapter
 	std::vector<PolygonalObject> Convert(IPObjectStruct* iritObjects)
 	{
 		std::vector<PolygonalObject> res;
+		if (iritObjects == NULL)
+		{
+			return std::vector<PolygonalObject>();
+		}
 		if (IP_IS_OLST_OBJ(iritObjects))
 		{
 			std::vector<PolygonalObject> res;
