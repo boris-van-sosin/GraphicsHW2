@@ -807,7 +807,7 @@ void CCGWorkView::OnFileLoad()
 		m_strItdFileName = dlg.GetPathName();		// Full path and filename
 		PngWrapper p;
 		_models.push_back(model_t());
-		CGSkelProcessIritDataFiles(m_strItdFileName, 1, _models.back());
+		CGSkelProcessIritDataFiles(m_strItdFileName, 1, _models.back(), _polygonFineness);
 		
 		_polygonNormals.push_back(Normals::NormalList());
 		_vertexNormals.push_back(Normals::NormalList());

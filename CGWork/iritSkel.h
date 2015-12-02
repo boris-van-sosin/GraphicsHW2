@@ -18,7 +18,7 @@
 #include <vector>
 #include "Geometry.h"
 
-bool CGSkelProcessIritDataFiles(CString &FileNames, int NumFiles, std::vector<PolygonalObject>& outObjects = std::vector<PolygonalObject>());
+bool CGSkelProcessIritDataFiles(CString &FileNames, int NumFiles, std::vector<PolygonalObject>& outObjects = std::vector<PolygonalObject>(), int polygonFineness = 20);
 void CGSkelDumpOneTraversedObject(IPObjectStruct *PObj, IrtHmgnMatType Mat);
 int CGSkelGetObjectColor(IPObjectStruct *PObj, double RGB[3]);
 const char *CGSkelGetObjectTexture(IPObjectStruct *PObj);

@@ -48,7 +48,7 @@ IPFreeformConvStateStruct CGSkelFFCState = {
 * RETURN VALUE:                                                              *
 *   bool:		false - fail, true - success.                                *
 *****************************************************************************/
-bool CGSkelProcessIritDataFiles(CString &FileNames, int NumFiles, std::vector<PolygonalObject>& outObjects)
+bool CGSkelProcessIritDataFiles(CString &FileNames, int NumFiles, std::vector<PolygonalObject>& outObjects, int polygonFineness)
 {
 	IPObjectStruct *PObjects;
 	IrtHmgnMatType CrntViewMat;
@@ -72,7 +72,7 @@ bool CGSkelProcessIritDataFiles(CString &FileNames, int NumFiles, std::vector<Po
 		IRIT_GEN_COPY(CrntViewMat, IPViewMat, sizeof(IrtHmgnMatType));
 
 	/* Here some useful parameters to play with in tesselating freeforms: */
-	CGSkelFFCState.FineNess = 20;   /* Res. of tesselation, larger is finer. */
+	CGSkelFFCState.FineNess = polygonFineness;   /* Res. of tesselation, larger is finer. */
 	CGSkelFFCState.ComputeUV = TRUE;   /* Wants UV coordinates for textures. */
 	CGSkelFFCState.FourPerFlat = TRUE;/* 4 poly per ~flat patch, 2 otherwise.*/
 	CGSkelFFCState.LinearOnePolyFlag = TRUE;    /* Linear srf gen. one poly. */

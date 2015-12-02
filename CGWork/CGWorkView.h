@@ -162,6 +162,8 @@ private:
 	int glowing_object = -1; // -1 is none
 	int active_object = 0;
 
+	int _polygonFineness = 20;
+
 	CImage _pxl2obj; // to know the position of the objects on the screen
 					// there is 1 offset of the object index, because the bg is 0
 
