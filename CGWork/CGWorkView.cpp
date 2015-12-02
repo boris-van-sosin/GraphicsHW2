@@ -656,9 +656,6 @@ LineSegment ApplyClippingAndViewMatrix(const HomogeneousPoint& p0, const Homogen
 {
 	const double clipValue0 = cp.Apply(mFirst * p0);
 	const double clipValue1 = cp.Apply(mFirst * p1);
-	const double test = cp.Apply(0, 0, 0.9);
-	double test20 = p0.z * 2 + 2;
-	double test21 = p1.z * 2 + 2;
 
 	if (clipValue0 < 0 && clipValue1 < 0)
 	{
