@@ -190,6 +190,7 @@
       <BrowseInformation Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</BrowseInformation>
     </ClCompile>
     <ClCompile Include="ChooseColorDlg.cpp" />
+    <ClCompile Include="ClippingDlg.cpp" />
     <ClCompile Include="Drawing.cpp" />
     <ClCompile Include="GeometricTransformations.cpp" />
     <ClCompile Include="Geometry.cpp" />
@@ -228,6 +229,7 @@
     <ClInclude Include="CGWorkDoc.h" />
     <ClInclude Include="CGWorkView.h" />
     <ClInclude Include="ChooseColorDlg.h" />
+    <ClInclude Include="ClippingDlg.h" />
     <ClInclude Include="Drawing.h" />
     <ClInclude Include="GeometricTransformations.h" />
     <ClInclude Include="Geometry.h" />
