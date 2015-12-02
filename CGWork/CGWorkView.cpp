@@ -77,6 +77,7 @@ BEGIN_MESSAGE_MAP(CCGWorkView, CView)
 	ON_UPDATE_COMMAND_UI(ID_LIGHT_SHADING_GOURAUD, OnUpdateLightShadingGouraud)
 	ON_COMMAND(ID_LIGHT_CONSTANTS, OnLightConstants)
 	ON_COMMAND(ID_CHANGE_VIEW, OnChangeView)
+	ON_UPDATE_COMMAND_UI(ID_CHANGE_VIEW, OnUpdateChangeView)
 	ON_WM_MOUSEMOVE()
 	ON_WM_MOUSEWHEEL()
 	ON_WM_KEYDOWN()
@@ -969,6 +970,22 @@ void CCGWorkView::OnUpdateAxisZ(CCmdUI* pCmdUI)
 	pCmdUI->SetCheck(m_nAxis == ID_AXIS_Z);
 }
 
+void CCGWorkView::OnChangeView()
+{
+	//_in_object_view == ID_CHANGE_VIEW;
+	if (_in_object_view)
+		_in_object_view = false;
+	else
+		_in_object_view = true;
+}
+
+void CCGWorkView::OnUpdateChangeView(CCmdUI* pCmdUI)
+{
+	if (_in_object_view)
+		pCmdUI->SetCheck(1);
+	else
+		pCmdUI->SetCheck(0);
+}
 
 void CCGWorkView::OnTogglePolygonNormals()
 {
@@ -1108,10 +1125,6 @@ void CCGWorkView::OnLightConstants()
 	Invalidate();
 }
 
-void CCGWorkView::OnChangeView()
-{
-	_in_object_view = !_in_object_view;
-}
 
 void CCGWorkView::FlipYAxis(int obj_idx)
 {
