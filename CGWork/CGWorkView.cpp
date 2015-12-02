@@ -980,7 +980,8 @@ void CCGWorkView::DrawScene(CImage& img)
 
 		const BoundingBox displayBox = (m * _bboxes[i]).BoundingCube();
 
-		const double scalingFactor = 0.25 * min(width, height) / (bCube.maxX - bCube.minX);
+		const double scalingFactor = 0.25 * min(width, height) /
+			(m_bIsPerspective ? (bCube.maxX - bCube.minX) : (displayBox.maxX - displayBox.minX));
 
 		MatrixHomogeneous mScale = Matrices::Translate(width*0.5, height*0.5, 0)*Matrices::Scale(scalingFactor) * m;
 
