@@ -1,5 +1,30 @@
 #include "Drawing.h"
 
+ClippingPlane::ClippingPlane(double x_, double y_, double z_, double c_)
+	: x(x_), y(y_), z(z_), c(c_)
+{
+}
+
+ClippingPlane::ClippingPlane(const Point3D& p, const Vector3D& n)
+	: x(n.x), y(n.y), z(n.z), c(-(p * n))
+{
+}
+
+double ClippingPlane::Apply(const Point3D& p) const
+{
+	return Apply(p.x, p.y, p.z);
+}
+
+double ClippingPlane::Apply(const HomogeneousPoint& p) const
+{
+	return Apply(Point3D(p));
+}
+
+double ClippingPlane::Apply(double x_, double y_, double z_) const
+{
+	return x_ * x + y_ * y + z_ * z + c;
+}
+
 MatrixHomogeneous ScaleAndCenter(const BoundingBox& boundingCube)
 {
 	const double vright = boundingCube.maxX;
@@ -17,7 +42,7 @@ MatrixHomogeneous ScaleAndCenter(const BoundingBox& boundingCube)
 	return MatrixHomogeneous(rows);
 }
 
-MatrixHomogeneous PerspectiveWarpMatrix(const BoundingBox& boundingCube)
+std::pair<MatrixHomogeneous, double> PerspectiveWarpMatrix(const BoundingBox& boundingCube)
 {
 	const double depth = boundingCube.maxZ - boundingCube.minZ;
 	const double clippingMargin = depth * 0.1;
@@ -33,7 +58,9 @@ MatrixHomogeneous PerspectiveWarpMatrix(const BoundingBox& boundingCube)
 		HomogeneousPoint(0, 0, -q2*near2, 0)
 	};
 
-	return MatrixHomogeneous(rows2) * Matrices::Translate(0, 0, 2) * ScaleAndCenter(boundingCube);
+	return std::pair<MatrixHomogeneous, double>(
+		MatrixHomogeneous(rows2) * Matrices::Translate(0, 0, 2) * ScaleAndCenter(boundingCube),
+		near2);
 }
 
 MatrixHomogeneous OrthographicProjectMatrix(const BoundingBox& boundingCube)
