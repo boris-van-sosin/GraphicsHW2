@@ -143,5 +143,21 @@ namespace Matrices
 	MatrixHomogeneous Flip(Axis axis);
 }
 
+class CoordinateSystem
+{
+public:
+	CoordinateSystem();
+
+	Point3D Origin() const;
+	Vector3D X() const;
+	Vector3D Y() const;
+	Vector3D Z() const;
+	void ApplyMatrix(const Matrix3D& m);
+	void ApplyMatrix(const MatrixHomogeneous& m);
+
+private:
+	Point3D _origin;
+	Point3D _xPoint, _yPoint, _zPoint;
+};
 
 #endif

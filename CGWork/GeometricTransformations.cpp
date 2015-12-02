@@ -213,3 +213,38 @@ namespace Matrices
 		return MatrixHomogeneous(rows);
 	}
 }
+
+CoordinateSystem::CoordinateSystem()
+	: _origin(0, 0, 0), _xPoint(1, 0, 0), _yPoint(0, 1, 0), _zPoint(0, 0, 1)
+{
+}
+
+Point3D CoordinateSystem::Origin() const
+{
+	return _origin;
+}
+
+Vector3D CoordinateSystem::X() const
+{
+	return _xPoint - _origin;
+}
+
+Vector3D CoordinateSystem::Y() const
+{
+	return _yPoint - _origin;
+}
+
+Vector3D CoordinateSystem::Z() const
+{
+	return _zPoint - _origin;
+}
+
+void CoordinateSystem::ApplyMatrix(const Matrix3D& m)
+{
+	_origin = m * _origin;
+}
+
+void CoordinateSystem::ApplyMatrix(const MatrixHomogeneous& m)
+{
+	_origin = Point3D(m * HomogeneousPoint(_origin));
+}
