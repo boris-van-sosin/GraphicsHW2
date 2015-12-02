@@ -21,14 +21,17 @@
 #include "GeometricTransformations.h"
 
 typedef std::vector<PolygonalObject> model_t;
-typedef std::vector<LineSegment> NormalList;
 
 class model_attr_t { // don't make this struct big
 public:
 	COLORREF color = RGB(0, 0, 255);
 	COLORREF normal_color = RGB(0, 255, 0);
+	COLORREF model_bbox_color = RGB(255, 0, 0);
+	COLORREF subObj_bbox_color = RGB(255, 0, 0);
 	bool forceColor = false;
 	unsigned int line_width = 1;
+	bool displayBBox = false;
+	bool displaySubObjectBBox = false;
 };
 
 class CCGWorkView : public CView
@@ -50,6 +53,7 @@ private:
 	int m_nView;				// Orthographic, perspective
 	bool m_bIsPerspective;			// is the view perspective
 	bool _displayPolygonNormals, _displayVertexNormals;
+	bool _dummyDisplayModelBBox, _dummyDisplaySubObjBBox;
 	COLORREF _normalsColor;
 
 	CString m_strItdFileName;		// file name of IRIT data
@@ -133,21 +137,27 @@ protected:
 	afx_msg void OnTogglePolygonNormals();
 	afx_msg void OnToggleVertexNormals();
 	afx_msg void OnChooseColors();
+	afx_msg void OnToggleModelBBox();
+	afx_msg void OnToggleSubObjBBox();
+	afx_msg void OnToggleAllModelBBox();
+	afx_msg void OnToggleAllSubObjBBox();
 
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 
 private:
 	void FlipYAxis(int obj_idx);
-	static void ComputeNormals(const model_t& objs, NormalList& polygonNormals, NormalList& vertexNormals);
 	void DrawScene(CImage& img);
 
 private:
 	std::vector<model_t> _models;
-	std::vector<NormalList> _polygonNormals;
-	std::vector<NormalList> _vertexNormals;
+	std::vector<Normals::NormalList> _polygonNormals;
+	std::vector<Normals::NormalList> _vertexNormals;
 	std::vector<BoundingBox> _bboxes;
 	std::vector<model_attr_t> _model_attr;
+
+	std::vector<PolygonalObject> _modelBoundingBoxes;
+	std::vector<model_t> _subObjectBoundingBoxes;
 
 	int glowing_object = -1; // -1 is none
 	int active_object = 0;

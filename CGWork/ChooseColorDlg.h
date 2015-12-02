@@ -8,6 +8,8 @@ public:
 	COLORREF model_color;
 	bool model_force_color;
 	COLORREF normal_color;
+	COLORREF model_bbox_color;
+	COLORREF subObj_bbox_color;
 };
 
 class CChooseColorDlg : public CDialogEx
@@ -30,5 +32,7 @@ protected:
 	void OnClrNormal();
 	void OnClrToFile();
 	void OnOk();
+	void OnClrModelBBox();
+	void OnClrSubObjBBox();
 	DECLARE_MESSAGE_MAP()
 };

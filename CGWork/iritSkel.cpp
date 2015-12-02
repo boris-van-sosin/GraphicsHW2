@@ -360,7 +360,7 @@ namespace IritAdapter
 		if (attrRGB != NULL)
 		{
 			int r, g, b;
-			sscanf_s(attrRGB->U.Str, "%d,%d,%d", &r, g, &b);
+			sscanf_s(attrRGB->U.Str, "%d,%d,%d", &r, &g, &b);
 			return PolygonalObject(currPolys, RGB(r, g, b));
 		}
 		{

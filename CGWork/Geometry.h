@@ -4,7 +4,7 @@
 #include <vector>
 #include <atlimage.h>
 
-#define GEOMETRIC_COMPUTATION_ESPILON 1e-10
+#define GEOMETRIC_COMPUTATION_EPSILON 1e-10
 
 class HomogeneousPoint;
 
@@ -123,6 +123,9 @@ private:
 public:
 	BoundingBox(const BoundingBox& other);
 	BoundingBox(const BoundingBox& b1, const BoundingBox& b2);
+	
+	BoundingBox BoundingCube() const;
+	PolygonalObject ToObject() const;
 
 public:
 	static BoundingBox OfLineSegmnet(const LineSegment& line);
@@ -132,8 +135,7 @@ public:
 	static BoundingBox OfObject(const PolygonalObject& obj);
 	static BoundingBox OfObjects(const std::vector<PolygonalObject>& objs);
 
-public:
-	BoundingBox BoundingCube() const;
+	static std::vector<PolygonalObject> BoundingBoxObjectsOfSubObjects(const std::vector<PolygonalObject>& objs);
 
 public:
 	const double minX, maxX, minY, maxY, minZ, maxZ;
@@ -141,5 +143,11 @@ public:
 private:
 	static BoundingBox join(const std::vector<BoundingBox>& boxes);
 };
+
+namespace Normals
+{
+	typedef std::vector<LineSegment> NormalList;
+	void ComputeNormals(const std::vector<PolygonalObject>& objs, NormalList& polygonNormals, NormalList& vertexNormals);
+}
 
 #endif

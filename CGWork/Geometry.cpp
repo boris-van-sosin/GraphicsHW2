@@ -1,5 +1,6 @@
 #include "Geometry.h"
 #include <math.h>
+#include <unordered_map>
 
 Point3D::Point3D()
 	: x(0.0), y(0.0), z(0.0), color(RGB(255, 255, 255))
@@ -251,7 +252,7 @@ std::vector<LineSegment> Polygon3D::Edges() const
 {
 	std::vector<LineSegment> res;
 	res.reserve(points.size());
-	for (int i = 0; i < points.size(); ++i)
+	for (size_t i = 0; i < points.size(); ++i)
 	{
 		res.push_back(LineSegment(points[i], points[(i + 1) % points.size()]));
 	}
@@ -260,13 +261,13 @@ std::vector<LineSegment> Polygon3D::Edges() const
 
 Vector3D Polygon3D::Normal() const
 {
-	for (int i = 0; i < points.size(); ++i)
+	for (size_t i = 0; i < points.size(); ++i)
 	{
 		const Point3D& p0 = points[i];
 		const Point3D& p1 = points[(i + 1) % points.size()];
 		const Point3D& p2 = points[(i + 2) % points.size()];
 		Vector3D n = (p1 - p0).Cross(p2 - p1); // with the point order
-		if (n.SquareNorm() > GEOMETRIC_COMPUTATION_ESPILON)
+		if (n.SquareNorm() > GEOMETRIC_COMPUTATION_EPSILON)
 		{
 			return n.Normalized();
 		}
@@ -464,4 +465,118 @@ BoundingBox BoundingBox::BoundingCube() const
 					   center.y + halfMaxSize,
 					   center.z - halfMaxSize,
 					   center.z + halfMaxSize);
+}
+
+PolygonalObject BoundingBox::ToObject() const
+{
+	const Point3D corners[] = {
+		Point3D(minX, minY, minZ),
+		Point3D(minX, minY, maxZ),
+		Point3D(minX, maxY, minZ),
+		Point3D(minX, maxY, maxZ),
+
+		Point3D(maxX, minY, minZ),
+		Point3D(maxX, minY, maxZ),
+		Point3D(maxX, maxY, minZ),
+		Point3D(maxX, maxY, maxZ),
+	};
+
+	Polygon3D sides[4]; // bottom, top, left, right. no need for front and back
+	//bottom
+	sides[0].points.push_back(corners[0]);
+	sides[0].points.push_back(corners[1]);
+	sides[0].points.push_back(corners[5]);
+	sides[0].points.push_back(corners[4]);
+
+	//top
+	sides[1].points.push_back(corners[2]);
+	sides[1].points.push_back(corners[3]);
+	sides[1].points.push_back(corners[7]);
+	sides[1].points.push_back(corners[6]);
+
+	//left
+	sides[2].points.push_back(corners[0]);
+	sides[2].points.push_back(corners[1]);
+	sides[2].points.push_back(corners[3]);
+	sides[2].points.push_back(corners[2]);
+
+	//right
+	sides[3].points.push_back(corners[4]);
+	sides[3].points.push_back(corners[5]);
+	sides[3].points.push_back(corners[7]);
+	sides[3].points.push_back(corners[6]);
+
+	return PolygonalObject(std::vector<Polygon3D>(sides, sides + 4));
+}
+
+std::vector<PolygonalObject> BoundingBox::BoundingBoxObjectsOfSubObjects(const std::vector<PolygonalObject>& objs)
+{
+	std::vector<PolygonalObject> res;
+	res.reserve(objs.size());
+	for (auto i = objs.begin(); i != objs.end(); ++i)
+	{
+		res.push_back(OfObject(*i).ToObject());
+	}
+	return res;
+}
+
+struct HashAndComparePoint3D
+{
+	size_t operator()(const Point3D& p) const
+	{
+		return (size_t)(p.x * p.x + p.y * p.y + p.z * p.z);
+	}
+	bool operator()(const Point3D& p0, const Point3D& p1) const
+	{
+		return (fabs(p0.x - p1.x) < GEOMETRIC_COMPUTATION_EPSILON) &&
+			(fabs(p0.y - p1.y) < GEOMETRIC_COMPUTATION_EPSILON) &&
+			(fabs(p0.z - p1.z) < GEOMETRIC_COMPUTATION_EPSILON);
+	}
+};
+
+void Normals::ComputeNormals(const std::vector<PolygonalObject>& objs, NormalList& polygonNormals, NormalList& vertexNormals)
+{
+	polygonNormals.clear();
+	vertexNormals.clear();
+	if (objs.empty())
+	{
+		return;
+	}
+	std::vector<double> polygonAreas;
+	const size_t approxNumPolygons = objs.front().polygons.size() * objs.size();
+	polygonAreas.reserve(approxNumPolygons);
+	polygonNormals.reserve(approxNumPolygons);
+	const size_t approxNumVertices = approxNumPolygons * (objs.front().polygons.empty() ? 1 : objs.front().polygons.front().points.size());
+	std::unordered_map<Point3D, Vector3D, HashAndComparePoint3D, HashAndComparePoint3D> vertexMap;
+	vertexMap.reserve(approxNumVertices);
+
+	for (auto i = objs.begin(); i != objs.end(); ++i)
+	{
+		for (auto j = i->polygons.begin(); j != i->polygons.end(); ++j)
+		{
+			std::pair<double, Point3D> areaAndCentroid = j->AreaAndCentroid();
+			const Vector3D currPolygonNormal = j->Normal();
+			polygonNormals.push_back(LineSegment(areaAndCentroid.second, areaAndCentroid.second - currPolygonNormal));
+			
+			polygonAreas.push_back(areaAndCentroid.first);
+			for (auto v = j->points.begin(); v != j->points.end(); ++v)
+			{
+				if (vertexMap.find(*v) == vertexMap.end())
+				{
+					vertexMap[*v] = currPolygonNormal * areaAndCentroid.first;
+				}
+				else
+				{
+					vertexMap[*v] += currPolygonNormal * areaAndCentroid.first;
+				}
+			}
+		}
+	}
+
+	vertexNormals.reserve(vertexMap.size());
+	for (auto i = vertexMap.begin(); i != vertexMap.end(); ++i)
+	{
+		const Vector3D direction = i->second.Normalized();
+		vertexNormals.push_back(LineSegment(i->first, i->first - direction));
+	}
 }

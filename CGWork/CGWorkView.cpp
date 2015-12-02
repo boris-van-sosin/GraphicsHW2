@@ -64,6 +64,10 @@ BEGIN_MESSAGE_MAP(CCGWorkView, CView)
 	ON_UPDATE_COMMAND_UI(ID_AXIS_Z, OnUpdateAxisZ)
 	ON_COMMAND(ID_POLYGON_NORMALS, OnTogglePolygonNormals)
 	ON_COMMAND(ID_VERTEX_NORMALS, OnToggleVertexNormals)
+	ON_COMMAND(ID_TOGGLE_MODEL_BBOX, OnToggleModelBBox)
+	ON_COMMAND(ID_TOGGLE_SUB_BBOX, OnToggleSubObjBBox)
+	ON_COMMAND(ID_TOGGLE_ALL_MODEL_BBOX, OnToggleAllModelBBox)
+	ON_COMMAND(ID_TOGGLE_ALL_SUB_BBOX, OnToggleAllSubObjBBox)
 	ON_COMMAND(ID_CHOOSE_COLORS, OnChooseColors)
 	ON_COMMAND(ID_LIGHT_SHADING_FLAT, OnLightShadingFlat)
 	ON_UPDATE_COMMAND_UI(ID_LIGHT_SHADING_FLAT, OnUpdateLightShadingFlat)
@@ -108,8 +112,9 @@ CCGWorkView::CCGWorkView()
 	//init the first light to be enabled
 	m_lights[LIGHT_ID_1].enabled = true;
 
-	_displayPolygonNormals = true;
+	_displayPolygonNormals = false;
 	_displayVertexNormals = false;
+	_dummyDisplayModelBBox = _dummyDisplaySubObjBBox = false;
 	_normalsColor = RGB(0, 255, 0);
 }
 
@@ -375,6 +380,14 @@ bool CCGWorkView::applyMat(const MatrixHomogeneous& mat) {
 	{
 		(*it) = mat * (*it);
 	}
+
+	_modelBoundingBoxes[active_object] = mat * _modelBoundingBoxes[active_object];
+	for (auto it = _subObjectBoundingBoxes[active_object].begin(); it != _subObjectBoundingBoxes[active_object].end(); ++it)
+	{
+		(*it) = mat * (*it);
+	}
+
+
 	return true;
 }
 
@@ -460,7 +473,7 @@ void innerDrawLine(CImage& img, int x0, int y0, int x1, int y1, COLORREF clr, un
 		if (!swapXY)
 		{
 			ImageSetPixel(img, x0, y0, clr);
-			for (int i = 1; i < line_width; i++) {
+			for (unsigned int i = 1; i < line_width; i++) {
 				ImageSetPixel(img, x0, y0 + i, clr);
 				ImageSetPixel(img, x0, y0 - i, clr);
 			}
@@ -468,7 +481,7 @@ void innerDrawLine(CImage& img, int x0, int y0, int x1, int y1, COLORREF clr, un
 		else
 		{
 			ImageSetPixel(img, y0, x0, clr);
-			for (int i = 1; i < line_width; i++) {
+			for (unsigned int i = 1; i < line_width; i++) {
 				ImageSetPixel(img, y0 + i, x0, clr);
 				ImageSetPixel(img, y0 - i, x0, clr);
 			}
@@ -494,7 +507,7 @@ void innerDrawLine(CImage& img, int x0, int y0, int x1, int y1, COLORREF clr, un
 			if (!swapXY)
 			{
 				ImageSetPixel(img, x, y, clr);
-				for (int i = 1; i < line_width; i++) {
+				for (unsigned int i = 1; i < line_width; i++) {
 					ImageSetPixel(img, x, y + i, clr);
 					ImageSetPixel(img, x, y - i, clr);
 				}
@@ -502,7 +515,7 @@ void innerDrawLine(CImage& img, int x0, int y0, int x1, int y1, COLORREF clr, un
 			else
 			{
 				ImageSetPixel(img, y, x, clr);
-				for (int i = 1; i < line_width; i++) {
+				for (unsigned int i = 1; i < line_width; i++) {
 					ImageSetPixel(img, y + i, x, clr);
 					ImageSetPixel(img, y - i, x, clr);
 				}
@@ -512,7 +525,7 @@ void innerDrawLine(CImage& img, int x0, int y0, int x1, int y1, COLORREF clr, un
 	else if (dx == 0 && dy == 0)
 	{
 		ImageSetPixel(img, x0, y0, clr);
-		for (int i = 1; i < line_width; i++) {
+		for (unsigned int i = 1; i < line_width; i++) {
 			ImageSetPixel(img, x0, y0 + i, clr);
 			ImageSetPixel(img, x0, y0 - i, clr);
 			ImageSetPixel(img, x0 + i, y0, clr);
@@ -675,9 +688,9 @@ void CCGWorkView::OnFileLoad()
 		_models.push_back(model_t());
 		CGSkelProcessIritDataFiles(m_strItdFileName, 1, _models.back());
 		
-		_polygonNormals.push_back(NormalList());
-		_vertexNormals.push_back(NormalList());
-		ComputeNormals(_models.back(), _polygonNormals.back(), _vertexNormals.back());
+		_polygonNormals.push_back(Normals::NormalList());
+		_vertexNormals.push_back(Normals::NormalList());
+		Normals::ComputeNormals(_models.back(), _polygonNormals.back(), _vertexNormals.back());
 
 		//FlipYAxis(_models.size() - 1);
 
@@ -689,6 +702,11 @@ void CCGWorkView::OnFileLoad()
 		assert(_vertexNormals.size() == _bboxes.size());
 		assert(_bboxes.size() == _model_attr.size());
 		assert(_model_attr.size() == _models.size());
+		
+		_modelBoundingBoxes.push_back(BoundingBox::OfObjects(_models.back()).ToObject());
+		
+		_subObjectBoundingBoxes.push_back(BoundingBox::BoundingBoxObjectsOfSubObjects(_models.back()));
+		
 		// Open the file and read it.
 		// Your code here...
 
@@ -836,9 +854,51 @@ void CCGWorkView::OnChooseColors()
 		_model_attr[active_object].forceColor = param.model_force_color;
 		_model_attr[active_object].color = param.model_color;
 		_model_attr[active_object].normal_color = param.normal_color;
+		_model_attr[active_object].model_bbox_color = param.model_bbox_color;
+		_model_attr[active_object].subObj_bbox_color = param.subObj_bbox_color;
+
 		Invalidate();
 	}
 }
+
+void CCGWorkView::OnToggleModelBBox()
+{
+	if (active_object >= 0)
+	{
+		_model_attr[active_object].displayBBox = !_model_attr[active_object].displayBBox;
+		Invalidate();
+	}
+}
+
+void CCGWorkView::OnToggleSubObjBBox()
+{
+	if (active_object >= 0)
+	{
+		_model_attr[active_object].displaySubObjectBBox = !_model_attr[active_object].displaySubObjectBBox;
+		Invalidate();
+	}
+}
+
+void CCGWorkView::OnToggleAllModelBBox()
+{
+	_dummyDisplayModelBBox = !_dummyDisplayModelBBox;
+	for (auto i = _model_attr.begin(); i != _model_attr.end(); ++i)
+	{
+		i->displayBBox = _dummyDisplayModelBBox;
+	}
+	Invalidate();
+}
+
+void CCGWorkView::OnToggleAllSubObjBBox()
+{
+	_dummyDisplaySubObjBBox = !_dummyDisplaySubObjBBox;
+	for (auto i = _model_attr.begin(); i != _model_attr.end(); ++i)
+	{
+		i->displaySubObjectBBox = _dummyDisplaySubObjBBox;
+	}
+	Invalidate();
+}
+
 
 // OPTIONS HANDLERS ///////////////////////////////////////////
 
@@ -909,7 +969,7 @@ void CCGWorkView::DrawScene(CImage& img)
 	int height = rect.bottom - rect.top - 2 * margin;
 	int width = rect.right - rect.left - 2 * margin;
 
-	for (int i = 0; i < _models.size(); i++) {
+	for (size_t i = 0; i < _models.size(); i++) {
 		const BoundingBox bCube = _bboxes[i].BoundingCube();
 		const MatrixHomogeneous mPersp = PerspectiveWarpMatrix(bCube);
 		const COLORREF normalsColor = _model_attr[i].normal_color;
@@ -930,6 +990,7 @@ void CCGWorkView::DrawScene(CImage& img)
 		{
 			DrawObject(img, mScale*(*it), attr);
 			shadow_attr.color = i + 1;
+			shadow_attr.forceColor = true;
 			DrawObject(_pxl2obj, mScale*(*it), shadow_attr);
 		}
 
@@ -947,25 +1008,22 @@ void CCGWorkView::DrawScene(CImage& img)
 				DrawLineSegment(img, TransformNormal(mScale, j->p0, j->p1, 10), normalsColor, 1);
 			}
 		}
-	}
-}
-
-void CCGWorkView::ComputeNormals(const model_t& objs, NormalList& polygonNormals, NormalList& vertexNormals)
-{
-	polygonNormals.clear();
-	vertexNormals.clear();
-	if (objs.empty())
-	{
-		return;
-	}
-	polygonNormals.reserve(objs.front().polygons.size() * objs.size());
-	vertexNormals.reserve(objs.size() * objs.front().polygons.size() * objs.front().polygons.front().points.size());
-	for (auto i = objs.begin(); i != objs.end(); ++i)
-	{
-		for (auto j = i->polygons.begin(); j != i->polygons.end(); ++j)
+		if (attr.displayBBox)
 		{
-			std::pair<double, Point3D> areaAndCentroid = j->AreaAndCentroid();
-			polygonNormals.push_back(LineSegment(areaAndCentroid.second, areaAndCentroid.second - (j->Normal())));
+			model_attr_t bboxAttr;
+			bboxAttr.color = _model_attr[i].model_bbox_color;
+			bboxAttr.forceColor = true;
+			DrawObject(img, mScale*(_modelBoundingBoxes[i]), bboxAttr);
+		}
+		if (attr.displaySubObjectBBox)
+		{
+			model_attr_t bboxAttr;
+			bboxAttr.color = _model_attr[i].subObj_bbox_color;
+			bboxAttr.forceColor = true;
+			for (auto j = _subObjectBoundingBoxes[i].begin(); j != _subObjectBoundingBoxes[i].end(); ++j)
+			{
+				DrawObject(img, mScale*(*j), bboxAttr);
+			}
 		}
 	}
 }
