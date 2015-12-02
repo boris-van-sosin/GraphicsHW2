@@ -974,12 +974,13 @@ void CCGWorkView::DrawScene(CImage& img)
 		const MatrixHomogeneous mPersp = PerspectiveWarpMatrix(bCube);
 		const COLORREF normalsColor = _model_attr[i].normal_color;
 
-		MatrixHomogeneous m = m_bIsPerspective ?
-			mPersp : (Matrices::Flip(AXIS_Y) * ScaleAndCenter(bCube));
+		MatrixHomogeneous m = Matrices::Flip(AXIS_Y) *
+			(m_bIsPerspective ?
+			mPersp : ScaleAndCenter(bCube));
 
 		const BoundingBox displayBox = (m * _bboxes[i]).BoundingCube();
 
-		const double scalingFactor = 0.05 * min(width, height) * (displayBox.maxX - displayBox.minX);
+		const double scalingFactor = 0.25 * min(width, height) / (bCube.maxX - bCube.minX);
 
 		MatrixHomogeneous mScale = Matrices::Translate(width*0.5, height*0.5, 0)*Matrices::Scale(scalingFactor) * m;
 
