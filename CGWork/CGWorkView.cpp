@@ -385,19 +385,20 @@ bool CCGWorkView::applyMat(const MatrixHomogeneous& mat) {
 	for (auto it = model.begin(); it != model.end(); ++it) {
 		(*it) = mat1 * (*it);
 	}
-	for (auto it = _polygonNormals[active_object].begin(); it != _polygonNormals[active_object].end(); ++it)
+	for (int i = 0; i <_polygonNormals[active_object].size(); ++i)
 	{
-		(*it) = mat * (*it);
+		//(*it) = mat * (*it);
+		_polygonNormals[active_object][i] = mat1 * _clean_polygonNormals[active_object][i];
 	}
-	for (auto it = _vertexNormals[active_object].begin(); it != _vertexNormals[active_object].end(); ++it)
+	for (int i = 0; i < _vertexNormals[active_object].size(); ++i)
 	{
-		(*it) = mat * (*it);
+		_vertexNormals[active_object][i] = mat1 * _clean_vertexNormals[active_object][i];
 	}
 
-	_modelBoundingBoxes[active_object] = mat * _modelBoundingBoxes[active_object];
-	for (auto it = _subObjectBoundingBoxes[active_object].begin(); it != _subObjectBoundingBoxes[active_object].end(); ++it)
+	_modelBoundingBoxes[active_object] = mat1 * _clean_modelBoundingBoxes[active_object];
+	for (int i = 0; i < _subObjectBoundingBoxes[active_object].size(); ++i)
 	{
-		(*it) = mat * (*it);
+		_subObjectBoundingBoxes[active_object][i] = mat1 * _clean_subObjectBoundingBoxes[active_object][i];
 	}
 
 
@@ -834,6 +835,17 @@ void CCGWorkView::OnFileLoad()
 
 		_bboxes.push_back(BoundingBox(BoundingBox::OfObjects(_models.back())));
 		_model_attr.push_back(model_attr_t());
+		
+		active_object = _models.size() - 1;
+
+		_modelBoundingBoxes.push_back(BoundingBox::OfObjects(_models.back()).ToObject());
+		
+		_subObjectBoundingBoxes.push_back(BoundingBox::BoundingBoxObjectsOfSubObjects(_models.back()));
+
+		_clean_polygonNormals.push_back(_polygonNormals.back());
+		_clean_vertexNormals.push_back(_vertexNormals.back());
+		_clean_modelBoundingBoxes.push_back(_modelBoundingBoxes.back());
+		_clean_subObjectBoundingBoxes.push_back(_subObjectBoundingBoxes.back());
 
 		assert(_models.size() == _polygonNormals.size());
 		assert(_polygonNormals.size() == _vertexNormals.size());
@@ -843,13 +855,12 @@ void CCGWorkView::OnFileLoad()
 		assert(_model_attr.size() == _clean_models.size());
 		assert(_model_attr.size() == _model_space_transformations.size());
 		assert(_model_attr.size() == _view_space_transformations.size());
-		
-		active_object = _models.size() - 1;
 
-		_modelBoundingBoxes.push_back(BoundingBox::OfObjects(_models.back()).ToObject());
-		
-		_subObjectBoundingBoxes.push_back(BoundingBox::BoundingBoxObjectsOfSubObjects(_models.back()));
-		
+		assert(_model_attr.size() == _clean_polygonNormals.size());
+		assert(_model_attr.size() == _clean_vertexNormals.size());
+		assert(_model_attr.size() == _clean_modelBoundingBoxes.size());
+		assert(_model_attr.size() == _clean_subObjectBoundingBoxes.size());
+
 		// Open the file and read it.
 		// Your code here...
 

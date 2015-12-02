@@ -154,17 +154,22 @@ private:
 
 private:
 	std::vector<model_t> _models;
+	std::vector<model_t> _clean_models;
 	std::vector<MatrixHomogeneous> _model_space_transformations;
 	std::vector<MatrixHomogeneous> _view_space_transformations;
-	std::vector<model_t> _clean_models;
 
 	std::vector<Normals::NormalList> _polygonNormals;
+	std::vector<Normals::NormalList> _clean_polygonNormals;
 	std::vector<Normals::NormalList> _vertexNormals;
-	std::vector<BoundingBox> _bboxes;
-	std::vector<model_attr_t> _model_attr;
+	std::vector<Normals::NormalList> _clean_vertexNormals;
 
 	std::vector<PolygonalObject> _modelBoundingBoxes;
+	std::vector<PolygonalObject> _clean_modelBoundingBoxes;
 	std::vector<model_t> _subObjectBoundingBoxes;
+	std::vector<model_t> _clean_subObjectBoundingBoxes;
+
+	std::vector<model_attr_t> _model_attr;
+	std::vector<BoundingBox> _bboxes;
 
 	int glowing_object = -1; // -1 is none
 	int active_object = 0;
