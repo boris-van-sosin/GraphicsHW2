@@ -10,6 +10,11 @@ ClippingPlane::ClippingPlane(const Point3D& p, const Vector3D& n)
 {
 }
 
+ClippingPlane::ClippingPlane(const ClippingPlane& other)
+	: ClippingPlane(other.x, other.y, other.z, other.c)
+{
+}
+
 double ClippingPlane::Apply(const Point3D& p) const
 {
 	return Apply(p.x, p.y, p.z);
@@ -23,6 +28,37 @@ double ClippingPlane::Apply(const HomogeneousPoint& p) const
 double ClippingPlane::Apply(double x_, double y_, double z_) const
 {
 	return x_ * x + y_ * y + z_ * z + c;
+}
+
+Point3D ClippingPlane::Intersection(const Point3D& p0, const Point3D& p1) const
+{
+	Point3D pb;
+	if (z != 0)
+	{
+		pb = Point3D(0, 0, -z);
+	}
+	else if (y != 0)
+	{
+		pb = Point3D(0, 0, -y);
+	}
+	else if (x != 0)
+	{
+		pb = Point3D(0, 0, -x);
+	}
+
+	const Point3D normal(x, y, z);
+	const double a = (p1 - p0)*normal;
+	if (fabs(a) < GEOMETRIC_COMPUTATION_EPSILON)
+	{
+		return Point3D(NAN, NAN, NAN);
+	}
+	double d = ((pb - p0) * normal) / a;
+	return (d * (p1 - p0)) + p0;
+}
+
+PerspectiveData::PerspectiveData(const MatrixHomogeneous& ms, const MatrixHomogeneous& mp, const ClippingPlane& n, const ClippingPlane& f)
+	: ScaleAndMoveToView(ms), PerspectiveWarp(mp), NearPlane(n), FarPlane(f)
+{
 }
 
 MatrixHomogeneous ScaleAndCenter(const BoundingBox& boundingCube)
@@ -42,7 +78,7 @@ MatrixHomogeneous ScaleAndCenter(const BoundingBox& boundingCube)
 	return MatrixHomogeneous(rows);
 }
 
-std::pair<MatrixHomogeneous, double> PerspectiveWarpMatrix(const BoundingBox& boundingCube)
+PerspectiveData PerspectiveWarpMatrix(const BoundingBox& boundingCube)
 {
 	const double depth = boundingCube.maxZ - boundingCube.minZ;
 	const double clippingMargin = depth * 0.1;
@@ -58,9 +94,11 @@ std::pair<MatrixHomogeneous, double> PerspectiveWarpMatrix(const BoundingBox& bo
 		HomogeneousPoint(0, 0, -q2*near2, 0)
 	};
 
-	return std::pair<MatrixHomogeneous, double>(
-		MatrixHomogeneous(rows2) * Matrices::Translate(0, 0, 2) * ScaleAndCenter(boundingCube),
-		near2);
+	return PerspectiveData(
+		Matrices::Translate(0, 0, 2) * ScaleAndCenter(boundingCube),
+		MatrixHomogeneous(rows2),
+		ClippingPlane(0, 0, 1, near2),
+		ClippingPlane(0, 0, -1, far2));
 }
 
 MatrixHomogeneous OrthographicProjectMatrix(const BoundingBox& boundingCube)
