@@ -1148,14 +1148,14 @@ void CCGWorkView::DrawScene(CImage& img)
 		{
 			for (auto j = _polygonNormals[i].begin(); j != _polygonNormals[i].end(); ++j)
 			{
-				DrawLineSegment(img, TransformNormal(mTotal, *j, 10), normalsColor, 1, m_bIsPerspective, perspData.NearPlane);
+				DrawLineSegment(img, TransformNormal(mTotal, *j, 10), normalsColor, 1);
 			}
 		}
 		if (_displayVertexNormals)
 		{
 			for (auto j = _vertexNormals[i].begin(); j != _vertexNormals[i].end(); ++j)
 			{
-				DrawLineSegment(img, TransformNormal(mTotal, *j, 10), normalsColor, 1, m_bIsPerspective, perspData.NearPlane);
+				DrawLineSegment(img, TransformNormal(mTotal, *j, 10), normalsColor, 1);
 			}
 		}
 		if (attr.displayBBox)
