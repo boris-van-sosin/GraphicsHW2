@@ -75,13 +75,15 @@
 #define ID_TOGGLE_ALL_SUB_BBOX          32815
 #define ID_BUTTON32817                  32817
 #define ID_GENERAL_SETTINGS             32817
+#define ID_BUTTON32818                  32818
+#define ID_CHANGE_VIEW                  32819
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        141
-#define _APS_NEXT_COMMAND_VALUE         32818
+#define _APS_NEXT_COMMAND_VALUE         32820
 #define _APS_NEXT_CONTROL_VALUE         1046
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

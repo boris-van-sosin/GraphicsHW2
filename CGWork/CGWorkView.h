@@ -130,6 +130,7 @@ protected:
 	afx_msg void OnLightShadingGouraud();
 	afx_msg void OnUpdateLightShadingGouraud(CCmdUI* pCmdUI);
 	afx_msg void OnLightConstants();
+	afx_msg void OnChangeView();
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 	afx_msg BOOL OnMouseWheel(UINT, short, CPoint);
 	afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
@@ -152,6 +153,10 @@ private:
 
 private:
 	std::vector<model_t> _models;
+	std::vector<MatrixHomogeneous> _model_space_transformations;
+	std::vector<MatrixHomogeneous> _view_space_transformations;
+	std::vector<model_t> _clean_models;
+
 	std::vector<Normals::NormalList> _polygonNormals;
 	std::vector<Normals::NormalList> _vertexNormals;
 	std::vector<BoundingBox> _bboxes;
@@ -162,6 +167,7 @@ private:
 
 	int glowing_object = -1; // -1 is none
 	int active_object = 0;
+	bool _in_object_view = true;	// in what wview to apply the matrix? object or view?
 
 	double _nearClippingPlane = 0.9, _farClippingPlane = 2.1;
 

@@ -76,6 +76,7 @@ BEGIN_MESSAGE_MAP(CCGWorkView, CView)
 	ON_COMMAND(ID_LIGHT_SHADING_GOURAUD, OnLightShadingGouraud)
 	ON_UPDATE_COMMAND_UI(ID_LIGHT_SHADING_GOURAUD, OnUpdateLightShadingGouraud)
 	ON_COMMAND(ID_LIGHT_CONSTANTS, OnLightConstants)
+	ON_COMMAND(ID_CHANGE_VIEW, OnChangeView)
 	ON_WM_MOUSEMOVE()
 	ON_WM_MOUSEWHEEL()
 	ON_WM_KEYDOWN()
@@ -370,9 +371,18 @@ bool CCGWorkView::applyMat(const MatrixHomogeneous& mat) {
 	}
 	*/
 	model_t& model = _models[active_object];
+	const model_t& clean_model = _clean_models[active_object];
+	model = clean_model;
+	
+	if (_in_object_view)
+		_model_space_transformations[active_object] = mat * _model_space_transformations[active_object];
+	else
+		_view_space_transformations[active_object] = mat * _model_space_transformations[active_object];
+	
+	const MatrixHomogeneous& mat1 = _view_space_transformations[active_object] * _model_space_transformations[active_object];
 
 	for (auto it = model.begin(); it != model.end(); ++it) {
-		(*it) = mat * (*it);
+		(*it) = mat1 * (*it);
 	}
 	for (auto it = _polygonNormals[active_object].begin(); it != _polygonNormals[active_object].end(); ++it)
 	{
@@ -809,7 +819,11 @@ void CCGWorkView::OnFileLoad()
 		m_strItdFileName = dlg.GetPathName();		// Full path and filename
 		PngWrapper p;
 		_models.push_back(model_t());
+
+		_model_space_transformations.push_back(Matrices::UnitMatrixHomogeneous);
+		_view_space_transformations.push_back(Matrices::UnitMatrixHomogeneous);
 		CGSkelProcessIritDataFiles(m_strItdFileName, 1, _models.back(), _polygonFineness);
+		_clean_models.push_back(_models.back());
 		
 		_polygonNormals.push_back(Normals::NormalList());
 		_vertexNormals.push_back(Normals::NormalList());
@@ -825,7 +839,12 @@ void CCGWorkView::OnFileLoad()
 		assert(_vertexNormals.size() == _bboxes.size());
 		assert(_bboxes.size() == _model_attr.size());
 		assert(_model_attr.size() == _models.size());
+		assert(_model_attr.size() == _clean_models.size());
+		assert(_model_attr.size() == _model_space_transformations.size());
+		assert(_model_attr.size() == _view_space_transformations.size());
 		
+		active_object = _models.size() - 1;
+
 		_modelBoundingBoxes.push_back(BoundingBox::OfObjects(_models.back()).ToObject());
 		
 		_subObjectBoundingBoxes.push_back(BoundingBox::BoundingBoxObjectsOfSubObjects(_models.back()));
@@ -1087,6 +1106,11 @@ void CCGWorkView::OnLightConstants()
 		m_ambientLight = dlg.GetDialogData(LIGHT_ID_AMBIENT);
 	}
 	Invalidate();
+}
+
+void CCGWorkView::OnChangeView()
+{
+	_in_object_view = !_in_object_view;
 }
 
 void CCGWorkView::FlipYAxis(int obj_idx)
