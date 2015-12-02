@@ -683,6 +683,12 @@ void CCGWorkView::OnFileLoad()
 
 		_bboxes.push_back(BoundingBox(BoundingBox::OfObjects(_models.back())));
 		_model_attr.push_back(model_attr_t());
+
+		assert(_models.size() == _polygonNormals.size());
+		assert(_polygonNormals.size() == _vertexNormals.size());
+		assert(_vertexNormals.size() == _bboxes.size());
+		assert(_bboxes.size() == _model_attr.size());
+		assert(_model_attr.size() == _models.size());
 		// Open the file and read it.
 		// Your code here...
 
