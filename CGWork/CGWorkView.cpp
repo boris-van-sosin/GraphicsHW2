@@ -301,21 +301,28 @@ BOOL CCGWorkView::OnMouseWheel(UINT flags, short zdelta, CPoint point) {
 	if (m_nAxis == ID_AXIS_Z)
 		axis = AXIS_Z;
 	
+	if (active_object >= _models.size())
+		return true;
+	double sensitivity = _model_attr[active_object].sensitivity;
+
 	if (m_nAction == ID_ACTION_ROTATE) {
 		double rotate_angle = zdelta / WHEEL_DELTA;
-		rotate_angle /= 10;
+		//rotate_angle /= 10;
+		rotate_angle *= sensitivity;
 
 		rotate(rotate_angle);
 	}
 	if (m_nAction == ID_ACTION_TRANSLATE) {
 		double dist = zdelta / WHEEL_DELTA;
-		dist /= 10;
+		//dist /= 10;
+		dist *= sensitivity;
 		dist = -dist;
 		translate(axis, dist);
 	}
 	if (m_nAction == ID_ACTION_SCALE) {
 		double factor = zdelta / WHEEL_DELTA;
-		factor *= 1.1;
+		//factor *= 1.1;
+		factor *= (1 + sensitivity);
 		factor = factor < 0 ? -1 / factor : factor;
 		scale(axis, factor);
 	}
@@ -834,7 +841,13 @@ void CCGWorkView::OnFileLoad()
 		//FlipYAxis(_models.size() - 1);
 
 		_bboxes.push_back(BoundingBox(BoundingBox::OfObjects(_models.back())));
+
+		const BoundingBox bcube = _bboxes.back().BoundingCube();
+
 		_model_attr.push_back(model_attr_t());
+
+		double gran_size = fmax(bcube.maxX - bcube.minX, fmax(bcube.maxY - bcube.minY, bcube.maxZ - bcube.minZ));
+		_model_attr.back().sensitivity = 1.0 / gran_size;
 		
 		active_object = _models.size() - 1;
 

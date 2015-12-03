@@ -32,6 +32,7 @@ public:
 	unsigned int line_width = 1;
 	bool displayBBox = false;
 	bool displaySubObjectBBox = false;
+	double sensitivity = 0.1;
 };
 
 class CCGWorkView : public CView
