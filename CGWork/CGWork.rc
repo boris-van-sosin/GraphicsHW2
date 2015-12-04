@@ -241,10 +241,11 @@ BEGIN
     DEFPUSHBUTTON   "OK",IDOK,198,155,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,252,155,50,14
     PUSHBUTTON      "Choose Model Color",IDC_CLR_MODEL,27,26,83,14
-    PUSHBUTTON      "Choose Normals Color",IDC_CLR_NORMAL,27,55,83,14
+    PUSHBUTTON      "Choose Normals Color",IDC_CLR_NORMAL,27,49,83,14
     PUSHBUTTON      "Use File Color",IDC_CLR_RESET_TO_FILE,119,26,82,14
-    PUSHBUTTON      "Choose Model\r\nBounding Box Color",IDC_CLR_MODEL_BBOX,27,81,83,23,BS_MULTILINE
-    PUSHBUTTON      "Choose Sub-Object\r\nBounding Box Color",IDC_CLR_SUB_BBOX,27,111,83,23,BS_MULTILINE
+    PUSHBUTTON      "Choose Model\r\nBounding Box Color",IDC_CLR_MODEL_BBOX,27,88,83,23,BS_MULTILINE
+    PUSHBUTTON      "Choose Sub-Object\r\nBounding Box Color",IDC_CLR_SUB_BBOX,27,118,83,23,BS_MULTILINE
+    PUSHBUTTON      "Choose Background",IDC_CLR_BG,27,69,83,14
 END
 
 IDD_CLIPPING_DLG DIALOGEX 0, 0, 309, 176

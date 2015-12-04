@@ -172,6 +172,9 @@ private:
 	std::vector<model_attr_t> _model_attr;
 	std::vector<BoundingBox> _bboxes;
 
+	COLORREF _backgroundColor;
+	HBRUSH _backgroundBrush;
+
 	int glowing_object = -1; // -1 is none
 	int active_object = 0;
 	bool _in_object_view = false;	// in what wview to apply the matrix? object or view?

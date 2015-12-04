@@ -47,6 +47,8 @@
 #define IDC_CLR_SUB_BBOX                1045
 #define IDC_EDIT2                       1045
 #define IDC_EDIT3                       1046
+#define IDC_CLR_NORMAL2                 1046
+#define IDC_CLR_BG                      1046
 #define ID_FILE_LOAD                    32771
 #define ID_VIEW_ORTHOGRAPHIC            32772
 #define ID_VIEW_PERSPECTIVE             32773

@@ -120,6 +120,9 @@ CCGWorkView::CCGWorkView()
 	_displayVertexNormals = false;
 	_dummyDisplayModelBBox = _dummyDisplaySubObjBBox = false;
 	_normalsColor = RGB(0, 255, 0);
+
+	_backgroundColor = RGB(0, 0, 0);
+	_backgroundBrush = CreateSolidBrush(_backgroundColor);
 }
 
 CCGWorkView::~CCGWorkView()
@@ -774,7 +777,7 @@ void CCGWorkView::OnDraw(CDC* pDC)
 		return;
 
 	RECT rect;
-	GetWindowRect(&rect);
+	GetClientRect(&rect);
 
 	int h = rect.bottom - rect.top;
 	int w = rect.right - rect.left;
@@ -786,6 +789,11 @@ void CCGWorkView::OnDraw(CDC* pDC)
 
 	CImage img;
 	img.Create(w, h, 32);
+
+	HDC imgDC = img.GetDC();
+	FillRect(imgDC, &rect, _backgroundBrush);
+	img.ReleaseDC();
+
 	DrawScene(img);
 	img.BitBlt(*pDC, 0, 0, w, h, 0, 0);
 	//temporary:
@@ -1031,6 +1039,7 @@ void CCGWorkView::OnChooseColors()
 	param.model_color = _model_attr[active_object].color;
 	param.model_force_color = _model_attr[active_object].forceColor;
 	param.normal_color = _model_attr[active_object].normal_color;
+	param.background_color = _backgroundColor;
 	CChooseColorDlg dlg(&param);
 	if (dlg.DoModal() == IDOK)
 	{
@@ -1039,6 +1048,9 @@ void CCGWorkView::OnChooseColors()
 		_model_attr[active_object].normal_color = param.normal_color;
 		_model_attr[active_object].model_bbox_color = param.model_bbox_color;
 		_model_attr[active_object].subObj_bbox_color = param.subObj_bbox_color;
+
+		DeleteObject(_backgroundBrush);
+		_backgroundBrush = CreateSolidBrush(_backgroundColor = param.background_color);
 
 		Invalidate();
 	}

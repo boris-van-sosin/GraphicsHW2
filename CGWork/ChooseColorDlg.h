@@ -10,6 +10,7 @@ public:
 	COLORREF normal_color;
 	COLORREF model_bbox_color;
 	COLORREF subObj_bbox_color;
+	COLORREF background_color;
 };
 
 class CChooseColorDlg : public CDialogEx
@@ -31,8 +32,9 @@ protected:
 	void OnClrModel();
 	void OnClrNormal();
 	void OnClrToFile();
-	void OnOk();
 	void OnClrModelBBox();
 	void OnClrSubObjBBox();
+	void OnClrBackground();
+	void OnOk();
 	DECLARE_MESSAGE_MAP()
 };
