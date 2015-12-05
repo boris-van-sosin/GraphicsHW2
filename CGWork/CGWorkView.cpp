@@ -1100,12 +1100,17 @@ void CCGWorkView::OnSettings()
 	s._polygonFineness = _polygonFineness;
 	s._nearClippingPlane = _nearClippingPlane;
 	s._farClippingPlane = _farClippingPlane;
+	s._sensitivity = 0;
+	if (active_object < _model_attr.size())
+		s._sensitivity = _model_attr[active_object].sensitivity;
 	CClippingDlg dlg(s);
 	if (dlg.DoModal() == IDOK)
 	{
 		_polygonFineness = s._polygonFineness;
 		_nearClippingPlane = s._nearClippingPlane;
 		_farClippingPlane = s._farClippingPlane;
+		if (active_object < _model_attr.size())
+			_model_attr[active_object].sensitivity = s._sensitivity;
 		Invalidate();
 	}
 }

@@ -46,13 +46,15 @@ bool IsValidInt(const CString& text)
 }
 // CClippingDlg message handlers
 void CClippingDlg::OnOk() {
-	CString nearStr, farStr, finenessStr;
+	CString nearStr, farStr, finenessStr, sensitivityStr;
 	GetDlgItemText(IDC_EDIT1, nearStr);
 	GetDlgItemText(IDC_EDIT2, farStr);
 	GetDlgItemText(IDC_EDIT3, finenessStr);
+	GetDlgItemText(IDC_EDIT4, sensitivityStr);
 
 	double nearNum, farNum;
 	int finenessNum;
+	double sensitivityNum;
 
 	if (nearStr != "" && IsValidFloat(nearStr))
 	{
@@ -66,12 +68,17 @@ void CClippingDlg::OnOk() {
 	{
 		finenessNum = (double)_ttoi(finenessStr);
 	}
+	if (sensitivityStr != "" && IsValidFloat(sensitivityStr))
+	{
+		sensitivityNum = (double)_ttof(sensitivityStr);
+	}
 
 	if (nearNum > 0 && farNum > nearNum && finenessNum >= 2)
 	{
 		_refSettings._nearClippingPlane = nearNum;
 		_refSettings._farClippingPlane = farNum;
 		_refSettings._polygonFineness = finenessNum;
+		_refSettings._sensitivity = sensitivityNum;
 		CDialog::OnOK();
 	}
 
@@ -91,5 +98,7 @@ BOOL CClippingDlg::OnInitDialog()
 	SetDlgItemText(IDC_EDIT2, str); //far
 	str.Format(_T("%d"), _refSettings._polygonFineness);
 	SetDlgItemText(IDC_EDIT3, str); //polygon fineness
+	str.Format(_T("%f"), _refSettings._sensitivity);
+	SetDlgItemText(IDC_EDIT4, str); //sensitivity
 	return res;
 }

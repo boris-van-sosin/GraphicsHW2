@@ -8,6 +8,7 @@ struct GeneralSettings
 	int _polygonFineness;
 	double _nearClippingPlane;
 	double _farClippingPlane;
+	double _sensitivity;
 };
 
 class CClippingDlg : public CDialogEx
