@@ -529,6 +529,21 @@ std::vector<PolygonalObject> BoundingBox::BoundingBoxObjectsOfSubObjects(const s
 	return res;
 }
 
+PolygonAdjacency::PolygonAdjacency(int p, int obj, int polyInObj, int v)
+	: objIdx(obj), polygonInObjIdx(polyInObj), vertexIdx(v)
+{
+	polygonIdxs.reserve(2);
+	polygonIdxs.push_back(p);
+}
+
+PolygonAdjacency::PolygonAdjacency(const PolygonAdjacency& other)
+	: polygonIdxs(other.polygonIdxs), objIdx(other.objIdx), polygonInObjIdx(other.polygonInObjIdx), vertexIdx(other.vertexIdx)
+{}
+
+PolygonAdjacency::PolygonAdjacency()
+{}
+
+
 struct HashAndComparePoint3D
 {
 	size_t operator()(const Point3D& p) const
@@ -559,9 +574,7 @@ private:
 	HashAndComparePoint3D _pointHash;
 };
 
-typedef std::vector<size_t> PolygonIdxList;
-
-void Normals::ComputeNormals(std::vector<PolygonalObject>& objs, NormalList& polygonNormals, NormalList& vertexNormals)
+void Normals::ComputeNormals(const std::vector<PolygonalObject>& objs, NormalList& polygonNormals, NormalList& vertexNormals, PolygonAdjacencyGraph& polygonAdjacency)
 {
 	polygonNormals.clear();
 	vertexNormals.clear();
@@ -577,10 +590,12 @@ void Normals::ComputeNormals(std::vector<PolygonalObject>& objs, NormalList& pol
 	std::unordered_map<Point3D, Vector3D, HashAndComparePoint3D, HashAndComparePoint3D> vertexMap;
 	vertexMap.reserve(approxNumVertices);
 
+	std::unordered_map<LineSegment, PolygonAdjacency, HashAndCompareEdge, HashAndCompareEdge> edgeMap;
+	edgeMap.reserve(2*approxNumVertices);
+
+	int polygonIdx = 0;
 	for (auto i = objs.begin(); i != objs.end(); ++i)
 	{
-		std::unordered_map<LineSegment, PolygonIdxList, HashAndCompareEdge, HashAndCompareEdge> edgeMap;
-		edgeMap.reserve(i->polygons.size() * (i->polygons.empty() ? 1 : i->polygons.front().points.size()));
 		for (auto j = i->polygons.begin(); j != i->polygons.end(); ++j)
 		{
 			const std::pair<double, HomogeneousPoint> areaAndCentroid = j->AreaAndCentroid();
@@ -602,24 +617,22 @@ void Normals::ComputeNormals(std::vector<PolygonalObject>& objs, NormalList& pol
 				const LineSegment currEdge(*v, (v + 1 != j->points.end()) ? *(v + 1) : j->points.front());
 				if (edgeMap.find(currEdge) == edgeMap.end())
 				{
-					edgeMap[currEdge] = PolygonIdxList();
+					edgeMap[currEdge] = PolygonAdjacency(polygonIdx, (i - objs.begin()), (j - i->polygons.begin()), v - j->points.begin());
 				}
-				edgeMap[currEdge].push_back(j - i->polygons.begin());
+				else
+				{
+					edgeMap[currEdge].polygonIdxs.push_back(polygonIdx);
+				}
 			}
+			++polygonIdx;
 		}
-		i->polygonAdjacency.clear();
-		i->polygonAdjacency.reserve(edgeMap.size());
-		for (auto e = edgeMap.begin(); e != edgeMap.end(); ++e)
-		{
-			if (e->second.size() == 1)
-			{
-				i->polygonAdjacency.push_back(std::pair<int, int>(e->second.front(), -1));
-			}
-			else
-			{
-				i->polygonAdjacency.push_back(std::pair<int, int>(e->second[0], e->second[1]));
-			}
-		}
+	}
+
+	polygonAdjacency.clear();
+	polygonAdjacency.reserve(edgeMap.size());
+	for (auto e = edgeMap.begin(); e != edgeMap.end(); ++e)
+	{
+		polygonAdjacency.push_back(e->second);
 	}
 
 	vertexNormals.reserve(vertexMap.size());

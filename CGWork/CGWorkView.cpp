@@ -844,7 +844,8 @@ void CCGWorkView::OnFileLoad()
 		
 		_polygonNormals.push_back(Normals::NormalList());
 		_vertexNormals.push_back(Normals::NormalList());
-		Normals::ComputeNormals(_models.back(), _polygonNormals.back(), _vertexNormals.back());
+		_polygonAdjacencies.push_back(PolygonAdjacencyGraph());
+		Normals::ComputeNormals(_models.back(), _polygonNormals.back(), _vertexNormals.back(), _polygonAdjacencies.back());
 
 		//FlipYAxis(_models.size() - 1);
 
@@ -1220,6 +1221,48 @@ void CCGWorkView::DrawScene(CImage& img)
 			shadow_attr.color = i + 1;
 			shadow_attr.forceColor = true;
 			DrawObject(_pxl2obj, *it, mFirst, mSecond, mTotal, shadow_attr, m_bIsPerspective, perspData.NearPlane);
+		}
+
+		if (true)
+		{
+			COLORREF boundaryColor = RGB(100, 0, 200);
+			for (auto j = _polygonAdjacencies[i].begin(); j != _polygonAdjacencies[i].end(); ++j)
+			{
+				const Polygon3D& currPoly = _models[i][j->objIdx].polygons[j->polygonInObjIdx];
+				const LineSegment edge(currPoly.points[j->vertexIdx], currPoly.points[(j->vertexIdx+1) % currPoly.points.size()]);
+				if (j->polygonIdxs.size() == 1)
+				{
+					// boundary
+					if (m_bIsPerspective)
+					{
+						DrawLineSegment(img, ApplyClippingAndViewMatrix(edge.p0, edge.p1, mFirst, mSecond, mTotal, perspData.NearPlane), boundaryColor, 2);
+					}
+					else
+					{
+						DrawLineSegment(img, mTotal*(edge.p0), mTotal*(edge.p1), boundaryColor, 2);
+					}
+				}
+				else
+				{
+					const LineSegment n0 = TransformNormal(mTotal, _polygonNormals[i][j->polygonIdxs[0]]);
+					const LineSegment n1 = TransformNormal(mTotal, _polygonNormals[i][j->polygonIdxs[1]]);
+					const Vector3D optVector(0, 0, 1);
+					const Vector3D n0Vec = Vector3D(n0.p1) - Vector3D(n0.p0);
+					const Vector3D n1Vec = Vector3D(n1.p1) - Vector3D(n1.p0);
+					if ((n0Vec * optVector) * (n1Vec * optVector) < 0)
+					{
+						// silhouette
+						if (m_bIsPerspective)
+						{
+							DrawLineSegment(img, ApplyClippingAndViewMatrix(edge.p0, edge.p1, mFirst, mSecond, mTotal, perspData.NearPlane), boundaryColor, 2);
+						}
+						else
+						{
+							DrawLineSegment(img, mTotal*(edge.p0), mTotal*(edge.p1), boundaryColor, 2);
+						}
+					}
+				}
+			}
 		}
 
 		if (_displayPolygonNormals)

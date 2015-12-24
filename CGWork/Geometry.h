@@ -110,8 +110,6 @@ public:
 	std::vector<Polygon3D> polygons;
 	COLORREF color;
 	bool colorValid;
-
-	std::vector<std::pair<int, int>> polygonAdjacency;
 private:
 	PolygonalObject(const std::vector<Polygon3D>& polygons_, COLORREF color_, bool valid);
 };
@@ -146,10 +144,24 @@ private:
 	static BoundingBox join(const std::vector<BoundingBox>& boxes);
 };
 
+class PolygonAdjacency
+{
+public:
+	PolygonAdjacency(int p, int obj, int polyInObj, int v);
+	PolygonAdjacency(const PolygonAdjacency& other);
+	PolygonAdjacency();
+
+	std::vector<int> polygonIdxs;
+	int objIdx, polygonInObjIdx;
+	int vertexIdx;
+};
+
+typedef std::vector<PolygonAdjacency> PolygonAdjacencyGraph;
+
 namespace Normals
 {
 	typedef std::vector<LineSegment> NormalList;
-	void ComputeNormals(std::vector<PolygonalObject>& objs, NormalList& polygonNormals, NormalList& vertexNormals);
+	void ComputeNormals(const std::vector<PolygonalObject>& objs, NormalList& polygonNormals, NormalList& vertexNormals, PolygonAdjacencyGraph& polygonAdjacency);
 }
 
 #endif

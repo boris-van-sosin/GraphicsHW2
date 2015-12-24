@@ -163,6 +163,7 @@ private:
 	std::vector<Normals::NormalList> _clean_polygonNormals;
 	std::vector<Normals::NormalList> _vertexNormals;
 	std::vector<Normals::NormalList> _clean_vertexNormals;
+	std::vector<PolygonAdjacencyGraph> _polygonAdjacencies;
 
 	std::vector<PolygonalObject> _modelBoundingBoxes;
 	std::vector<PolygonalObject> _clean_modelBoundingBoxes;
