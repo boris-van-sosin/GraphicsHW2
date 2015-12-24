@@ -543,7 +543,25 @@ struct HashAndComparePoint3D
 	}
 };
 
-void Normals::ComputeNormals(const std::vector<PolygonalObject>& objs, NormalList& polygonNormals, NormalList& vertexNormals)
+struct HashAndCompareEdge
+{
+	size_t operator()(const LineSegment& e) const
+	{
+		return _pointHash(Point3D(e.p0)) ^ _pointHash(Point3D(e.p1));
+	}
+	bool operator()(const LineSegment& e0, const LineSegment& e1) const
+	{
+		return (_pointHash(Point3D(e0.p0), Point3D(e1.p0)) && _pointHash(Point3D(e0.p1), Point3D(e1.p1))) ||
+			(_pointHash(Point3D(e0.p0), Point3D(e1.p1)) && _pointHash(Point3D(e0.p1), Point3D(e1.p0)));
+	}
+
+private:
+	HashAndComparePoint3D _pointHash;
+};
+
+typedef std::vector<size_t> PolygonIdxList;
+
+void Normals::ComputeNormals(std::vector<PolygonalObject>& objs, NormalList& polygonNormals, NormalList& vertexNormals)
 {
 	polygonNormals.clear();
 	vertexNormals.clear();
@@ -561,6 +579,8 @@ void Normals::ComputeNormals(const std::vector<PolygonalObject>& objs, NormalLis
 
 	for (auto i = objs.begin(); i != objs.end(); ++i)
 	{
+		std::unordered_map<LineSegment, PolygonIdxList, HashAndCompareEdge, HashAndCompareEdge> edgeMap;
+		edgeMap.reserve(i->polygons.size() * (i->polygons.empty() ? 1 : i->polygons.front().points.size()));
 		for (auto j = i->polygons.begin(); j != i->polygons.end(); ++j)
 		{
 			const std::pair<double, HomogeneousPoint> areaAndCentroid = j->AreaAndCentroid();
@@ -578,6 +598,26 @@ void Normals::ComputeNormals(const std::vector<PolygonalObject>& objs, NormalLis
 				{
 					vertexMap[Point3D(*v)] += currPolygonNormal * areaAndCentroid.first;
 				}
+
+				const LineSegment currEdge(*v, (v + 1 != j->points.end()) ? *(v + 1) : j->points.front());
+				if (edgeMap.find(currEdge) == edgeMap.end())
+				{
+					edgeMap[currEdge] = PolygonIdxList();
+				}
+				edgeMap[currEdge].push_back(j - i->polygons.begin());
+			}
+		}
+		i->polygonAdjacency.clear();
+		i->polygonAdjacency.reserve(edgeMap.size());
+		for (auto e = edgeMap.begin(); e != edgeMap.end(); ++e)
+		{
+			if (e->second.size() == 1)
+			{
+				i->polygonAdjacency.push_back(std::pair<int, int>(e->second.front(), -1));
+			}
+			else
+			{
+				i->polygonAdjacency.push_back(std::pair<int, int>(e->second[0], e->second[1]));
 			}
 		}
 	}
