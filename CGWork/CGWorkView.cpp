@@ -639,6 +639,51 @@ void DrawLineSegment(CImage& img, const LineSegment& line, COLORREF clr, unsigne
 	DrawLineSegment(img, line.p0, line.p1, clr, line_width, clip, cp);
 }
 
+inline COLORREF GetActualColor(COLORREF objColor, bool objColorValid, const Polygon3D& poly, const HomogeneousPoint& p, const model_attr_t& attr)
+{
+	COLORREF actualColor = CCGWorkView::DefaultModelColor;
+	if (attr.forceColor)
+	{
+		actualColor = attr.color;
+	}
+	else if (p.colorValid)
+	{
+		actualColor = p.color;
+	}
+	else if (poly.colorValid)
+	{
+		actualColor = poly.color;
+	}
+	else if (objColorValid)
+	{
+		actualColor = objColor;
+	}
+	return actualColor;
+}
+
+inline COLORREF ShiftColor(COLORREF c, int shift)
+{
+	int red = GetRValue(c) + shift;
+	int green = GetGValue(c) + shift;
+	int blue = GetBValue(c) + shift;
+	if (red > 255)
+		red = 255;
+	else if (red < 0)
+		red = 0;
+
+	if (green > 255)
+		green = 255;
+	else if (green < 0)
+		green = 0;
+
+	if (blue > 255)
+		blue = 255;
+	else if (blue < 0)
+		blue = 0;
+
+	return RGB(red, green, blue);
+}
+
 void DrawPolygon(CImage& img, const Polygon3D& poly, const model_attr_t& attr, COLORREF objColor, bool objColorValid, bool clip = false, const ClippingPlane& cp = ClippingPlane(0,0,0,0))
 {
 	if (poly.points.size() < 2)
@@ -647,23 +692,7 @@ void DrawPolygon(CImage& img, const Polygon3D& poly, const model_attr_t& attr, C
 	}
 	for (auto i = poly.points.begin(); i != poly.points.end(); ++i)
 	{
-		COLORREF actualColor = CCGWorkView::DefaultModelColor;
-		if (attr.forceColor)
-		{
-			actualColor = attr.color;
-		}
-		else if (i->colorValid)
-		{
-			actualColor = i->color;
-		}
-		else if (poly.colorValid)
-		{
-			actualColor = poly.color;
-		}
-		else if (objColorValid)
-		{
-			actualColor = objColor;
-		}
+		COLORREF actualColor = GetActualColor(objColor, objColorValid, poly, *i, attr);
 
 		if (i + 1 != poly.points.end())
 		{
@@ -710,23 +739,7 @@ void DrawPolygon(CImage& img, const Polygon3D& poly, const MatrixHomogeneous& mF
 
 	for (auto i = poly.points.begin(); i != poly.points.end(); ++i)
 	{
-		COLORREF actualColor = CCGWorkView::DefaultModelColor;
-		if (attr.forceColor)
-		{
-			actualColor = attr.color;
-		}
-		else if (i->colorValid)
-		{
-			actualColor = i->color;
-		}
-		else if (poly.colorValid)
-		{
-			actualColor = poly.color;
-		}
-		else if (objColorValid)
-		{
-			actualColor = objColor;
-		}
+		COLORREF actualColor = GetActualColor(objColor, objColorValid, poly, *i, attr);
 
 		if (i + 1 != poly.points.end())
 		{
@@ -1225,11 +1238,11 @@ void CCGWorkView::DrawScene(CImage& img)
 
 		if (true)
 		{
-			COLORREF boundaryColor = RGB(100, 0, 200);
 			for (auto j = _polygonAdjacencies[i].begin(); j != _polygonAdjacencies[i].end(); ++j)
 			{
 				const Polygon3D& currPoly = _models[i][j->objIdx].polygons[j->polygonInObjIdx];
 				const LineSegment edge(currPoly.points[j->vertexIdx], currPoly.points[(j->vertexIdx+1) % currPoly.points.size()]);
+				COLORREF boundaryColor = ShiftColor(GetActualColor(_models[i][j->objIdx].color, _models[i][j->objIdx].colorValid, currPoly, edge.p0, attr), -100);
 				if (j->polygonIdxs.size() == 1)
 				{
 					// boundary
