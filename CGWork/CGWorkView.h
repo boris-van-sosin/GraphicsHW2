@@ -145,6 +145,7 @@ protected:
 	afx_msg void OnToggleAllModelBBox();
 	afx_msg void OnToggleAllSubObjBBox();
 	afx_msg void OnSettings();
+	afx_msg void OnFileSave();
 
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()

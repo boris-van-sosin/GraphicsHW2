@@ -82,6 +82,7 @@ BEGIN_MESSAGE_MAP(CCGWorkView, CView)
 	ON_WM_MOUSEWHEEL()
 	ON_WM_KEYDOWN()
 	ON_WM_LBUTTONDOWN()
+	ON_COMMAND(ID_SAVE, OnFileSave)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -1195,9 +1196,9 @@ void CCGWorkView::DrawScene(CImage& img)
 	const int margin = 5;
 	RECT rect;
 	GetWindowRect(&rect);
-
-	int height = rect.bottom - rect.top - 2 * margin;
-	int width = rect.right - rect.left - 2 * margin;
+	
+	int height = img.GetHeight();
+	int width = img.GetWidth();
 
 	for (size_t i = 0; i < _models.size(); i++) {
 		const BoundingBox bCube = _bboxes[i].BoundingCube();
@@ -1309,5 +1310,29 @@ void CCGWorkView::DrawScene(CImage& img)
 				DrawObject(img, *j, mFirst, mSecond, mTotal, bboxAttr, m_bIsPerspective, perspData.NearPlane);
 			}
 		}
+	}
+}
+
+void CCGWorkView::OnFileSave()
+{
+	TCHAR szFilters[] = _T("PNG image (*.png)|*.png|All Files (*.*)|*.*||");
+	CFileDialog dlg(FALSE, _T("png"), _T("*.png"), OFN_FILEMUSTEXIST | OFN_HIDEREADONLY, szFilters);
+	if (dlg.DoModal() == IDOK)
+	{
+		const CString fileName = dlg.GetPathName();
+		CImage img;
+		img.Create(1000, 1000, 32);
+
+		RECT r;
+		r.top = r.left = 0;
+		r.bottom = r.right = 1000;
+
+		HDC imgDC = img.GetDC();
+		FillRect(imgDC, &r, _backgroundBrush);
+		img.ReleaseDC();
+
+		DrawScene(img);
+		img.Save(fileName, Gdiplus::ImageFormatPNG);
+		img.Destroy();
 	}
 }
