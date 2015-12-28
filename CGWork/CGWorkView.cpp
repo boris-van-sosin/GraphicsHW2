@@ -1249,11 +1249,11 @@ void CCGWorkView::DrawScene(CImage& img)
 					// boundary
 					if (m_bIsPerspective)
 					{
-						DrawLineSegment(img, ApplyClippingAndViewMatrix(edge.p0, edge.p1, mFirst, mSecond, mTotal, perspData.NearPlane), boundaryColor, 2);
+						DrawLineSegment(img, ApplyClippingAndViewMatrix(edge.p0, edge.p1, mFirst, mSecond, mTotal, perspData.NearPlane), boundaryColor, 1);
 					}
 					else
 					{
-						DrawLineSegment(img, mTotal*(edge.p0), mTotal*(edge.p1), boundaryColor, 2);
+						DrawLineSegment(img, mTotal*(edge.p0), mTotal*(edge.p1), boundaryColor, 1);
 					}
 				}
 				else
@@ -1268,11 +1268,11 @@ void CCGWorkView::DrawScene(CImage& img)
 						// silhouette
 						if (m_bIsPerspective)
 						{
-							DrawLineSegment(img, ApplyClippingAndViewMatrix(edge.p0, edge.p1, mFirst, mSecond, mTotal, perspData.NearPlane), boundaryColor, 2);
+							DrawLineSegment(img, ApplyClippingAndViewMatrix(edge.p0, edge.p1, mFirst, mSecond, mTotal, perspData.NearPlane), boundaryColor, 1);
 						}
 						else
 						{
-							DrawLineSegment(img, mTotal*(edge.p0), mTotal*(edge.p1), boundaryColor, 2);
+							DrawLineSegment(img, mTotal*(edge.p0), mTotal*(edge.p1), boundaryColor, 1);
 						}
 					}
 				}
@@ -1321,11 +1321,11 @@ void CCGWorkView::OnFileSave()
 	{
 		const CString fileName = dlg.GetPathName();
 		CImage img;
-		img.Create(1000, 1000, 32);
+		img.Create(1500, 1500, 32);
 
 		RECT r;
 		r.top = r.left = 0;
-		r.bottom = r.right = 1000;
+		r.bottom = r.right = 1500;
 
 		HDC imgDC = img.GetDC();
 		FillRect(imgDC, &r, _backgroundBrush);
