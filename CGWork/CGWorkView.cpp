@@ -387,7 +387,7 @@ bool CCGWorkView::applyMat(const MatrixHomogeneous& mat) {
 	model = clean_model;
 	
 	if (_in_object_view)
-		_model_space_transformations[active_object] = mat * _model_space_transformations[active_object];
+		_model_space_transformations[active_object] = _model_space_transformations[active_object] * mat;
 	else
 		_view_space_transformations[active_object] = mat * _view_space_transformations[active_object];
 	
