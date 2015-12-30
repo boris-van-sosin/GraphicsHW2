@@ -19,6 +19,7 @@
 
 #include "Geometry.h"
 #include "GeometricTransformations.h"
+#include "Drawing.h"
 
 typedef std::vector<PolygonalObject> model_t;
 
@@ -33,6 +34,7 @@ public:
 	bool displayBBox = false;
 	bool displaySubObjectBBox = false;
 	double sensitivity = 0.1;
+	bool removeBackFace = true;
 };
 
 class CCGWorkView : public CView
@@ -152,7 +154,7 @@ protected:
 
 private:
 	void FlipYAxis(int obj_idx);
-	void DrawScene(CImage& img);
+	void DrawScene(DrawingObject& img);
 
 private:
 	std::vector<model_t> _models;
@@ -187,6 +189,8 @@ private:
 
 	CImage _pxl2obj; // to know the position of the objects on the screen
 					// there is 1 offset of the object index, because the bg is 0
+
+	DrawingObject _drawObj;
 
 	//BoundingBox* _bbox;
 	bool applyMat(const MatrixHomogeneous& mat);
