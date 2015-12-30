@@ -226,6 +226,8 @@ void ZBufferImage::DrawOnImage(CImage& img) const
 	{
 		for (size_t y = 0; y < _height; ++y)
 		{
+			if (_img[y*_width + x].IsEmpty())
+				continue;
 			BYTE* pos = (BYTE*)img.GetPixelAddress(x, y);
 			const COLORREF clr = _img[y*_width + x].GetActualColor();
 			*pos = GetBValue(clr);

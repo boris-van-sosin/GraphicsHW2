@@ -1317,21 +1317,26 @@ void CCGWorkView::OnFileSave()
 	{
 		const CString fileName = dlg.GetPathName();
 		CImage img;
-		img.Create(1500, 1500, 32);
+		img.Create(2000, 2000, 32);
 
 		RECT r;
 		r.top = r.left = 0;
-		r.bottom = r.right = 1500;
+		r.bottom = r.right = 2000;
 
 		HDC imgDC = img.GetDC();
 		FillRect(imgDC, &r, _backgroundBrush);
 		img.ReleaseDC();
 
 		DrawingObject tmpDrawingObj;
+		ZBufferImage zbimg(2000, 2000);
+		tmpDrawingObj.zBufImg = &zbimg;
 		tmpDrawingObj.img = &_pxl2obj;
-		tmpDrawingObj.active = DrawingObject::DRAWING_OBJECT_CIMG;
+		tmpDrawingObj.active = DrawingObject::DRAWING_OBJECT_ZBUF;
 
 		DrawScene(tmpDrawingObj);
+
+		zbimg.DrawOnImage(img);
+
 		img.Save(fileName, Gdiplus::ImageFormatPNG);
 		img.Destroy();
 	}
