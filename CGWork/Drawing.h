@@ -81,6 +81,8 @@ private:
 	ZBufferPixel* _img;
 	bool _useBackgroundColor, _useBackgroundImg;
 	COLORREF _backgroundColor;
+	CImage _backgroundImage;
+	BGImageMode _bgImageMode;
 };
 
 class DrawingObject

@@ -176,7 +176,15 @@ void ZBufferImage::SetBackgroundColor(COLORREF clr)
 
 void ZBufferImage::SetBackgroundImage(CImage& img, BGImageMode imMode)
 {
+	_bgImageMode = imMode;
+	if (!_backgroundImage.IsNull())
+		_backgroundImage.Destroy();
+	_backgroundImage.Create(img.GetWidth(), img.GetHeight(), 32);
 
+	// copy image:
+	HDC bgdc = _backgroundImage.GetDC();
+	img.BitBlt(bgdc, 0, 0, img.GetWidth(), img.GetHeight(), 0, 0);
+	_backgroundImage.ReleaseDC();
 }
 
 void ZBufferImage::PushPixel(int x, int y, double z, COLORREF clr)
@@ -220,6 +228,44 @@ void ZBufferImage::DrawOnImage(CImage& img) const
 		FillRect(imgDC, &rect, brsh);
 		DeleteObject(brsh);
 		img.ReleaseDC();
+	}
+	else if (_useBackgroundImg)
+	{
+		switch (_bgImageMode)
+		{
+		case CROP:
+		{
+			HDC imgDC = img.GetDC();
+			_backgroundImage.BitBlt(imgDC, 0, 0, _width, _height, 0, 0);
+			img.ReleaseDC();
+			break;
+		}
+		case STRECH:
+		{
+			HDC imgDC = img.GetDC();
+			_backgroundImage.StretchBlt(imgDC, 0, 0, _width, _height, 0, 0, _backgroundImage.GetWidth(), _backgroundImage.GetHeight());
+			img.ReleaseDC();
+			break;
+		}
+		case REPEAT:
+		{
+			HDC imgDC = img.GetDC();
+			int bgWidth = _backgroundImage.GetWidth(), bgHeight = _backgroundImage.GetHeight();
+			for (int i = 0; i < _height; i += bgHeight)
+			{
+				for (int j = 0; j < _width; j += bgWidth)
+				{
+					int actualWidth = min(bgWidth, _width - j - 1);
+					int actualHeight = min(bgHeight, _height - i - 1);
+					_backgroundImage.BitBlt(imgDC, j, i, bgWidth, bgHeight, 0, 0);
+				}
+			}
+			img.ReleaseDC();
+			break;
+		}
+		default:
+			break;
+		}
 	}
 	
 	for (size_t x = 0; x < _width; ++x)

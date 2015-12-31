@@ -50,6 +50,8 @@
 #define IDC_CLR_NORMAL2                 1046
 #define IDC_CLR_BG                      1046
 #define IDC_EDIT4                       1047
+#define IDC_CLR_BG2                     1047
+#define IDC_BGIMAGE                     1047
 #define ID_FILE_LOAD                    32771
 #define ID_VIEW_ORTHOGRAPHIC            32772
 #define ID_VIEW_PERSPECTIVE             32773
