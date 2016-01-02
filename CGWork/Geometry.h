@@ -161,7 +161,18 @@ typedef std::vector<PolygonAdjacency> PolygonAdjacencyGraph;
 namespace Normals
 {
 	typedef std::vector<LineSegment> NormalList;
-	void ComputeNormals(const std::vector<PolygonalObject>& objs, NormalList& polygonNormals, NormalList& vertexNormals, PolygonAdjacencyGraph& polygonAdjacency);
+
+	struct PolygonNormalData
+	{
+		PolygonNormalData(const LineSegment& ls);
+		PolygonNormalData(const PolygonNormalData& other);
+		PolygonNormalData& operator=(const PolygonNormalData& other);
+
+		LineSegment PolygonNormal;
+		NormalList VertexNormals;
+	};
+
+	void ComputeNormals(const std::vector<PolygonalObject>& objs, std::vector<PolygonNormalData>& polygonNormals, NormalList& vertexNormals, PolygonAdjacencyGraph& polygonAdjacency);
 }
 
 #endif

@@ -162,8 +162,8 @@ private:
 	std::vector<MatrixHomogeneous> _model_space_transformations;
 	std::vector<MatrixHomogeneous> _view_space_transformations;
 
-	std::vector<Normals::NormalList> _polygonNormals;
-	std::vector<Normals::NormalList> _clean_polygonNormals;
+	std::vector<std::vector<Normals::PolygonNormalData>> _polygonNormals;
+	std::vector<std::vector<Normals::PolygonNormalData>> _clean_polygonNormals;
 	std::vector<Normals::NormalList> _vertexNormals;
 	std::vector<Normals::NormalList> _clean_vertexNormals;
 	std::vector<PolygonAdjacencyGraph> _polygonAdjacencies;

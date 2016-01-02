@@ -669,11 +669,11 @@ inline COLORREF ShiftColor(COLORREF c, int shift)
 	return RGB(red, green, blue);
 }
 
-void DrawPolygon(DrawingObject& img, const Polygon3D& poly, const model_attr_t& attr, COLORREF objColor, bool objColorValid, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0))
+void DrawPolygon(DrawingObject& img, const Polygon3D& poly, const model_attr_t& attr, COLORREF objColor, bool objColorValid, const Normals::PolygonNormalData& nd, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0))
 {
 	if (poly.points.size() < 2)
 	{
-		return;
+return;
 	}
 	for (auto i = poly.points.begin(); i != poly.points.end(); ++i)
 	{
@@ -715,7 +715,7 @@ LineSegment ApplyClippingAndViewMatrix(const HomogeneousPoint& p0, const Homogen
 	}
 }
 
-void DrawPolygon(DrawingObject& img, const Polygon3D& poly, const MatrixHomogeneous& mFirst, const MatrixHomogeneous& mSecond, const MatrixHomogeneous& mTotal, const model_attr_t& attr, COLORREF objColor, bool objColorValid, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0))
+void DrawPolygon(DrawingObject& img, const Polygon3D& poly, const MatrixHomogeneous& mFirst, const MatrixHomogeneous& mSecond, const MatrixHomogeneous& mTotal, const model_attr_t& attr, COLORREF objColor, bool objColorValid, const Normals::PolygonNormalData& nd, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0))
 {
 	if (poly.points.size() < 2)
 	{
@@ -751,24 +751,39 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly, const MatrixHomogene
 	}
 }
 
-void DrawObject(DrawingObject& img, const PolygonalObject& obj, const model_attr_t& attr, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0))
+void DrawObject(DrawingObject& img, const PolygonalObject& obj, const model_attr_t& attr, const std::vector<Normals::PolygonNormalData>& normals, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0))
 {
-	for (std::vector<Polygon3D>::const_iterator i = obj.polygons.begin(); i != obj.polygons.end(); ++i)
+	for (size_t i = 0; i != obj.polygons.size(); ++i)
 	{
-		if ((!attr.removeBackFace) || (i->Normal() * Vector3D(0, 0, 1) < 0))
+		if ((!attr.removeBackFace) ||
+			((Vector3D(normals[i].PolygonNormal.p1) - Vector3D(normals[i].PolygonNormal.p0)) * Vector3D(0, 0, 1) < 0))
 		{
-			DrawPolygon(img, *i, attr, obj.color, obj.colorValid, clip, cp);
+			DrawPolygon(img, obj.polygons[i], attr, obj.color, obj.colorValid, normals[i], clip, cp);
 		}
 	}
 }
 
-void DrawObject(DrawingObject& img, const PolygonalObject& obj, const MatrixHomogeneous& mFirst, const MatrixHomogeneous& mSecond, const MatrixHomogeneous& mTotal, const model_attr_t& attr, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0))
+void DrawObject(DrawingObject& img, const PolygonalObject& obj, const MatrixHomogeneous& mFirst, const MatrixHomogeneous& mSecond, const MatrixHomogeneous& mTotal, const model_attr_t& attr, const std::vector<Normals::PolygonNormalData>& normals, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0))
 {
-	for (std::vector<Polygon3D>::const_iterator i = obj.polygons.begin(); i != obj.polygons.end(); ++i)
+	for (size_t i = 0; i != obj.polygons.size(); ++i)
 	{
-		if ((!attr.removeBackFace) || ((mTotal * (*i)).Normal() * Vector3D(0, 0, 1) < 0))
+		bool draw = false;
+		if (!attr.removeBackFace)
 		{
-			DrawPolygon(img, *i, mFirst, mSecond, mTotal, attr, obj.color, obj.colorValid, clip, cp);
+			draw = true;
+		}
+		else
+		{
+			Normals::PolygonNormalData n = mTotal * normals[i];
+			Vector3D normalDir = (Vector3D(n.PolygonNormal.p1) - Vector3D(n.PolygonNormal.p0));
+			if (normalDir * Vector3D(0, 0, 1) < 0)
+			{
+				draw = true;
+			}
+		}
+		if (draw)
+		{
+			DrawPolygon(img, obj.polygons[i], mFirst, mSecond, mTotal, attr, obj.color, obj.colorValid, normals[i], clip, cp);
 		}
 	}
 }
@@ -849,7 +864,7 @@ void CCGWorkView::OnFileLoad()
 		CGSkelProcessIritDataFiles(m_strItdFileName, 1, _models.back(), _polygonFineness);
 		_clean_models.push_back(_models.back());
 		
-		_polygonNormals.push_back(Normals::NormalList());
+		_polygonNormals.push_back(std::vector<Normals::PolygonNormalData>());
 		_vertexNormals.push_back(Normals::NormalList());
 		_polygonAdjacencies.push_back(PolygonAdjacencyGraph());
 		Normals::ComputeNormals(_models.back(), _polygonNormals.back(), _vertexNormals.back(), _polygonAdjacencies.back());
@@ -1227,10 +1242,10 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 		tmpDrawingObj.active = DrawingObject::DRAWING_OBJECT_CIMG;
 		for (std::vector<PolygonalObject>::iterator it = model.begin(); it != model.end(); ++it)
 		{
-			DrawObject(img, *it, mFirst, mSecond, mTotal, attr, m_bIsPerspective, perspData.NearPlane);
+			DrawObject(img, *it, mFirst, mSecond, mTotal, attr, _polygonNormals[i], m_bIsPerspective, perspData.NearPlane);
 			shadow_attr.color = i + 1;
 			shadow_attr.forceColor = true;
-			DrawObject(tmpDrawingObj, *it, mFirst, mSecond, mTotal, shadow_attr, m_bIsPerspective, perspData.NearPlane);
+			DrawObject(tmpDrawingObj, *it, mFirst, mSecond, mTotal, shadow_attr, _polygonNormals[i], m_bIsPerspective, perspData.NearPlane);
 		}
 
 		if (true)
@@ -1254,8 +1269,8 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 				}
 				else
 				{
-					const LineSegment n0 = TransformNormal(mTotal, _polygonNormals[i][j->polygonIdxs[0]]);
-					const LineSegment n1 = TransformNormal(mTotal, _polygonNormals[i][j->polygonIdxs[1]]);
+					const LineSegment n0 = TransformNormal(mTotal, _polygonNormals[i][j->polygonIdxs[0]].PolygonNormal);
+					const LineSegment n1 = TransformNormal(mTotal, _polygonNormals[i][j->polygonIdxs[1]].PolygonNormal);
 					const Vector3D optVector(0, 0, 1);
 					const Vector3D n0Vec = Vector3D(n0.p1) - Vector3D(n0.p0);
 					const Vector3D n1Vec = Vector3D(n1.p1) - Vector3D(n1.p0);
@@ -1279,7 +1294,7 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 		{
 			for (auto j = _polygonNormals[i].begin(); j != _polygonNormals[i].end(); ++j)
 			{
-				DrawLineSegment(img, TransformNormal(mTotal, *j, 10), normalsColor, 1);
+				DrawLineSegment(img, TransformNormal(mTotal, j->PolygonNormal, 10), normalsColor, 1);
 			}
 		}
 		if (_displayVertexNormals)
@@ -1294,7 +1309,7 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 			model_attr_t bboxAttr;
 			bboxAttr.color = _model_attr[i].model_bbox_color;
 			bboxAttr.forceColor = true;
-			DrawObject(img, _modelBoundingBoxes[i], mFirst, mSecond, mTotal, bboxAttr, m_bIsPerspective, perspData.NearPlane);
+			DrawObject(img, _modelBoundingBoxes[i], mFirst, mSecond, mTotal, bboxAttr, _polygonNormals[i], m_bIsPerspective, perspData.NearPlane);
 		}
 		if (attr.displaySubObjectBBox)
 		{
@@ -1303,7 +1318,7 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 			bboxAttr.forceColor = true;
 			for (auto j = _subObjectBoundingBoxes[i].begin(); j != _subObjectBoundingBoxes[i].end(); ++j)
 			{
-				DrawObject(img, *j, mFirst, mSecond, mTotal, bboxAttr, m_bIsPerspective, perspData.NearPlane);
+				DrawObject(img, *j, mFirst, mSecond, mTotal, bboxAttr, _polygonNormals[i], m_bIsPerspective, perspData.NearPlane);
 			}
 		}
 	}
