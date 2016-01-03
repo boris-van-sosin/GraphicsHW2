@@ -404,6 +404,9 @@ void DrawingObject::SetPixel(int x, int y, double z, COLORREF clr)
 
 void DrawingObject::SetPixel(int x, int y, const Point3D& p0, const Point3D& p1, COLORREF clr)
 {
-	double z = ((x - p0.x) / (p1.x - p0.x)) * (p1.z - p0.z) + p0.z;
+	double z = (p1.x != p0.x) ?
+			p0.z
+			:
+			(((x - p0.x) / (p1.x - p0.x)) * (p1.z - p0.z) + p0.z);
 	SetPixel(x, y, z, clr);
 }
