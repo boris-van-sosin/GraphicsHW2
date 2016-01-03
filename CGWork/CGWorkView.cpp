@@ -7,6 +7,7 @@
 #include "CGWorkView.h"
 
 #include <iostream>
+#include <algorithm>
 using std::cout;
 using std::endl;
 #include "MaterialDlg.h"
@@ -685,6 +686,11 @@ inline COLORREF ShiftColor(COLORREF c, int shift)
 	return RGB(red, green, blue);
 }
 
+bool CompareEdgesByY(const LineSegment& e0, const LineSegment& e1)
+{
+	return e0.p0.y < e1.p0.y;
+}
+
 void DrawPolygon(CImage& img, const Polygon3D& poly, const model_attr_t& attr, COLORREF objColor, bool objColorValid, bool clip = false, const ClippingPlane& cp = ClippingPlane(0,0,0,0))
 {
 	if (poly.points.size() < 2)
@@ -765,6 +771,17 @@ void DrawPolygon(CImage& img, const Polygon3D& poly, const MatrixHomogeneous& mF
 			}
 		}
 	}
+
+	std::vector<LineSegment> edges = (mTotal * poly).Edges();
+	for (auto e = edges.begin(); e != edges.end(); ++e) {
+		if (e->p0.y > e->p1.y) {
+			*e = LineSegment(e->p1, e->p0);
+		}
+	}
+
+	std::sort(edges.begin(), edges.end(), CompareEdgesByY);
+
+
 }
 
 void DrawObject(CImage& img, const PolygonalObject& obj, const model_attr_t& attr, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0))
