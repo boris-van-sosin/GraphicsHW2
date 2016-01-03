@@ -178,6 +178,8 @@ private:
 
 	COLORREF _backgroundColor;
 	HBRUSH _backgroundBrush;
+	CImage _backgrounImage;
+	bool _useBackgroundImage = false;
 
 	int glowing_object = -1; // -1 is none
 	int active_object = 0;

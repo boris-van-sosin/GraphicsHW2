@@ -18,6 +18,7 @@ using std::endl;
 #include "Drawing.h"
 #include "ChooseColorDlg.h"
 #include "ClippingDlg.h"
+#include "Utils.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -1093,6 +1094,11 @@ void CCGWorkView::OnChooseColors()
 		DeleteObject(_backgroundBrush);
 		_backgroundBrush = CreateSolidBrush(_backgroundColor = param.background_color);
 
+		if (_useBackgroundImage = (!param.background_image.IsNull()))
+		{
+			CopyImage(param.background_image, _backgrounImage);
+		}
+
 		Invalidate();
 	}
 }
@@ -1365,6 +1371,14 @@ void CCGWorkView::OnFileSave()
 		tmpDrawingObj.zBufImg = &zbimg;
 		tmpDrawingObj.img = &_pxl2obj;
 		tmpDrawingObj.active = DrawingObject::DRAWING_OBJECT_ZBUF;
+		if (_useBackgroundImage)
+		{
+			zbimg.SetBackgroundImage(_backgrounImage, ZBufferImage::REPEAT);
+		}
+		else
+		{
+			zbimg.SetBackgroundColor(_backgroundColor);
+		}
 
 		DrawScene(tmpDrawingObj);
 

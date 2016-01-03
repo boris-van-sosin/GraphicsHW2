@@ -178,6 +178,8 @@ void ZBufferImage::SetBackgroundColor(COLORREF clr)
 void ZBufferImage::SetBackgroundImage(CImage& img, BGImageMode imMode)
 {
 	_bgImageMode = imMode;
+	_useBackgroundImg = true;
+	_useBackgroundColor = false;
 	CopyImage(img, _backgroundImage);
 }
 
