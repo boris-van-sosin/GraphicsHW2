@@ -127,6 +127,17 @@ LineSegment operator*(const MatrixHomogeneous& m, const LineSegment& l)
 	return LineSegment(m * HomogeneousPoint(l.p0), m * HomogeneousPoint(l.p1));
 }
 
+Normals::PolygonNormalData operator*(const MatrixHomogeneous&m, const Normals::PolygonNormalData& nd)
+{
+	Normals::PolygonNormalData res(m * nd.PolygonNormal);
+	res.VertexNormals.reserve(nd.VertexNormals.size());
+	for (auto i = nd.VertexNormals.begin(); i != nd.VertexNormals.end(); ++i)
+	{
+		res.VertexNormals.push_back(m * (*i));
+	}
+	return res;
+}
+
 LineSegment TransformNormal(const MatrixHomogeneous& m, const LineSegment& l, double scalingFactor)
 {
 	const Point3D originTr(m * l.p0);

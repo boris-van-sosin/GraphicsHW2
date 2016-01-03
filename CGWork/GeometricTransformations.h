@@ -122,6 +122,7 @@ BoundingBox operator*(const Matrix3D& m, const BoundingBox& bbox);
 BoundingBox operator*(const MatrixHomogeneous& m, const BoundingBox& bbox);
 LineSegment operator*(const Matrix3D& m, const LineSegment& l);
 LineSegment operator*(const MatrixHomogeneous& m, const LineSegment& l);
+Normals::PolygonNormalData operator*(const MatrixHomogeneous&m, const Normals::PolygonNormalData& nd);
 
 LineSegment TransformNormal(const MatrixHomogeneous& m, const LineSegment& l, double scalingFactor = 1.0);
 

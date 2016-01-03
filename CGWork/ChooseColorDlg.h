@@ -36,5 +36,6 @@ protected:
 	void OnClrSubObjBBox();
 	void OnClrBackground();
 	void OnOk();
+	void OnBGImage();
 	DECLARE_MESSAGE_MAP()
 };

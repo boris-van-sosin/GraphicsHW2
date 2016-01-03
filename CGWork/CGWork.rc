@@ -246,6 +246,7 @@ BEGIN
     PUSHBUTTON      "Choose Model\r\nBounding Box Color",IDC_CLR_MODEL_BBOX,27,88,83,23,BS_MULTILINE
     PUSHBUTTON      "Choose Sub-Object\r\nBounding Box Color",IDC_CLR_SUB_BBOX,27,118,83,23,BS_MULTILINE
     PUSHBUTTON      "Choose Background",IDC_CLR_BG,27,69,83,14
+    PUSHBUTTON      "Choose Background",IDC_BGIMAGE,118,69,83,14
 END
 
 IDD_CLIPPING_DLG DIALOGEX 0, 0, 309, 176

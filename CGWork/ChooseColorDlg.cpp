@@ -35,6 +35,7 @@ BEGIN_MESSAGE_MAP(CChooseColorDlg, CDialogEx)
 	ON_COMMAND(IDC_CLR_SUB_BBOX, OnClrSubObjBBox)
 	ON_COMMAND(IDC_CLR_BG, OnClrBackground)
 	ON_COMMAND(IDOK, OnOk)
+	ON_COMMAND(IDC_BGIMAGE, OnBGImage)
 END_MESSAGE_MAP()
 
 
@@ -95,5 +96,16 @@ void CChooseColorDlg::OnClrBackground()
 	{
 		COLORREF clr = dlg.GetColor();
 		local_param.background_color = clr;
+	}
+}
+
+void CChooseColorDlg::OnBGImage()
+{
+	TCHAR szFilters[] = _T("PNG images (*.itd)|*.itd|BMP images (*.bmp)|*.bmp|JPG images (*.jpg)|*.jpg|JPG images (*.jpeg)|*.jpeg|All Files (*.*)|*.*||");
+	CFileDialog dlg(TRUE, _T("png"), _T("*.png"), OFN_FILEMUSTEXIST | OFN_HIDEREADONLY, szFilters);
+
+	if (dlg.DoModal() == IDOK)
+	{
+
 	}
 }

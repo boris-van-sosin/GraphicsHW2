@@ -1,6 +1,7 @@
 #include "Geometry.h"
 #include <math.h>
 #include <unordered_map>
+#include <set>
 
 Point3D::Point3D()
 	: x(0.0), y(0.0), z(0.0), color(RGB(255, 255, 255))
@@ -574,7 +575,26 @@ private:
 	HashAndComparePoint3D _pointHash;
 };
 
-void Normals::ComputeNormals(const std::vector<PolygonalObject>& objs, NormalList& polygonNormals, NormalList& vertexNormals, PolygonAdjacencyGraph& polygonAdjacency)
+Normals::PolygonNormalData::PolygonNormalData(const LineSegment& ls)
+	: PolygonNormal(ls)
+{
+}
+
+Normals::PolygonNormalData::PolygonNormalData(const Normals::PolygonNormalData& other)
+	: PolygonNormal(other.PolygonNormal), VertexNormals(other.VertexNormals)
+{
+}
+
+Normals::PolygonNormalData& Normals::PolygonNormalData::operator = (const Normals::PolygonNormalData& other)
+{
+	if (this == &other)
+		return *this;
+	PolygonNormal = other.PolygonNormal;
+	VertexNormals = other.VertexNormals;
+	return *this;
+}
+
+void Normals::ComputeNormals(const std::vector<PolygonalObject>& objs, std::vector<Normals::PolygonNormalData>& polygonNormals, NormalList& vertexNormals, PolygonAdjacencyGraph& polygonAdjacency)
 {
 	polygonNormals.clear();
 	vertexNormals.clear();
@@ -591,7 +611,7 @@ void Normals::ComputeNormals(const std::vector<PolygonalObject>& objs, NormalLis
 	vertexMap.reserve(approxNumVertices);
 
 	std::unordered_map<LineSegment, PolygonAdjacency, HashAndCompareEdge, HashAndCompareEdge> edgeMap;
-	edgeMap.reserve(2*approxNumVertices);
+	edgeMap.reserve(2 * approxNumVertices);
 
 	int polygonIdx = 0;
 	for (auto i = objs.begin(); i != objs.end(); ++i)
@@ -600,8 +620,9 @@ void Normals::ComputeNormals(const std::vector<PolygonalObject>& objs, NormalLis
 		{
 			const std::pair<double, HomogeneousPoint> areaAndCentroid = j->AreaAndCentroid();
 			const Vector3D currPolygonNormal = j->Normal();
-			polygonNormals.push_back(LineSegment(areaAndCentroid.second, HomogeneousPoint(Point3D(areaAndCentroid.second) - currPolygonNormal)));
-			
+			PolygonNormalData d(LineSegment(areaAndCentroid.second, HomogeneousPoint(Point3D(areaAndCentroid.second) - currPolygonNormal)));
+			polygonNormals.push_back(d);
+
 			polygonAreas.push_back(areaAndCentroid.first);
 			for (auto v = j->points.begin(); v != j->points.end(); ++v)
 			{
@@ -640,5 +661,19 @@ void Normals::ComputeNormals(const std::vector<PolygonalObject>& objs, NormalLis
 	{
 		const Vector3D direction = i->second.Normalized();
 		vertexNormals.push_back(LineSegment(HomogeneousPoint(i->first), HomogeneousPoint(i->first - direction)));
+	}
+
+	polygonIdx = 0;
+	for (auto i = objs.begin(); i != objs.end(); ++i)
+	{
+		for (auto j = i->polygons.begin(); j != i->polygons.end(); ++j)
+		{
+			for (auto v = j->points.begin(); v != j->points.end(); ++v)
+			{
+				const Vector3D direction = vertexMap[Point3D(*v)].Normalized();
+				polygonNormals[polygonIdx].VertexNormals.push_back(LineSegment(*v, HomogeneousPoint(Point3D(*v) + direction)));
+			}
+			++polygonIdx;
+		}
 	}
 }
