@@ -767,7 +767,10 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly, const MatrixHomogene
 
 	std::sort(edges.begin(), edges.end(), CompareEdgesByY);
 
-
+	double curr_y = edges.begin()->p0.y;
+	std::vector<LineSegment> activeList;
+	//activeList.push_back(edges.pop_back());
+	//while (!activeList.)
 }
 
 void DrawObject(DrawingObject& img, const PolygonalObject& obj, const model_attr_t& attr, const std::vector<Normals::PolygonNormalData>& normals, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0))
