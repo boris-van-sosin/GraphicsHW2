@@ -220,6 +220,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <BrowseInformation Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</BrowseInformation>
     </ClCompile>
+    <ClCompile Include="Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CGWork.rc" />
@@ -266,6 +267,7 @@
     <ClInclude Include="..\include\triv_lib.h" />
     <ClInclude Include="..\include\trng_lib.h" />
     <ClInclude Include="..\include\user_lib.h" />
+    <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="res\CGWork.ico" />

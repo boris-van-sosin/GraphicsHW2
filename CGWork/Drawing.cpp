@@ -1,4 +1,5 @@
 #include "Drawing.h"
+#include "Utils.h"
 
 ClippingPlane::ClippingPlane(double x_, double y_, double z_, double c_)
 	: x(x_), y(y_), z(z_), c(c_)
@@ -177,14 +178,7 @@ void ZBufferImage::SetBackgroundColor(COLORREF clr)
 void ZBufferImage::SetBackgroundImage(CImage& img, BGImageMode imMode)
 {
 	_bgImageMode = imMode;
-	if (!_backgroundImage.IsNull())
-		_backgroundImage.Destroy();
-	_backgroundImage.Create(img.GetWidth(), img.GetHeight(), 32);
-
-	// copy image:
-	HDC bgdc = _backgroundImage.GetDC();
-	img.BitBlt(bgdc, 0, 0, img.GetWidth(), img.GetHeight(), 0, 0);
-	_backgroundImage.ReleaseDC();
+	CopyImage(img, _backgroundImage);
 }
 
 void ZBufferImage::PushPixel(int x, int y, double z, COLORREF clr)

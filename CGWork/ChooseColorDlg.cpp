@@ -106,6 +106,10 @@ void CChooseColorDlg::OnBGImage()
 
 	if (dlg.DoModal() == IDOK)
 	{
-
+		if (!local_param.background_image.IsNull())
+		{
+			local_param.background_image.Destroy();
+		}
+		local_param.background_image.Load(dlg.GetPathName());
 	}
 }

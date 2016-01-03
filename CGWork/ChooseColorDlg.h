@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atlimage.h>
 
 // CChooseColorDlg dialog
 
@@ -11,6 +12,7 @@ public:
 	COLORREF model_bbox_color;
 	COLORREF subObj_bbox_color;
 	COLORREF background_color;
+	CImage background_image;
 };
 
 class CChooseColorDlg : public CDialogEx
