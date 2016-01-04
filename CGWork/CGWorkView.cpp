@@ -460,14 +460,15 @@ struct XData
 	int x;
 	int LineId;
 	PixelType Type;
-	bool operator<(const XData& other) const
-	{
-		if (x != other.x)
-			return x < other.x;
-		else
-			return LineId != other.LineId;
-	}
 };
+
+bool operator<(const XData& a, const XData& b)
+{
+	if (a.x != b.x)
+		return a.x < b.x;
+	else
+		return a.LineId < b.LineId;
+}
 
 bool CmpByX(const XData& a, const XData& b)
 {
@@ -487,30 +488,8 @@ struct FakeXYMap
 		if (xyMap.find(y) == xyMap.end())
 		{
 			xyMap[y] = std::vector<XData>();
-			xyMap[y].push_back(XData(x, clr));
 		}
-		else
-		{
-			std::vector<XData>& row = xyMap[y];
-			for (int i = 0; i < row.size(); ++i)
-			{
-				if (row[i].x == x)
-				{
-					if (i != (row.size() - 1) && row[i + 1].x == x)
-					{
-
-					}
-					else
-					{
-					}
-				}
-				else if (row[i].x > x)
-				{
-					row.insert(row.begin() + i, XData(x, clr));
-					break;
-				}
-			}
-		}
+		xyMap[y].push_back(XData(x, clr));
 	}
 
 	std::map<int, std::vector<XData>> xyMap;	// y => <x, line id, pixel type>
@@ -793,7 +772,70 @@ LineSegment ApplyClippingAndViewMatrix(const HomogeneousPoint& p0, const Homogen
 	}
 }
 
-void DrawPolygon(DrawingObject& img, const Polygon3D& poly, const MatrixHomogeneous& mFirst, const MatrixHomogeneous& mSecond, const MatrixHomogeneous& mTotal, const model_attr_t& attr, COLORREF objColor, bool objColorValid, const Normals::PolygonNormalData& nd, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0))
+void CollapseSequences(std::vector<XData>& row)
+{
+	for (int i = 0; i < (row.size() - 1);)
+	{
+		const size_t sz = row.size();
+		bool deleted = false;
+		for (int j = i + 1; j < min(sz, i + 3); ++j)
+		{
+			if ((row[i].x + 1) == row[j].x &&
+				row[i].LineId == row[j].LineId)
+			{
+				if (row[i].Type == XData::MIDDLE &&
+					row[j].Type == XData::MIDDLE)
+				{
+					row.erase(row.begin() + i);
+					deleted = true;
+					break;
+				}
+				else if (row[i].Type == XData::MIDDLE &&
+					row[j].Type != XData::MIDDLE)
+				{
+					int lastX = row[j].x;
+					while (i >= 0)
+					{
+						if (row[i].Type == XData::MIDDLE &&
+							row[i].LineId == row[j--].LineId &&
+							row[i].x == lastX - 1)
+						{
+							row.erase(row.begin() + i);
+							--lastX;
+						}
+						--i;
+					}
+					if (i < 0)
+						i = 0;
+					deleted = true;
+					break;
+				}
+				else if (row[i].Type != XData::MIDDLE &&
+					row[j].Type == XData::MIDDLE)
+				{
+					int lastX = row[i].x;
+					while (j < row.size()){
+						if (row[j].Type == XData::MIDDLE &&
+							row[j].LineId == row[i].LineId &&
+							row[j].x == lastX + 1)
+						{
+							row.erase(row.begin() + j);
+							++lastX;
+						}
+						else
+							++j;
+					}
+					deleted = true;
+					break;
+				}
+			}
+		}
+		if (!deleted)
+			++i;
+	}
+}
+
+void DrawPolygon(DrawingObject& img, const Polygon3D& poly, const MatrixHomogeneous& mFirst, const MatrixHomogeneous& mSecond, const MatrixHomogeneous& mTotal, const model_attr_t& attr, COLORREF objColor, bool objColorValid, const Normals::PolygonNormalData& nd, bool fillPolygons, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0))
 {
 	if (poly.points.size() < 2)
 	{
@@ -832,6 +874,7 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly, const MatrixHomogene
 						pIt->Type = XData::UPPER_LIMIT;
 					else
 						pIt->Type = XData::LOWER_LIMIT;
+					break;
 				}
 			}
 			for (auto pIt = xyMap.xyMap[y1].begin(); pIt != xyMap.xyMap[y1].end(); ++pIt)
@@ -842,6 +885,30 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly, const MatrixHomogene
 						pIt->Type = XData::UPPER_LIMIT;
 					else
 						pIt->Type = XData::LOWER_LIMIT;
+					break;
+				}
+			}
+		}
+		else
+		{
+			xyMap.SetPixel(x0, y0, 0.0, i - poly.points.begin());
+			xyMap.SetPixel(x1, y1, 0.0, i - poly.points.begin());
+			for (auto pIt = xyMap.xyMap[y0].begin(); pIt != xyMap.xyMap[y0].end(); ++pIt)
+			{
+				if (pIt->LineId == (i - poly.points.begin()))
+				if (pIt->x == x0)
+				{
+					if (x0 < x1)
+						pIt->Type = XData::UPPER_LIMIT;
+					else
+						pIt->Type = XData::LOWER_LIMIT;
+				} 
+				else if(pIt->x == x0)
+				{
+					if (x0 < x1)
+						pIt->Type = XData::LOWER_LIMIT;
+					else
+						pIt->Type = XData::UPPER_LIMIT;
 				}
 			}
 		}
@@ -850,49 +917,51 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly, const MatrixHomogene
 		y0 = y1;
 	}
 
+	if (!fillPolygons)
+	{
+		return;
+	}
 	for (int y = xyMap.minY; y <= xyMap.maxY; ++y) {
+		if (y < 0)
+			continue;
 		std::vector<XData>& currRow = xyMap.xyMap[y];
-		std::sort(currRow.begin(), currRow.end(), CmpById);
-		std::stable_sort(currRow.begin(), currRow.end(), CmpByX);
+		std::sort(currRow.begin(), currRow.end());
+
+		// collapse sequences of pixels
+		CollapseSequences(currRow);
 
 		bool draw = false;
 		int idx = 0;
-		for (int x = currRow.front().x; x != currRow.back().x;)
+		for (int x = currRow.front().x; x != currRow.back().x; ++x)
 		{
 			if (x == currRow[idx].x)
 			{
-				while (idx < (currRow.size() - 1) && currRow[idx].x != currRow[idx + 1].x)
+				int counters[3] = { 0, 0, 0 };
+				
+				while (idx < (currRow.size() - 1) && (currRow[idx].x == currRow[idx + 1].x))
 				{
+					++(counters[currRow[idx].Type]);
 					++idx;
 				}
+				++(counters[currRow[idx].Type]);
 
-				x = currRow[idx - 1].x;
+				++idx;
 
-				switch (currRow[idx].Type)
+				if (counters[XData::MIDDLE] > 0 && (counters[XData::UPPER_LIMIT] == 0 || counters[XData::LOWER_LIMIT] == 0))
 				{
-				case XData::MIDDLE:
 					draw = !draw;
-					break;
-				case XData::LOWER_LIMIT:
-					draw = true;
-					break;
-				case XData::UPPER_LIMIT:
-					draw = false;
-					break;
-				default:
-					break;
 				}
+				else if (counters[XData::UPPER_LIMIT] > 0 && counters[XData::LOWER_LIMIT] > 0)
+				{
+					draw = !draw;
+				}
+
 			}
-			/*else
-			{
-				++x;
-			}*/
 
 			if (draw)
 			{
 				img.SetPixel(x, y, 0.0, RGB(0, 0, 255));
 			}
-			++x;
 		}
 	}
 
@@ -938,7 +1007,7 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly, const MatrixHomogene
 	*/
 }
 
-void DrawObject(DrawingObject& img, const PolygonalObject& obj, const model_attr_t& attr, const std::vector<Normals::PolygonNormalData>& normals, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0))
+void DrawObject(DrawingObject& img, const PolygonalObject& obj, const model_attr_t& attr, const std::vector<Normals::PolygonNormalData>& normals, bool fillPolygons, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0))
 {
 	for (size_t i = 0; i != obj.polygons.size(); ++i)
 	{
@@ -950,7 +1019,7 @@ void DrawObject(DrawingObject& img, const PolygonalObject& obj, const model_attr
 	}
 }
 
-void DrawObject(DrawingObject& img, const PolygonalObject& obj, const MatrixHomogeneous& mFirst, const MatrixHomogeneous& mSecond, const MatrixHomogeneous& mTotal, const model_attr_t& attr, const std::vector<Normals::PolygonNormalData>& normals, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0))
+void DrawObject(DrawingObject& img, const PolygonalObject& obj, const MatrixHomogeneous& mFirst, const MatrixHomogeneous& mSecond, const MatrixHomogeneous& mTotal, const model_attr_t& attr, const std::vector<Normals::PolygonNormalData>& normals, bool fillPolygons, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0))
 {
 	for (size_t i = 0; i != obj.polygons.size(); ++i)
 	{
@@ -970,7 +1039,7 @@ void DrawObject(DrawingObject& img, const PolygonalObject& obj, const MatrixHomo
 		}
 		if (draw)
 		{
-			DrawPolygon(img, obj.polygons[i], mFirst, mSecond, mTotal, attr, obj.color, obj.colorValid, normals[i], clip, cp);
+			DrawPolygon(img, obj.polygons[i], mFirst, mSecond, mTotal, attr, obj.color, obj.colorValid, normals[i], fillPolygons, clip, cp);
 		}
 	}
 }
@@ -1434,10 +1503,10 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 		tmpDrawingObj.active = DrawingObject::DRAWING_OBJECT_CIMG;
 		for (std::vector<PolygonalObject>::iterator it = model.begin(); it != model.end(); ++it)
 		{
-			DrawObject(img, *it, mFirst, mSecond, mTotal, attr, _polygonNormals[i], m_bIsPerspective, perspData.NearPlane);
+			DrawObject(img, *it, mFirst, mSecond, mTotal, attr, _polygonNormals[i], true, m_bIsPerspective, perspData.NearPlane);
 			shadow_attr.color = i + 1;
 			shadow_attr.forceColor = true;
-			DrawObject(tmpDrawingObj, *it, mFirst, mSecond, mTotal, shadow_attr, _polygonNormals[i], m_bIsPerspective, perspData.NearPlane);
+			DrawObject(tmpDrawingObj, *it, mFirst, mSecond, mTotal, shadow_attr, _polygonNormals[i], false, m_bIsPerspective, perspData.NearPlane);
 		}
 
 		if (true)
@@ -1501,7 +1570,7 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 			model_attr_t bboxAttr;
 			bboxAttr.color = _model_attr[i].model_bbox_color;
 			bboxAttr.forceColor = true;
-			DrawObject(img, _modelBoundingBoxes[i], mFirst, mSecond, mTotal, bboxAttr, _polygonNormals[i], m_bIsPerspective, perspData.NearPlane);
+			DrawObject(img, _modelBoundingBoxes[i], mFirst, mSecond, mTotal, bboxAttr, _polygonNormals[i], false, m_bIsPerspective, perspData.NearPlane);
 		}
 		if (attr.displaySubObjectBBox)
 		{
@@ -1510,7 +1579,7 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 			bboxAttr.forceColor = true;
 			for (auto j = _subObjectBoundingBoxes[i].begin(); j != _subObjectBoundingBoxes[i].end(); ++j)
 			{
-				DrawObject(img, *j, mFirst, mSecond, mTotal, bboxAttr, _polygonNormals[i], m_bIsPerspective, perspData.NearPlane);
+				DrawObject(img, *j, mFirst, mSecond, mTotal, bboxAttr, _polygonNormals[i], false, m_bIsPerspective, perspData.NearPlane);
 			}
 		}
 	}
@@ -1537,7 +1606,6 @@ void CCGWorkView::OnFileSave()
 		DrawingObject tmpDrawingObj;
 		ZBufferImage zbimg(2000, 2000);
 		tmpDrawingObj.zBufImg = &zbimg;
-		tmpDrawingObj.img = &_pxl2obj;
 		tmpDrawingObj.active = DrawingObject::DRAWING_OBJECT_ZBUF;
 		if (_useBackgroundImage)
 		{
