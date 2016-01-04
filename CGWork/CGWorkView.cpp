@@ -8,6 +8,8 @@
 
 #include <iostream>
 #include <algorithm>
+#include <list>
+#include <map>
 using std::cout;
 using std::endl;
 #include "MaterialDlg.h"
@@ -448,7 +450,75 @@ void swap(int& x, int& y) {
 	y = z;
 }
 
-void innerDrawLine(DrawingObject& img, int x0, int y0, int x1, int y1, COLORREF clr, unsigned int line_width) {
+struct XData
+{
+	enum PixelType { MIDDLE, UPPER_LIMIT, LOWER_LIMIT };
+	XData(int x_, int lid, PixelType pt = MIDDLE)
+		: x(x_), LineId(lid), Type(pt)
+	{}
+
+	int x;
+	int LineId;
+	PixelType Type;
+	bool operator<(const XData& other) const
+	{
+		if (x != other.x)
+			return x < other.x;
+		else
+			return LineId != other.LineId;
+	}
+};
+
+bool CmpByX(const XData& a, const XData& b)
+{
+	return a.x < b.x;
+}
+bool CmpById(const XData& a, const XData& b)
+{
+	return a.LineId < b.LineId;
+}
+
+struct FakeXYMap
+{
+	void SetPixel(int x, int y, double z, COLORREF clr)
+	{
+		minY = min(minY, y);
+		maxY = max(maxY, y);
+		if (xyMap.find(y) == xyMap.end())
+		{
+			xyMap[y] = std::vector<XData>();
+			xyMap[y].push_back(XData(x, clr));
+		}
+		else
+		{
+			std::vector<XData>& row = xyMap[y];
+			for (int i = 0; i < row.size(); ++i)
+			{
+				if (row[i].x == x)
+				{
+					if (i != (row.size() - 1) && row[i + 1].x == x)
+					{
+
+					}
+					else
+					{
+					}
+				}
+				else if (row[i].x > x)
+				{
+					row.insert(row.begin() + i, XData(x, clr));
+					break;
+				}
+			}
+		}
+	}
+
+	std::map<int, std::vector<XData>> xyMap;	// y => <x, line id, pixel type>
+	int minY = INT_MAX, maxY = -1;
+};
+
+template <typename T>
+void innerDrawLine(T& img, int x0, int y0, int x1, int y1, COLORREF clr, unsigned int line_width) {
 	if (x0 > x1) {
 		swap(x0, x1);
 		swap(y0, y1);
@@ -730,47 +800,142 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly, const MatrixHomogene
 		return;
 	}
 
+	FakeXYMap xyMap;
+
+	int x0, y0, x1, y1;
 	for (auto i = poly.points.begin(); i != poly.points.end(); ++i)
 	{
 		COLORREF actualColor = GetActualColor(objColor, objColorValid, poly, *i, attr);
 
-		if (i + 1 != poly.points.end())
+		const LineSegment l = ((i+1) != poly.points.end()) ? 
+			(clip ? ApplyClippingAndViewMatrix(*i, *(i + 1), mFirst, mSecond, mTotal, cp) : LineSegment(mTotal*(*i), mTotal*(*(i + 1)))) :
+			(clip ? ApplyClippingAndViewMatrix(*i, poly.points.front(), mFirst, mSecond, mTotal, cp) : LineSegment(mTotal*(*i), mTotal*poly.points.front()));
+
+		if (i == poly.points.begin())
 		{
-			if (clip)
+			x0 = l.p0.x;
+			y0 = l.p0.y;
+		}
+		x1 = l.p1.x;
+		y1 = l.p1.y;
+		innerDrawLine(img, x0, y0, x1, y1, actualColor, attr.line_width);
+
+		if (y0 != y1)
+		{
+			innerDrawLine(xyMap, x0, y0, x1, y1, i - poly.points.begin(), 1);
+
+			for (auto pIt = xyMap.xyMap[y0].begin(); pIt != xyMap.xyMap[y0].end(); ++pIt)
 			{
-				DrawLineSegment(img, ApplyClippingAndViewMatrix(*i, *(i + 1), mFirst, mSecond, mTotal, cp), actualColor, attr.line_width);
+				if (pIt->x == x0 && pIt->LineId == (i - poly.points.begin()))
+				{
+					if (y0 < y1)
+						pIt->Type = XData::UPPER_LIMIT;
+					else
+						pIt->Type = XData::LOWER_LIMIT;
+				}
 			}
-			else
+			for (auto pIt = xyMap.xyMap[y1].begin(); pIt != xyMap.xyMap[y1].end(); ++pIt)
 			{
-				DrawLineSegment(img, mTotal*(*i), mTotal*(*(i + 1)), actualColor, attr.line_width, clip, cp);
+				if (pIt->x == x1 && pIt->LineId == (i - poly.points.begin()))
+				{
+					if (y1 < y0)
+						pIt->Type = XData::UPPER_LIMIT;
+					else
+						pIt->Type = XData::LOWER_LIMIT;
+				}
 			}
 		}
-		else
+
+		x0 = x1;
+		y0 = y1;
+	}
+
+	for (int y = xyMap.minY; y <= xyMap.maxY; ++y) {
+		std::vector<XData>& currRow = xyMap.xyMap[y];
+		std::sort(currRow.begin(), currRow.end(), CmpById);
+		std::stable_sort(currRow.begin(), currRow.end(), CmpByX);
+
+		bool draw = false;
+		int idx = 0;
+		for (int x = currRow.front().x; x != currRow.back().x;)
 		{
-			if (clip)
+			if (x == currRow[idx].x)
 			{
-				DrawLineSegment(img, ApplyClippingAndViewMatrix(*i, poly.points.front(), mFirst, mSecond, mTotal, cp), actualColor, attr.line_width);
+				while (idx < (currRow.size() - 1) && currRow[idx].x != currRow[idx + 1].x)
+				{
+					++idx;
+				}
+
+				x = currRow[idx - 1].x;
+
+				switch (currRow[idx].Type)
+				{
+				case XData::MIDDLE:
+					draw = !draw;
+					break;
+				case XData::LOWER_LIMIT:
+					draw = true;
+					break;
+				case XData::UPPER_LIMIT:
+					draw = false;
+					break;
+				default:
+					break;
+				}
 			}
-			else
+			/*else
 			{
-				DrawLineSegment(img, mTotal*(*i), mTotal*poly.points.front(), actualColor, attr.line_width, clip, cp);
+				++x;
+			}*/
+
+			if (draw)
+			{
+				img.SetPixel(x, y, 0.0, RGB(0, 0, 255));
 			}
+			++x;
 		}
 	}
 
-	std::vector<LineSegment> edges = (mTotal * poly).Edges();
-	for (auto e = edges.begin(); e != edges.end(); ++e) {
+	/*
+	std::vector<LineSegment> edges1 = (mTotal * poly).Edges();
+	
+	for (auto e = edges1.begin(); e != edges1.end(); ++e) {
 		if (e->p0.y > e->p1.y) {
 			*e = LineSegment(e->p1, e->p0);
 		}
 	}
+	
+	std::sort(edges1.begin(), edges1.end(), CompareEdgesByY);
 
-	std::sort(edges.begin(), edges.end(), CompareEdgesByY);
+	std::list<LineSegment> edges(edges1.begin(), edges1.end());
 
-	double curr_y = edges.begin()->p0.y;
-	std::vector<LineSegment> activeList;
-	//activeList.push_back(edges.pop_back());
-	//while (!activeList.)
+	int curr_y = edges.begin()->p0.y;
+	std::list<LineSegment> activeList;
+	activeList.push_back(edges.front());
+	edges.pop_front();
+	
+	while (!activeList.empty()) {
+		// adding edges to active list
+		while (!edges.empty() && edges.begin()->p0.y >= curr_y) {
+			activeList.push_back(edges.front());
+			edges.pop_front();
+		}
+		
+		// drawing current active_list line
+		bool to_draw = false;
+		for (auto it = activeList.begin(); it != activeList.end(); ++it)
+		{
+			int x0 = it->p0.x, y0 = it->p0.y, x1 = it->p1.x, y1 = it->p1.y;
+			int dy = y1 - y0;
+			int dx = x1 - x0;
+			int midY = curr_y - y0;
+			
+		}
+
+		// y ++
+		curr_y++;
+	}
+	*/
 }
 
 void DrawObject(DrawingObject& img, const PolygonalObject& obj, const model_attr_t& attr, const std::vector<Normals::PolygonNormalData>& normals, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0))
