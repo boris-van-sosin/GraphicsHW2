@@ -125,7 +125,7 @@ ZBufferImage::ZBufferImage()
 {
 }
 
-ZBufferImage::ZBufferImage(size_t h, size_t w)
+ZBufferImage::ZBufferImage(size_t w, size_t h)
 	: _height(h), _width(w), _useBackgroundColor(false), _useBackgroundImg(false)
 {
 	_img = new ZBufferPixel[_height*_width];
@@ -146,7 +146,7 @@ int ZBufferImage::GetWidth() const
 	return _width;
 }
 
-void ZBufferImage::SetSize(size_t h, size_t w)
+void ZBufferImage::SetSize(size_t w, size_t h)
 {
 	if (h == _height && w == _width)
 	{
@@ -365,12 +365,12 @@ void inline ImageSetPixel(CImage& img, int x, int y, COLORREF clr)
 }
 
 DrawingObject::DrawingObject()
-	: zBufImg(NULL), img(NULL)
+	: zBufImg(NULL), img(NULL), _near(0.0), _far(0.0), _doClip(false)
 {
 }
 
 DrawingObject::DrawingObject(CImage& cimg, ZBufferImage& zbimg)
-	: zBufImg(&zbimg), img(&cimg)
+	: zBufImg(&zbimg), img(&cimg), _near(0.0), _far(0.0), _doClip(false)
 {
 }
 
@@ -396,6 +396,11 @@ int DrawingObject::GetWidth() const
 
 void DrawingObject::SetPixel(int x, int y, double z, COLORREF clr)
 {
+	/*if (_doClip &&
+		z < _near)
+	{
+		return;
+	}*/
 	if (active == DRAWING_OBJECT_CIMG && img)
 		ImageSetPixel(*img, x, y, clr);
 	else if (zBufImg)
@@ -409,4 +414,16 @@ void DrawingObject::SetPixel(int x, int y, const Point3D& p0, const Point3D& p1,
 			:
 			(((x - p0.x) / (p1.x - p0.x)) * (p1.z - p0.z) + p0.z);
 	SetPixel(x, y, z, clr);
+}
+
+void DrawingObject::SetClipping(double n, double f)
+{
+	_near = n;
+	_far = f;
+	_doClip = true;
+}
+
+void DrawingObject::RemoveClipping()
+{
+	_doClip = false;
 }

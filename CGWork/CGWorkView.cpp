@@ -570,10 +570,10 @@ void innerDrawLine(T& img, const MixedIntPoint& p0, const MixedIntPoint& p1, COL
 			}
 			else
 			{
-				img.SetPixel(y0, x0, 0.0, clr);
+				img.SetPixel(y0, x0, currZ, clr);
 				for (unsigned int i = 1; i < line_width; i++) {
-					img.SetPixel(y0 + i, x0, 0.0, clr);
-					img.SetPixel(y0 - i, x0, 0.0, clr);
+					img.SetPixel(y0 + i, x0, currZ, clr);
+					img.SetPixel(y0 - i, x0, currZ, clr);
 				}
 			}
 		}
@@ -598,7 +598,7 @@ void innerDrawLine(T& img, const MixedIntPoint& p0, const MixedIntPoint& p1, COL
 			const double currZ = z ? (swapXY ? LinearInterpolate(y, y0, y1, z0, z1) : LinearInterpolate(x, x0, x1, z0, z1)) : 0.0;
 			if (!swapXY)
 			{
-				img.SetPixel(x, y, 0.0, clr);
+				img.SetPixel(x, y, currZ, clr);
 				for (unsigned int i = 1; i < line_width; i++) {
 					img.SetPixel(x, y + 1, currZ, clr);
 					img.SetPixel(x, y - 1, currZ, clr);
@@ -606,7 +606,7 @@ void innerDrawLine(T& img, const MixedIntPoint& p0, const MixedIntPoint& p1, COL
 			}
 			else
 			{
-				img.SetPixel(y, x, 0.0, clr);
+				img.SetPixel(y, x, currZ, clr);
 				for (unsigned int i = 1; i < line_width; i++) {
 					img.SetPixel(y + i, x, currZ, clr);
 					img.SetPixel(y - i, x, currZ, clr);
@@ -616,7 +616,7 @@ void innerDrawLine(T& img, const MixedIntPoint& p0, const MixedIntPoint& p1, COL
 	}
 	else if (dx == 0 && dy == 0)
 	{
-		img.SetPixel(x0, y0, 0.0, clr);
+		img.SetPixel(x0, y0, z0, clr);
 		for (unsigned int i = 1; i < line_width; i++) {
 			img.SetPixel(x0, y0 + i, z0, clr);
 			img.SetPixel(x0, y0 - i, z0, clr);
@@ -867,6 +867,23 @@ void CollapseSequences(std::vector<XData>& row)
 	}
 }
 
+bool innerBinarySearchInXDataVector(const std::vector<XData>::const_iterator a, const std::vector<XData>::const_iterator b, const std::vector<XData>::const_iterator end, int x)
+{
+	if ((a != end && a->x == x) || (b != end && b->x == x))
+		return true;
+	else if (a == b)
+		return false;
+	const std::vector<XData>::const_iterator mid = a + ((b - a) >> 1);
+	if (mid != end && mid->x == x)
+		return true;
+	return innerBinarySearchInXDataVector(a, mid, end, x) || innerBinarySearchInXDataVector(mid + 1, b, end, x);
+}
+
+bool BinarySearchInXDataVector(const std::vector<XData>& v, int x)
+{
+	return innerBinarySearchInXDataVector(v.begin(), v.end(), v.end(), x);
+}
+
 void DrawPolygon(DrawingObject& img, const Polygon3D& poly, const MatrixHomogeneous& mFirst, const MatrixHomogeneous& mSecond, const MatrixHomogeneous& mTotal, const model_attr_t& attr, COLORREF objColor, bool objColorValid, const Normals::PolygonNormalData& nd, bool fillPolygons, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0))
 {
 	if (poly.points.size() < 2)
@@ -877,6 +894,7 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly, const MatrixHomogene
 	FakeXYMap xyMap;
 
 	MixedIntPoint p0, p1;
+	bool getP0 = true;
 	for (auto i = poly.points.begin(); i != poly.points.end(); ++i)
 	{
 		COLORREF actualColor = GetActualColor(objColor, objColorValid, poly, *i, attr);
@@ -885,10 +903,18 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly, const MatrixHomogene
 			(clip ? ApplyClippingAndViewMatrix(*i, *(i + 1), mFirst, mSecond, mTotal, cp) : LineSegment(mTotal*(*i), mTotal*(*(i + 1)))) :
 			(clip ? ApplyClippingAndViewMatrix(*i, poly.points.front(), mFirst, mSecond, mTotal, cp) : LineSegment(mTotal*(*i), mTotal*poly.points.front()));
 
-		if (i == poly.points.begin())
+		if (getP0)
 		{
 			p0 = MixedIntPoint(l.p0);
+			getP0 = false;
 		}
+
+		if (l.p0.w == 0 || l.p1.w == 0)
+		{
+			getP0 = true;
+			continue;
+		}
+
 		p1 = MixedIntPoint(l.p1);
 		innerDrawLine(img, p0, p1, actualColor, attr.line_width, img.active==DrawingObject::DRAWING_OBJECT_ZBUF);
 
@@ -954,18 +980,15 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly, const MatrixHomogene
 		if (y < 0)
 			continue;
 		std::vector<XData> currRow = xyMap.xyMap[y];
-		std::set<int> toRemoveList;
-		for (auto it = currRow.begin(); it != currRow.end(); ++it)
-		{
-			toRemoveList.insert(it->x);
-		}
 		std::sort(currRow.begin(), currRow.end());
+		std::vector<XData> origRow = currRow;
 
 		// collapse sequences of pixels
 		CollapseSequences(currRow);
 
 		bool draw = false;
 		int idx = 0;
+		std::vector<XData>::const_iterator interpolationIter0 = origRow.begin();
 		for (int x = currRow.front().x; x != currRow.back().x; ++x)
 		{
 			if (x == currRow[idx].x)
@@ -992,9 +1015,23 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly, const MatrixHomogene
 
 			}
 
-			if (draw && (toRemoveList.find(x) == toRemoveList.end()))
+			if (draw && !BinarySearchInXDataVector(origRow, x))
 			{
-				img.SetPixel(x, y, 0.0, RGB(0, 0, 255));
+				if (img.active == DrawingObject::DRAWING_OBJECT_ZBUF)
+				{
+					while (x > (interpolationIter0 + 1)->x)
+					{
+						++interpolationIter0;
+					}
+					const int x0 = (interpolationIter0)->x, x1 = (interpolationIter0 + 1)->x;
+					const double z0 = (interpolationIter0)->z, z1 = (interpolationIter0 + 1)->z;
+					const double currZ = LinearInterpolate(x, x0, x1, z0, z1);
+					img.SetPixel(x, y, currZ, RGB(0, 0, 255));
+				}
+				else
+				{
+					img.SetPixel(x, y, 0.0, RGB(0, 0, 255));
+				}
 			}
 		}
 	}
@@ -1461,6 +1498,15 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 	
 	int height = img.GetHeight();
 	int width = img.GetWidth();
+	
+	if (m_bIsPerspective)
+	{
+		img.SetClipping(_nearClippingPlane, _farClippingPlane);
+	}
+	else
+	{
+		img.RemoveClipping();
+	}
 
 	for (size_t i = 0; i < _models.size(); i++) {
 		const BoundingBox bCube = _bboxes[i].BoundingCube();
@@ -1586,18 +1632,19 @@ void CCGWorkView::OnFileSave()
 	{
 		const CString fileName = dlg.GetPathName();
 		CImage img;
-		img.Create(2000, 2000, 32);
+		const int h = 200, w = 200;
+		img.Create(w, h, 32);
 
 		RECT r;
 		r.top = r.left = 0;
-		r.bottom = r.right = 2000;
+		r.bottom = h; r.right = w;
 
 		HDC imgDC = img.GetDC();
 		FillRect(imgDC, &r, _backgroundBrush);
 		img.ReleaseDC();
 
 		DrawingObject tmpDrawingObj;
-		ZBufferImage zbimg(2000, 2000);
+		ZBufferImage zbimg(w, h);
 		tmpDrawingObj.zBufImg = &zbimg;
 		tmpDrawingObj.active = DrawingObject::DRAWING_OBJECT_ZBUF;
 		if (_useBackgroundImage)

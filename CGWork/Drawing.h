@@ -62,14 +62,14 @@ class ZBufferImage
 {
 public:
 	ZBufferImage();
-	ZBufferImage(size_t h, size_t w);
+	ZBufferImage(size_t w, size_t h);
 	~ZBufferImage();
 
 	enum BGImageMode { CROP, STRECH, REPEAT };
 
 	int GetHeight() const;
 	int GetWidth() const;
-	void SetSize(size_t h, size_t w);
+	void SetSize(size_t w, size_t h);
 	void PushPixel(int x, int y, double z, COLORREF clr);
 	void PushPixel(int x, int y, const Point3D& p0, const Point3D& p1, COLORREF clr);
 	void Clear();
@@ -91,6 +91,9 @@ public:
 	DrawingObject();
 	DrawingObject(CImage& cimg, ZBufferImage& zbimg);
 
+	void SetClipping(double n, double f);
+	void RemoveClipping();
+
 	enum ActiveDrawingObject { DRAWING_OBJECT_ZBUF, DRAWING_OBJECT_CIMG };
 
 	ZBufferImage* zBufImg;
@@ -100,6 +103,9 @@ public:
 	int GetWidth() const;
 	void SetPixel(int x, int y, double z, COLORREF clr);
 	void SetPixel(int x, int y, const Point3D& p0, const Point3D& p1, COLORREF clr);
+private:
+	double _near, _far;
+	bool _doClip;
 };
 
 #endif
