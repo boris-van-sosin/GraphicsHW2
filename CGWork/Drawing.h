@@ -91,9 +91,6 @@ public:
 	DrawingObject();
 	DrawingObject(CImage& cimg, ZBufferImage& zbimg);
 
-	void SetClipping(double n, double f);
-	void RemoveClipping();
-
 	enum ActiveDrawingObject { DRAWING_OBJECT_ZBUF, DRAWING_OBJECT_CIMG };
 
 	ZBufferImage* zBufImg;

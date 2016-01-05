@@ -415,15 +415,3 @@ void DrawingObject::SetPixel(int x, int y, const Point3D& p0, const Point3D& p1,
 			(((x - p0.x) / (p1.x - p0.x)) * (p1.z - p0.z) + p0.z);
 	SetPixel(x, y, z, clr);
 }
-
-void DrawingObject::SetClipping(double n, double f)
-{
-	_near = n;
-	_far = f;
-	_doClip = true;
-}
-
-void DrawingObject::RemoveClipping()
-{
-	_doClip = false;
-}
