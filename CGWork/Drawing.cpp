@@ -111,9 +111,9 @@ MatrixHomogeneous CenterToCube(const BoundingBox& boundingCube, bool minus)
 	const double vnear = -boundingCube.minZ;
 	const double sign = minus ? 1 : -1;
 	HomogeneousPoint rows[4] = {
-		HomogeneousPoint(1, 0, 0, sign * (vright + vleft) / (vright - vleft)),
-		HomogeneousPoint(0, 1, 0, sign * (vtop + vbottom) / (vtop - vbottom)),
-		HomogeneousPoint(0, 0, 1, sign * (vnear + vfar) / (vfar - vnear)),
+		HomogeneousPoint(1, 0, 0, sign * (vright + vleft) / 2),
+		HomogeneousPoint(0, 1, 0, sign * (vtop + vbottom) / 2),
+		HomogeneousPoint(0, 0, 1, sign * (vnear + vfar) / 2),
 		HomogeneousPoint(0, 0, 0, 1)
 	};
 	return MatrixHomogeneous(rows);
@@ -833,17 +833,25 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 
 	FakeXYMap xyMap;
 
-	const Polygon3D poly = mTotal * (clip ? ApplyClipping(poly0, cp) : poly0);
+	const Polygon3D clipPoly = clip ? ApplyClipping(poly0, cp) : poly0;
+	const Polygon3D poly = mTotal * clipPoly;
 
 	MixedIntPoint p0, p1;
 	bool getP0 = true;
-	for (auto i = poly.points.begin(); i != poly.points.end(); ++i)
+	for (size_t i = 0; i < poly.points.size(); ++i)
 	{
-		COLORREF actualColor = GetActualColor(objColor, objColorValid, poly, *i, attr);
+		COLORREF actualColor = fillPolygons ?
+								GetActualColor(objColor, objColorValid, poly, HomogeneousPoint::Zeros, attr)
+								:
+								GetActualColor(objColor, objColorValid, poly, poly.points[i], attr);
 
-		const LineSegment l = ((i + 1) != poly.points.end()) ?
-			LineSegment(*i, *(i + 1)) :
-			LineSegment(*i, poly.points.front());
+		const LineSegment l = ((i + 1) < poly.points.size()) ?
+			LineSegment(poly.points[i], poly.points[i + 1]) :
+			LineSegment(poly.points[i], poly.points.front());
+
+		const LineSegment objSpaceLn = ((i + 1) < clipPoly.points.size()) ?
+			LineSegment(clipPoly.points[i], clipPoly.points[i + 1]) :
+			LineSegment(clipPoly.points[i], clipPoly.points.front());
 
 		if (getP0)
 		{
@@ -863,11 +871,11 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 
 		if (p0.y != p1.y)
 		{
-			innerDrawLine(xyMap, p0, p1, i - poly.points.begin(), 1, img.active == DrawingObject::DRAWING_OBJECT_ZBUF);
+			innerDrawLine(xyMap, p0, p1, i, 1, img.active == DrawingObject::DRAWING_OBJECT_ZBUF);
 
 			for (auto pIt = xyMap.xyMap[p0.y].begin(); pIt != xyMap.xyMap[p0.y].end(); ++pIt)
 			{
-				if (pIt->x == p0.x && pIt->LineId == (i - poly.points.begin()))
+				if (pIt->x == p0.x && pIt->LineId == i)
 				{
 					if (p0.y < p1.y)
 						pIt->Type = XData::UPPER_LIMIT;
@@ -878,7 +886,7 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 			}
 			for (auto pIt = xyMap.xyMap[p1.y].begin(); pIt != xyMap.xyMap[p1.y].end(); ++pIt)
 			{
-				if (pIt->x == p1.x && pIt->LineId == (i - poly.points.begin()))
+				if (pIt->x == p1.x && pIt->LineId == i)
 				{
 					if (p1.y < p0.y)
 						pIt->Type = XData::UPPER_LIMIT;
@@ -890,11 +898,11 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 		}
 		else
 		{
-			xyMap.SetPixel(p0.x, p0.y, p0.z, i - poly.points.begin());
-			xyMap.SetPixel(p1.x, p1.y, p1.z, i - poly.points.begin());
+			xyMap.SetPixel(p0.x, p0.y, p0.z, i);
+			xyMap.SetPixel(p1.x, p1.y, p1.z, i);
 			for (auto pIt = xyMap.xyMap[p0.y].begin(); pIt != xyMap.xyMap[p0.y].end(); ++pIt)
 			{
-				if (pIt->LineId == (i - poly.points.begin()))
+				if (pIt->LineId == i)
 					if (pIt->x == p0.x)
 					{
 					if (p0.x < p1.x)

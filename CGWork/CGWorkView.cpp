@@ -382,8 +382,8 @@ bool CCGWorkView::applyMat(const MatrixHomogeneous& mat) {
 	}
 
 	const BoundingBox& bcube = _bboxes[active_object];
-	const MatrixHomogeneous recenter = Matrices::Translate(0, 0, (_initFar + _initNear) / 2) * CenterToCube(bcube);
-	const MatrixHomogeneous rerurnToPos = Matrices::Translate(0, 0, -(_initFar + _initNear) / 2) * CenterToCube(bcube, true);
+	const MatrixHomogeneous recenter = Matrices::Translate(0, 0, -(bcube.maxZ + bcube.minZ) / 2);
+	const MatrixHomogeneous rerurnToPos = Matrices::Translate(0, 0, (bcube.maxZ + bcube.minZ) / 2);
 	const MatrixHomogeneous mat0 = rerurnToPos * mat * recenter;
 	/*
 	for (auto it = _objects.begin(); it != _objects.end(); ++it) {
