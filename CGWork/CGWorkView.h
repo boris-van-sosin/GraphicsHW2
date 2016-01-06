@@ -23,20 +23,6 @@
 
 typedef std::vector<PolygonalObject> model_t;
 
-class model_attr_t { // don't make this struct big
-public:
-	COLORREF color = RGB(0, 0, 255);
-	COLORREF normal_color = RGB(0, 255, 0);
-	COLORREF model_bbox_color = RGB(255, 0, 0);
-	COLORREF subObj_bbox_color = RGB(255, 0, 0);
-	bool forceColor = false;
-	unsigned int line_width = 1;
-	bool displayBBox = false;
-	bool displaySubObjectBBox = false;
-	double sensitivity = 0.1;
-	bool removeBackFace = true;
-};
-
 class CCGWorkView : public CView
 {
 protected: // create from serialization only
@@ -89,7 +75,6 @@ public:
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 
-	static const COLORREF DefaultModelColor;
 protected:
 	BOOL InitializeCGWork();
 	BOOL SetupViewingFrustum(void);
@@ -173,7 +158,7 @@ private:
 	std::vector<model_t> _subObjectBoundingBoxes;
 	std::vector<model_t> _clean_subObjectBoundingBoxes;
 
-	std::vector<model_attr_t> _model_attr;
+	std::vector<ModelAttr> _model_attr;
 	std::vector<BoundingBox> _bboxes;
 
 	COLORREF _backgroundColor;

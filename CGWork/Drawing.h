@@ -105,4 +105,83 @@ private:
 	bool _doClip;
 };
 
+class ModelAttr
+{ // don't make this struct big
+public:
+	COLORREF color = RGB(0, 0, 255);
+	COLORREF normal_color = RGB(0, 255, 0);
+	COLORREF model_bbox_color = RGB(255, 0, 0);
+	COLORREF subObj_bbox_color = RGB(255, 0, 0);
+	bool forceColor = false;
+	unsigned int line_width = 1;
+	bool displayBBox = false;
+	bool displaySubObjectBBox = false;
+	double sensitivity = 0.1;
+	bool removeBackFace = true;
+};
+
+inline COLORREF ShiftColor(COLORREF c, int shift)
+{
+	int red = GetRValue(c) + shift;
+	int green = GetGValue(c) + shift;
+	int blue = GetBValue(c) + shift;
+	if (red > 255)
+		red = 255;
+	else if (red < 0)
+		red = 0;
+
+	if (green > 255)
+		green = 255;
+	else if (green < 0)
+		green = 0;
+
+	if (blue > 255)
+		blue = 255;
+	else if (blue < 0)
+		blue = 0;
+
+	return RGB(red, green, blue);
+}
+
+extern const COLORREF DefaultModelColor;
+
+inline COLORREF GetActualColor(COLORREF objColor, bool objColorValid, const Polygon3D& poly, const HomogeneousPoint& p, const ModelAttr& attr)
+{
+	COLORREF actualColor = DefaultModelColor;
+	if (attr.forceColor)
+	{
+		actualColor = attr.color;
+	}
+	else if (p.colorValid)
+	{
+		actualColor = p.color;
+	}
+	else if (poly.colorValid)
+	{
+		actualColor = poly.color;
+	}
+	else if (objColorValid)
+	{
+		actualColor = objColor;
+	}
+	return actualColor;
+}
+
+struct ClippingResult
+{
+	ClippingResult(const LineSegment& ls, bool c0, bool c1)
+		: lineSegment(ls), clippedFirst(c0), clippedSecond(c1)
+	{
+	}
+
+	LineSegment lineSegment;
+	bool clippedFirst, clippedSecond;
+};
+
+ClippingResult ApplyClippingAndViewMatrix(const HomogeneousPoint& p0, const HomogeneousPoint& p1, const MatrixHomogeneous& mFirst, const MatrixHomogeneous& mSecond, const MatrixHomogeneous& mTotal, const ClippingPlane& cp);
+void DrawLineSegment(DrawingObject& img, const Point3D& p0, const Point3D& p1, COLORREF clr, unsigned int line_width, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0));
+void DrawLineSegment(DrawingObject& img, const HomogeneousPoint& p0, const HomogeneousPoint& p1, COLORREF clr, unsigned int line_width, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0));
+void DrawLineSegment(DrawingObject& img, const LineSegment& line, COLORREF clr, unsigned int line_width, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0));
+void DrawObject(DrawingObject& img, const PolygonalObject& obj, const MatrixHomogeneous& mFirst, const MatrixHomogeneous& mSecond, const MatrixHomogeneous& mTotal, const ModelAttr& attr, const std::vector<Normals::PolygonNormalData>& normals, bool fillPolygons, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0));
+
 #endif

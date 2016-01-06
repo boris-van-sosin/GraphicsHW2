@@ -1,6 +1,11 @@
 #include "Drawing.h"
 #include "Utils.h"
 
+#include <map>
+#include <algorithm>
+
+const COLORREF DefaultModelColor(RGB(0, 0, 255));
+
 ClippingPlane::ClippingPlane(double x_, double y_, double z_, double c_)
 	: x(x_), y(y_), z(z_), c(c_)
 {
@@ -414,4 +419,552 @@ void DrawingObject::SetPixel(int x, int y, const Point3D& p0, const Point3D& p1,
 			:
 			(((x - p0.x) / (p1.x - p0.x)) * (p1.z - p0.z) + p0.z);
 	SetPixel(x, y, z, clr);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// CCGWorkView drawing
+/////////////////////////////////////////////////////////////////////////////
+
+
+template <typename T>
+void CGSwap(T& x, T& y) {
+	T  t = x;
+	x = y;
+	y = t;
+}
+
+template<typename T>
+T LinearInterpolate(double x, double minX, double maxX, const T& t0, const T& t1)
+{
+	double b = (x - minX) / (maxX - minX);
+	return (1 - b)*t0 + b*t1;
+}
+
+struct XData
+{
+	enum PixelType { MIDDLE, UPPER_LIMIT, LOWER_LIMIT };
+	XData(int x_, double z_, int lid, PixelType pt = MIDDLE)
+		: x(x_), z(z_), LineId(lid), Type(pt)
+	{}
+
+	int x;
+	int LineId;
+	PixelType Type;
+	double z;
+};
+
+bool operator<(const XData& a, const XData& b)
+{
+	if (a.x != b.x)
+		return a.x < b.x;
+	else
+		return a.LineId < b.LineId;
+}
+
+struct FakeXYMap
+{
+	void SetPixel(int x, int y, double z, COLORREF clr)
+	{
+		minY = min(minY, y);
+		maxY = max(maxY, y);
+		if (xyMap.find(y) == xyMap.end())
+		{
+			xyMap[y] = std::vector<XData>();
+		}
+		xyMap[y].push_back(XData(x, z, clr));
+	}
+
+	std::map<int, std::vector<XData>> xyMap;	// y => <x, line id, pixel type>
+	int minY = INT_MAX, maxY = -1;
+};
+
+struct MixedIntPoint
+{
+	MixedIntPoint(int x_, int y_, double z_)
+		: x(x_), y(y_), z(z_)
+	{}
+
+	MixedIntPoint()
+		: x(0), y(0), z(0)
+	{}
+	MixedIntPoint(int x_, int y_)
+		: MixedIntPoint(x, y, 0.0)
+	{}
+
+	MixedIntPoint(const MixedIntPoint& other)
+		: MixedIntPoint(other.x, other.y, other.z)
+	{}
+
+	MixedIntPoint(const Point3D& p)
+		: MixedIntPoint(p.x, p.y, p.z)
+	{}
+
+	MixedIntPoint(const HomogeneousPoint& p)
+		: MixedIntPoint(Point3D(p))
+	{}
+
+	int x, y;
+	double z;
+};
+
+template <typename T>
+void innerDrawLine(T& img, const MixedIntPoint& p0, const MixedIntPoint& p1, COLORREF clr, unsigned int line_width, bool z = false) {
+	int x0 = p0.x, y0 = p0.y,
+		x1 = p1.x, y1 = p1.y;
+	double z0 = p0.z, z1 = p1.z;
+
+	if (x0 > x1) {
+		CGSwap(x0, x1);
+		CGSwap(y0, y1);
+		CGSwap(z0, z1);
+	}
+
+	int dx = x1 - x0;
+	int dy = y1 - y0;
+
+	bool swapXY = false;
+	if (abs(dy) > dx)
+	{
+		CGSwap(x0, y0);
+		CGSwap(x1, y1);
+		if (x0 > x1) {
+			CGSwap(x0, x1);
+			CGSwap(y0, y1);
+			CGSwap(z0, z1);
+		}
+		dx = x1 - x0;
+		dy = y1 - y0;
+		swapXY = true;
+	}
+
+	bool reverseY = (dy < 0); // was: && ((-dy) < dx)
+	if (reverseY)
+	{
+		dy = -dy;
+	}
+
+	if (dx > 0 && dy >= 0 && dy <= dx) {
+
+		int err = 2 * dy - dx;
+		int horizontal = 2 * dy, diagonal = 2 * (dy - dx);
+		{
+			const double currZ = z ? z0 : 0.0;
+			if (!swapXY)
+			{
+				img.SetPixel(x0, y0, currZ, clr);
+				for (unsigned int i = 1; i < line_width; i++) {
+					img.SetPixel(x0, y0 + i, currZ, clr);
+					img.SetPixel(x0, y0 - i, currZ, clr);
+				}
+			}
+			else
+			{
+				img.SetPixel(y0, x0, currZ, clr);
+				for (unsigned int i = 1; i < line_width; i++) {
+					img.SetPixel(y0 + i, x0, currZ, clr);
+					img.SetPixel(y0 - i, x0, currZ, clr);
+				}
+			}
+		}
+		int y = y0;
+
+		for (int x = x0 + 1; x <= x1; x++) {
+			if (err < 0) {
+				err = err + horizontal;
+			}
+			else
+			{
+				err = err + diagonal;
+				if (!reverseY)
+				{
+					++y;
+				}
+				else
+				{
+					--y;
+				}
+			}
+			const double currZ = z ? (swapXY ? LinearInterpolate(y, y0, y1, z0, z1) : LinearInterpolate(x, x0, x1, z0, z1)) : 0.0;
+			if (!swapXY)
+			{
+				img.SetPixel(x, y, currZ, clr);
+				for (unsigned int i = 1; i < line_width; i++) {
+					img.SetPixel(x, y + 1, currZ, clr);
+					img.SetPixel(x, y - 1, currZ, clr);
+				}
+			}
+			else
+			{
+				img.SetPixel(y, x, currZ, clr);
+				for (unsigned int i = 1; i < line_width; i++) {
+					img.SetPixel(y + i, x, currZ, clr);
+					img.SetPixel(y - i, x, currZ, clr);
+				}
+			}
+		}
+	}
+	else if (dx == 0 && dy == 0)
+	{
+		img.SetPixel(x0, y0, z0, clr);
+		for (unsigned int i = 1; i < line_width; i++) {
+			img.SetPixel(x0, y0 + i, z0, clr);
+			img.SetPixel(x0, y0 - i, z0, clr);
+			img.SetPixel(x0 + i, y0, z0, clr);
+			img.SetPixel(x0 - i, y0, z0, clr);
+		}
+	}
+}
+
+void DrawLineSegment(DrawingObject& img, const Point3D& p0, const Point3D& p1, COLORREF clr, unsigned int line_width, bool clip, const ClippingPlane& cp)
+{
+	if (isnan(p0.x) || isnan(p0.y) || isnan(p1.x) || isnan(p1.y) ||
+		fabs(p0.x) > 1e6 || fabs(p0.y) > 1e6 || fabs(p1.x) > 1e6 || fabs(p1.y) > 1e6)
+	{
+		return;
+	}
+	if (clip)
+	{
+		const double clipValue0 = cp.Apply(p0);
+		const double clipValue1 = cp.Apply(p1);
+
+		if (clipValue0 < 0 && clipValue1 < 0)
+		{
+			return;
+		}
+		else if (clipValue0 < 0)
+		{
+			const Point3D clippingPoint = cp.Intersection(p0, p1);
+			innerDrawLine(img, clippingPoint, p1, clr, line_width);
+		}
+		else if (clipValue1 < 0)
+		{
+			const Point3D clippingPoint = cp.Intersection(p0, p1);
+			innerDrawLine(img, p0, clippingPoint, clr, line_width);
+		}
+		else
+		{
+			innerDrawLine(img, p0, p1, clr, line_width);
+		}
+	}
+	else
+	{
+		innerDrawLine(img, p0, p1, clr, line_width);
+	}
+}
+
+void DrawLineSegment(DrawingObject& img, const HomogeneousPoint& p0, const HomogeneousPoint& p1, COLORREF clr, unsigned int line_width, bool clip, const ClippingPlane& cp)
+{
+	DrawLineSegment(img, Point3D(p0), Point3D(p1), clr, line_width, clip, cp);
+}
+
+void DrawLineSegment(DrawingObject& img, const LineSegment& line, COLORREF clr, unsigned int line_width, bool clip, const ClippingPlane& cp)
+{
+	DrawLineSegment(img, line.p0, line.p1, clr, line_width, clip, cp);
+}
+
+ClippingResult ApplyClippingAndViewMatrix(const HomogeneousPoint& p0, const HomogeneousPoint& p1, const MatrixHomogeneous& mFirst, const MatrixHomogeneous& mSecond, const MatrixHomogeneous& mTotal, const ClippingPlane& cp)
+{
+	const double clipValue0 = cp.Apply(mFirst * p0);
+	const double clipValue1 = cp.Apply(mFirst * p1);
+
+	if (clipValue0 < 0 && clipValue1 < 0)
+	{
+		return ClippingResult(LineSegment(HomogeneousPoint::Zeros, HomogeneousPoint::Zeros), true, true);
+	}
+	else if (clipValue0 < 0)
+	{
+		const HomogeneousPoint clippingPoint = HomogeneousPoint(cp.Intersection(Point3D(mFirst * p0), Point3D(mFirst * p1)));
+		return ClippingResult(LineSegment(mSecond*clippingPoint, mTotal*p1), true, false);
+	}
+	else if (clipValue1 < 0)
+	{
+		const HomogeneousPoint clippingPoint = HomogeneousPoint(cp.Intersection(Point3D(mFirst * p0), Point3D(mFirst * p1)));
+		return ClippingResult(LineSegment(mTotal*p0, mSecond*clippingPoint), false, true);
+	}
+	else
+	{
+		return ClippingResult(LineSegment(mTotal*p0, mTotal*p1), false, false);
+	}
+}
+
+Polygon3D ApplyClippingAndViewMatrix(const Polygon3D& poly, const MatrixHomogeneous& mFirst, const MatrixHomogeneous& mSecond, const MatrixHomogeneous& mTotal, const ClippingPlane& cp)
+{
+	std::vector<HomogeneousPoint> resPoints;
+	resPoints.reserve(poly.points.size());
+	for (auto i = poly.points.begin(); i != poly.points.end(); ++i)
+	{
+		const HomogeneousPoint p0 = *i;
+		const HomogeneousPoint p1 = (i + 1 != poly.points.end()) ? *(i + 1) : poly.points.front();
+		const ClippingResult clipRes = ApplyClippingAndViewMatrix(p0, p1, mFirst, mSecond, mTotal, cp);
+		if ((!clipRes.clippedFirst) && (!clipRes.clippedSecond))
+		{
+			resPoints.push_back(clipRes.lineSegment.p0);
+		}
+		else if (clipRes.clippedFirst ^ clipRes.clippedSecond)
+		{
+			resPoints.push_back(clipRes.lineSegment.p0);
+			resPoints.push_back(clipRes.lineSegment.p1);
+		}
+	}
+	return Polygon3D(resPoints);
+}
+
+void CollapseSequences(std::vector<XData>& row)
+{
+	for (int i = 0; i < (row.size() - 1);)
+	{
+		const size_t sz = row.size();
+		bool deleted = false;
+		for (int j = i + 1; j < min(sz, i + 3); ++j)
+		{
+			if ((row[i].x + 1) == row[j].x &&
+				row[i].LineId == row[j].LineId)
+			{
+				if (row[i].Type == XData::MIDDLE &&
+					row[j].Type == XData::MIDDLE)
+				{
+					row.erase(row.begin() + i);
+					deleted = true;
+					break;
+				}
+				else if (row[i].Type == XData::MIDDLE &&
+					row[j].Type != XData::MIDDLE)
+				{
+					int lastX = row[j].x;
+					while (i >= 0)
+					{
+						if (row[i].Type == XData::MIDDLE &&
+							row[i].LineId == row[j--].LineId &&
+							row[i].x == lastX - 1)
+						{
+							row.erase(row.begin() + i);
+							--lastX;
+						}
+						--i;
+					}
+					if (i < 0)
+						i = 0;
+					deleted = true;
+					break;
+				}
+				else if (row[i].Type != XData::MIDDLE &&
+					row[j].Type == XData::MIDDLE)
+				{
+					int lastX = row[i].x;
+					while (j < row.size()){
+						if (row[j].Type == XData::MIDDLE &&
+							row[j].LineId == row[i].LineId &&
+							row[j].x == lastX + 1)
+						{
+							row.erase(row.begin() + j);
+							++lastX;
+						}
+						else
+							++j;
+					}
+					deleted = true;
+					break;
+				}
+			}
+		}
+		if (!deleted)
+			++i;
+	}
+}
+
+bool innerBinarySearchInXDataVector(const std::vector<XData>::const_iterator a, const std::vector<XData>::const_iterator b, const std::vector<XData>::const_iterator end, int x)
+{
+	if ((a != end && a->x == x) || (b != end && b->x == x))
+		return true;
+	else if (a == b)
+		return false;
+	const std::vector<XData>::const_iterator mid = a + ((b - a) >> 1);
+	if (mid != end && mid->x == x)
+		return true;
+	return innerBinarySearchInXDataVector(a, mid, end, x) || innerBinarySearchInXDataVector(mid + 1, b, end, x);
+}
+
+bool BinarySearchInXDataVector(const std::vector<XData>& v, int x)
+{
+	return innerBinarySearchInXDataVector(v.begin(), v.end(), v.end(), x);
+}
+
+void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogeneous& mFirst, const MatrixHomogeneous& mSecond, const MatrixHomogeneous& mTotal, const ModelAttr& attr, COLORREF objColor, bool objColorValid, const Normals::PolygonNormalData& nd, bool fillPolygons, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0))
+{
+	if (poly0.points.size() < 2)
+	{
+		return;
+	}
+
+	FakeXYMap xyMap;
+
+	const Polygon3D poly = clip ? ApplyClippingAndViewMatrix(poly0, mFirst, mSecond, mTotal, cp) : (mTotal * poly0);
+
+	MixedIntPoint p0, p1;
+	bool getP0 = true;
+	for (auto i = poly.points.begin(); i != poly.points.end(); ++i)
+	{
+		COLORREF actualColor = GetActualColor(objColor, objColorValid, poly, *i, attr);
+
+		const LineSegment l = ((i + 1) != poly.points.end()) ?
+			LineSegment(*i, *(i + 1)) :
+			LineSegment(*i, poly.points.front());
+
+		if (getP0)
+		{
+			p0 = MixedIntPoint(l.p0);
+			getP0 = false;
+		}
+
+		if (l.p0.w == 0 || l.p1.w == 0)
+		{
+			getP0 = true;
+			continue;
+		}
+
+		p1 = MixedIntPoint(l.p1);
+		innerDrawLine(img, p0, p1, actualColor, attr.line_width, img.active == DrawingObject::DRAWING_OBJECT_ZBUF);
+
+		if (p0.y != p1.y)
+		{
+			innerDrawLine(xyMap, p0, p1, i - poly.points.begin(), 1, img.active == DrawingObject::DRAWING_OBJECT_ZBUF);
+
+			for (auto pIt = xyMap.xyMap[p0.y].begin(); pIt != xyMap.xyMap[p0.y].end(); ++pIt)
+			{
+				if (pIt->x == p0.x && pIt->LineId == (i - poly.points.begin()))
+				{
+					if (p0.y < p1.y)
+						pIt->Type = XData::UPPER_LIMIT;
+					else
+						pIt->Type = XData::LOWER_LIMIT;
+					break;
+				}
+			}
+			for (auto pIt = xyMap.xyMap[p1.y].begin(); pIt != xyMap.xyMap[p1.y].end(); ++pIt)
+			{
+				if (pIt->x == p1.x && pIt->LineId == (i - poly.points.begin()))
+				{
+					if (p1.y < p0.y)
+						pIt->Type = XData::UPPER_LIMIT;
+					else
+						pIt->Type = XData::LOWER_LIMIT;
+					break;
+				}
+			}
+		}
+		else
+		{
+			xyMap.SetPixel(p0.x, p0.y, p0.z, i - poly.points.begin());
+			xyMap.SetPixel(p1.x, p1.y, p1.z, i - poly.points.begin());
+			for (auto pIt = xyMap.xyMap[p0.y].begin(); pIt != xyMap.xyMap[p0.y].end(); ++pIt)
+			{
+				if (pIt->LineId == (i - poly.points.begin()))
+					if (pIt->x == p0.x)
+					{
+					if (p0.x < p1.x)
+						pIt->Type = XData::UPPER_LIMIT;
+					else
+						pIt->Type = XData::LOWER_LIMIT;
+					}
+					else if (pIt->x == p0.x)
+					{
+						if (p0.x < p1.x)
+							pIt->Type = XData::LOWER_LIMIT;
+						else
+							pIt->Type = XData::UPPER_LIMIT;
+					}
+			}
+		}
+
+		p0 = p1;
+	}
+
+	if (!fillPolygons)
+	{
+		return;
+	}
+	for (int y = xyMap.minY; y <= xyMap.maxY; ++y) {
+		if (y < 0)
+			continue;
+		std::vector<XData> currRow = xyMap.xyMap[y];
+		std::sort(currRow.begin(), currRow.end());
+		std::vector<XData> origRow = currRow;
+
+		// collapse sequences of pixels
+		CollapseSequences(currRow);
+
+		bool draw = false;
+		int idx = 0;
+		std::vector<XData>::const_iterator interpolationIter0 = origRow.begin();
+		for (int x = currRow.front().x; x != currRow.back().x; ++x)
+		{
+			if (x == currRow[idx].x)
+			{
+				int counters[3] = { 0, 0, 0 };
+
+				while (idx < (currRow.size() - 1) && (currRow[idx].x == currRow[idx + 1].x))
+				{
+					++(counters[currRow[idx].Type]);
+					++idx;
+				}
+				++(counters[currRow[idx].Type]);
+
+				++idx;
+
+				if (counters[XData::MIDDLE] > 0 && (counters[XData::UPPER_LIMIT] == 0 || counters[XData::LOWER_LIMIT] == 0))
+				{
+					draw = !draw;
+				}
+				else if (counters[XData::UPPER_LIMIT] > 0 && counters[XData::LOWER_LIMIT] > 0)
+				{
+					draw = !draw;
+				}
+
+			}
+
+			if (draw && !BinarySearchInXDataVector(origRow, x))
+			{
+				if (img.active == DrawingObject::DRAWING_OBJECT_ZBUF)
+				{
+					while (x > (interpolationIter0 + 1)->x)
+					{
+						++interpolationIter0;
+					}
+					const int x0 = (interpolationIter0)->x, x1 = (interpolationIter0 + 1)->x;
+					const double z0 = (interpolationIter0)->z, z1 = (interpolationIter0 + 1)->z;
+					const double currZ = LinearInterpolate(x, x0, x1, z0, z1);
+					img.SetPixel(x, y, currZ, RGB(0, 0, 255));
+				}
+				else
+				{
+					img.SetPixel(x, y, 0.0, RGB(0, 0, 255));
+				}
+			}
+		}
+	}
+}
+
+void DrawObject(DrawingObject& img, const PolygonalObject& obj, const MatrixHomogeneous& mFirst, const MatrixHomogeneous& mSecond, const MatrixHomogeneous& mTotal, const ModelAttr& attr, const std::vector<Normals::PolygonNormalData>& normals, bool fillPolygons, bool clip, const ClippingPlane& cp)
+{
+	for (size_t i = 0; i != obj.polygons.size(); ++i)
+	{
+		bool draw = false;
+		if (!attr.removeBackFace)
+		{
+			draw = true;
+		}
+		else
+		{
+			Normals::PolygonNormalData n = mTotal * normals[i];
+			Vector3D normalDir = (Vector3D(n.PolygonNormal.p1) - Vector3D(n.PolygonNormal.p0));
+			if (normalDir * Vector3D(0, 0, 1) < 0)
+			{
+				draw = true;
+			}
+		}
+		if (draw)
+		{
+			DrawPolygon(img, obj.polygons[i], mFirst, mSecond, mTotal, attr, obj.color, obj.colorValid, normals[i], fillPolygons, clip, cp);
+		}
+	}
 }
