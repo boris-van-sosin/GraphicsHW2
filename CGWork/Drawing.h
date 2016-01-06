@@ -120,6 +120,24 @@ public:
 	bool removeBackFace = true;
 };
 
+class LightSource
+{
+public:
+
+	enum LightSourceType { POINT, PLANE };
+
+	LightSource();
+	LightSource(const Point3D& or, const Vector3D& dir, LightSourceType t);
+	LightSource(const HomogeneousPoint& or, const HomogeneousPoint& dir, LightSourceType t);
+	LightSource(const LightSource& other);
+
+	Vector3D Direction() const;
+
+	HomogeneousPoint _origin, _offset;
+	LightSourceType _type;
+	double _intensity;
+};
+
 inline COLORREF ShiftColor(COLORREF c, int shift)
 {
 	int red = GetRValue(c) + shift;

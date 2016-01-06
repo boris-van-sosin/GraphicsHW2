@@ -823,6 +823,7 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 		}
 
 		p1 = MixedIntPoint(l.p1);
+
 		innerDrawLine(img, p0, p1, actualColor, attr.line_width, img.active == DrawingObject::DRAWING_OBJECT_ZBUF);
 
 		if (p0.y != p1.y)
@@ -967,4 +968,69 @@ void DrawObject(DrawingObject& img, const PolygonalObject& obj, const MatrixHomo
 			DrawPolygon(img, obj.polygons[i], mFirst, mSecond, mTotal, attr, obj.color, obj.colorValid, normals[i], fillPolygons, clip, cp);
 		}
 	}
+}
+
+LightSource::LightSource()
+	: LightSource(HomogeneousPoint::Zeros, HomogeneousPoint::Zeros, LightSource::POINT)
+{
+}
+
+LightSource::LightSource(const Point3D& or, const Vector3D& dir, LightSourceType t)
+	: LightSource(HomogeneousPoint(or), HomogeneousPoint(dir), t)
+{
+}
+
+LightSource::LightSource(const HomogeneousPoint& or, const HomogeneousPoint& dir, LightSourceType t)
+	: _origin(or), _offset(Point3D(or) + (Point3D(dir).Normalized())), _type(t)
+{
+}
+
+LightSource::LightSource(const LightSource& other)
+	: _origin(other._origin), _offset(other._offset), _type(other._type)
+{
+}
+
+Vector3D LightSource::Direction() const
+{
+	return (Vector3D(_origin) - Vector3D(_offset)).Normalized();
+}
+
+COLORREF ApplyLight(const LightSource& ls, const MixedIntPoint& pixel, COLORREF clr,  const Vector3D& normal, const Point3D& viewPoint)
+{
+	const Point3D pt(pixel.x, pixel.y, pixel.z);
+	double ambIntensity = 0.1;
+	const double lightIntensity = ls._intensity;
+	
+	double ambCoefficient = 1.0;
+	double diffuseCoefficient = 1.0;
+	double specularCoefficient = 1.0;
+
+	int specularPower = 4;
+
+	double normACoefficient = ambCoefficient / (ambCoefficient + diffuseCoefficient + specularCoefficient);
+	double normDCoefficient = diffuseCoefficient / (ambCoefficient + diffuseCoefficient + specularCoefficient);
+	double normSCoefficient = specularCoefficient / (ambCoefficient + diffuseCoefficient + specularCoefficient);
+
+	double rgbValues[] = { (double)(GetRValue(clr)), (double)(GetGValue(clr)), (double)(GetBValue(clr)) };
+
+	const Vector3D n = normal.Normalized();
+	const Vector3D lightVec = ls._type == LightSource::POINT ?
+				(Point3D(ls._origin) - pt).Normalized()
+				:
+				ls.Direction();
+	const Vector3D reflectVec = lightVec - 2 * (lightVec*n)*n;
+	const Vector3D viewVec = (viewPoint - pt).Normalized();
+
+	for (int i = 0; i < 3; ++i)
+	{
+		double dotProd = n * lightVec;
+		double viewProd = -(reflectVec * viewVec);
+		rgbValues[i] = rgbValues[i] *
+			(ambIntensity*normACoefficient + lightIntensity*(normDCoefficient*dotProd + normSCoefficient*pow(viewProd, specularPower)));
+		rgbValues[i] = max(rgbValues[i], 255.0);
+	}
+
+	int rgbInts[] = { rgbValues[0], rgbValues[1], rgbValues[2] };
+
+	return RGB(rgbInts[0], rgbInts[1], rgbInts[2]);
 }
