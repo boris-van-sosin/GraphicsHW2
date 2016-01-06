@@ -380,6 +380,11 @@ bool CCGWorkView::applyMat(const MatrixHomogeneous& mat) {
 	if (active_object >= _models.size()) {
 		return false;
 	}
+
+	const BoundingBox& bcube = _bboxes[active_object];
+	const MatrixHomogeneous recenter = Matrices::Translate(0, 0, (_initFar + _initNear) / 2) * CenterToCube(bcube);
+	const MatrixHomogeneous rerurnToPos = Matrices::Translate(0, 0, -(_initFar + _initNear) / 2) * CenterToCube(bcube, true);
+	const MatrixHomogeneous mat0 = rerurnToPos * mat * recenter;
 	/*
 	for (auto it = _objects.begin(); it != _objects.end(); ++it) {
 	(*it) = mat * (*it);
@@ -390,9 +395,9 @@ bool CCGWorkView::applyMat(const MatrixHomogeneous& mat) {
 	model = clean_model;
 	
 	if (_in_object_view)
-		_model_space_transformations[active_object] = _model_space_transformations[active_object] * mat;
+		_model_space_transformations[active_object] = _model_space_transformations[active_object] * mat0;
 	else
-		_view_space_transformations[active_object] = mat * _view_space_transformations[active_object];
+		_view_space_transformations[active_object] = mat0 * _view_space_transformations[active_object];
 	
 	const MatrixHomogeneous& mat1 = _view_space_transformations[active_object] * _model_space_transformations[active_object];
 
@@ -512,6 +517,15 @@ void CCGWorkView::RenderScene() {
 	return;
 }
 
+void CCGWorkView::ScaleAndCenterAll(model_t& model) const
+{
+	const BoundingBox bcube = BoundingBox::OfObjects(model).BoundingCube();
+	const MatrixHomogeneous sc = Matrices::Translate(0, 0, (_initFar + _initNear) / 2) * CenterToCube(bcube) * ScaleToCube(bcube);
+	for (auto i = model.begin(); i != model.end(); ++i)
+	{
+		*i = sc * (*i);
+	}
+}
 
 void CCGWorkView::OnFileLoad()
 {
@@ -527,6 +541,8 @@ void CCGWorkView::OnFileLoad()
 		_model_space_transformations.push_back(Matrices::UnitMatrixHomogeneous);
 		_view_space_transformations.push_back(Matrices::UnitMatrixHomogeneous);
 		CGSkelProcessIritDataFiles(m_strItdFileName, 1, _models.back(), _polygonFineness);
+		
+		ScaleAndCenterAll(_models.back());
 		_clean_models.push_back(_models.back());
 		
 		_polygonNormals.push_back(std::vector<Normals::PolygonNormalData>());
@@ -536,10 +552,9 @@ void CCGWorkView::OnFileLoad()
 
 		//FlipYAxis(_models.size() - 1);
 
-		_bboxes.push_back(BoundingBox(BoundingBox::OfObjects(_models.back())));
+		_bboxes.push_back(BoundingBox::OfObjects(_models.back()));
 
 		const BoundingBox bcube = _bboxes.back().BoundingCube();
-
 		_model_attr.push_back(ModelAttr());
 
 		double gran_size = fmax(bcube.maxX - bcube.minX, fmax(bcube.maxY - bcube.minY, bcube.maxZ - bcube.minZ));
@@ -880,29 +895,29 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 
 	for (size_t i = 0; i < _models.size(); i++) {
 		const BoundingBox bCube = _bboxes[i].BoundingCube();
-		const PerspectiveData perspData = PerspectiveWarpMatrix(bCube, _nearClippingPlane, _farClippingPlane);
+		const PerspectiveData perspData = PerspectiveWarpMatrix(bCube, _nearClippingPlane, _farClippingPlane, min(width, height));
 
 		const COLORREF normalsColor = _model_attr[i].normal_color;
 
-		MatrixHomogeneous mMoveToView = 
+		/*MatrixHomogeneous mMoveToView = 
 			(m_bIsPerspective ?
 			(Matrices::Flip(AXIS_X)*perspData.ScaleAndMoveToView) :
-			(Matrices::Flip(AXIS_Y)*ScaleAndCenter(bCube)));
+			(Matrices::Flip(AXIS_Y)*ScaleAndCenter(bCube)));*/
 
 		MatrixHomogeneous mProj = 
 			(m_bIsPerspective ?
 			perspData.PerspectiveWarp : Matrices::UnitMatrixHomogeneous);
 
-		const BoundingBox displayBox = ((mProj*mMoveToView) * _bboxes[i]).BoundingCube();
+		const BoundingBox displayBox = (mProj * _bboxes[i]).BoundingCube();
 
-		const double scalingFactor = 0.25 * min(width, height) /
-			((displayBox.maxX - displayBox.minX));
+		const double scalingFactor = m_bIsPerspective ? 1 :
+			(0.25 * min(width, height) / ((displayBox.maxX - displayBox.minX)));
 
-		const MatrixHomogeneous mScale = Matrices::Translate(width*0.5, height*0.5, 0)*Matrices::Scale(scalingFactor);
+		const MatrixHomogeneous mScale = Matrices::Translate(width*0.5, height*0.5, 0) * Matrices::Scale(scalingFactor);
 
-		const MatrixHomogeneous mFirst = mMoveToView;
-		const MatrixHomogeneous mSecond = mScale * mProj;
-		const MatrixHomogeneous mTotal = mSecond * mFirst;
+		const MatrixHomogeneous mTotal = mScale * mProj * (m_bIsPerspective ?
+			(Matrices::Flip(AXIS_X)) :
+			(Matrices::Flip(AXIS_Y)));
 
 		model_t& model = _models[i];
 		const ModelAttr attr = _model_attr[i];
@@ -912,10 +927,10 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 		tmpDrawingObj.active = DrawingObject::DRAWING_OBJECT_CIMG;
 		for (std::vector<PolygonalObject>::iterator it = model.begin(); it != model.end(); ++it)
 		{
-			DrawObject(img, *it, mFirst, mSecond, mTotal, attr, _polygonNormals[i], true, m_bIsPerspective, perspData.NearPlane);
+			DrawObject(img, *it, mTotal, attr, _polygonNormals[i], true, m_bIsPerspective, perspData.NearPlane);
 			shadow_attr.color = i + 1;
 			shadow_attr.forceColor = true;
-			DrawObject(tmpDrawingObj, *it, mFirst, mSecond, mTotal, shadow_attr, _polygonNormals[i], false, m_bIsPerspective, perspData.NearPlane);
+			DrawObject(tmpDrawingObj, *it, mTotal, shadow_attr, _polygonNormals[i], false, m_bIsPerspective, perspData.NearPlane);
 		}
 
 		if (true)
@@ -930,7 +945,7 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 					// boundary
 					if (m_bIsPerspective)
 					{
-						DrawLineSegment(img, ApplyClippingAndViewMatrix(edge.p0, edge.p1, mFirst, mSecond, mTotal, perspData.NearPlane).lineSegment, boundaryColor, 1);
+						DrawLineSegment(img, mTotal * ApplyClipping(edge.p0, edge.p1, perspData.NearPlane).lineSegment, boundaryColor, 1);
 					}
 					else
 					{
@@ -949,7 +964,7 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 						// silhouette
 						if (m_bIsPerspective)
 						{
-							DrawLineSegment(img, ApplyClippingAndViewMatrix(edge.p0, edge.p1, mFirst, mSecond, mTotal, perspData.NearPlane).lineSegment, boundaryColor, 1);
+							DrawLineSegment(img, mTotal * ApplyClipping(edge.p0, edge.p1, perspData.NearPlane).lineSegment, boundaryColor, 1);
 						}
 						else
 						{
@@ -979,7 +994,7 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 			ModelAttr bboxAttr;
 			bboxAttr.color = _model_attr[i].model_bbox_color;
 			bboxAttr.forceColor = true;
-			DrawObject(img, _modelBoundingBoxes[i], mFirst, mSecond, mTotal, bboxAttr, _polygonNormals[i], false, m_bIsPerspective, perspData.NearPlane);
+			DrawObject(img, _modelBoundingBoxes[i], mTotal, bboxAttr, _polygonNormals[i], false, m_bIsPerspective, perspData.NearPlane);
 		}
 		if (attr.displaySubObjectBBox)
 		{
@@ -988,7 +1003,7 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 			bboxAttr.forceColor = true;
 			for (auto j = _subObjectBoundingBoxes[i].begin(); j != _subObjectBoundingBoxes[i].end(); ++j)
 			{
-				DrawObject(img, *j, mFirst, mSecond, mTotal, bboxAttr, _polygonNormals[i], false, m_bIsPerspective, perspData.NearPlane);
+				DrawObject(img, *j, mTotal, bboxAttr, _polygonNormals[i], false, m_bIsPerspective, perspData.NearPlane);
 			}
 		}
 	}

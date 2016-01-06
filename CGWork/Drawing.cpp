@@ -76,15 +76,50 @@ MatrixHomogeneous ScaleAndCenter(const BoundingBox& boundingCube)
 	const double vfar = -boundingCube.maxZ;
 	const double vnear = -boundingCube.minZ;
 	HomogeneousPoint rows[4] = {
-		HomogeneousPoint(2 / (vright - vleft), 0, 0, -(vright + vleft) / (vright - vleft)),
-		HomogeneousPoint(0, 2 / (vtop - vbottom), 0, -(vtop + vbottom) / (vtop - vbottom)),
-		HomogeneousPoint(0, 0, 2 / (vnear - vfar), -(vnear + vfar) / (vfar - vnear)),
+		HomogeneousPoint(1 / (vright - vleft), 0, 0, -(vright + vleft) / (vright - vleft)),
+		HomogeneousPoint(0, 1 / (vtop - vbottom), 0, -(vtop + vbottom) / (vtop - vbottom)),
+		HomogeneousPoint(0, 0, 1 / (vnear - vfar), -(vnear + vfar) / (vfar - vnear)),
 		HomogeneousPoint(0, 0, 0, 1)
 	};
 	return MatrixHomogeneous(rows);
 }
 
-PerspectiveData PerspectiveWarpMatrix(const BoundingBox& boundingCube, double n, double f)
+MatrixHomogeneous ScaleToCube(const BoundingBox& boundingCube)
+{
+	const double vright = boundingCube.maxX;
+	const double vleft = boundingCube.minX;
+	const double vbottom = boundingCube.minY;
+	const double vtop = boundingCube.maxY;
+	const double vfar = -boundingCube.maxZ;
+	const double vnear = -boundingCube.minZ;
+	HomogeneousPoint rows[4] = {
+		HomogeneousPoint(1 / (vright - vleft), 0, 0, 0),
+		HomogeneousPoint(0, 1 / (vtop - vbottom), 0, 0),
+		HomogeneousPoint(0, 0, 1 / (vnear - vfar), 0),
+		HomogeneousPoint(0, 0, 0, 1)
+	};
+	return MatrixHomogeneous(rows);
+}
+
+MatrixHomogeneous CenterToCube(const BoundingBox& boundingCube, bool minus)
+{
+	const double vright = boundingCube.maxX;
+	const double vleft = boundingCube.minX;
+	const double vbottom = boundingCube.minY;
+	const double vtop = boundingCube.maxY;
+	const double vfar = -boundingCube.maxZ;
+	const double vnear = -boundingCube.minZ;
+	const double sign = minus ? 1 : -1;
+	HomogeneousPoint rows[4] = {
+		HomogeneousPoint(1, 0, 0, sign * (vright + vleft) / (vright - vleft)),
+		HomogeneousPoint(0, 1, 0, sign * (vtop + vbottom) / (vtop - vbottom)),
+		HomogeneousPoint(0, 0, 1, sign * (vnear + vfar) / (vfar - vnear)),
+		HomogeneousPoint(0, 0, 0, 1)
+	};
+	return MatrixHomogeneous(rows);
+}
+
+PerspectiveData PerspectiveWarpMatrix(const BoundingBox& boundingCube, double n, double f, int viewSize)
 {
 	const double near2 = n;
 	const double far2 = f;
@@ -92,8 +127,8 @@ PerspectiveData PerspectiveWarpMatrix(const BoundingBox& boundingCube, double n,
 
 	//return MatrixHomogeneous(rows) * Matrices::Translate(0, 0, boundingCube.minZ + near + depth*0.5);
 	HomogeneousPoint rows2[] = {
-		HomogeneousPoint(2, 0, 0, 0),
-		HomogeneousPoint(0, 2, 0, 0),
+		HomogeneousPoint(viewSize, 0, 0, 0),
+		HomogeneousPoint(0, viewSize, 0, 0),
 		HomogeneousPoint(0, 0, q2, 1),
 		HomogeneousPoint(0, 0, -q2*near2, 0)
 	};
@@ -662,10 +697,10 @@ void DrawLineSegment(DrawingObject& img, const LineSegment& line, COLORREF clr, 
 	DrawLineSegment(img, line.p0, line.p1, clr, line_width, clip, cp);
 }
 
-ClippingResult ApplyClippingAndViewMatrix(const HomogeneousPoint& p0, const HomogeneousPoint& p1, const MatrixHomogeneous& mFirst, const MatrixHomogeneous& mSecond, const MatrixHomogeneous& mTotal, const ClippingPlane& cp)
+ClippingResult ApplyClipping(const HomogeneousPoint& p0, const HomogeneousPoint& p1, const ClippingPlane& cp)
 {
-	const double clipValue0 = cp.Apply(mFirst * p0);
-	const double clipValue1 = cp.Apply(mFirst * p1);
+	const double clipValue0 = cp.Apply(p0);
+	const double clipValue1 = cp.Apply(p1);
 
 	if (clipValue0 < 0 && clipValue1 < 0)
 	{
@@ -673,21 +708,21 @@ ClippingResult ApplyClippingAndViewMatrix(const HomogeneousPoint& p0, const Homo
 	}
 	else if (clipValue0 < 0)
 	{
-		const HomogeneousPoint clippingPoint = HomogeneousPoint(cp.Intersection(Point3D(mFirst * p0), Point3D(mFirst * p1)));
-		return ClippingResult(LineSegment(mSecond*clippingPoint, mTotal*p1), true, false);
+		const HomogeneousPoint clippingPoint = HomogeneousPoint(cp.Intersection(Point3D(p0), Point3D(p1)));
+		return ClippingResult(LineSegment(clippingPoint, p1), true, false);
 	}
 	else if (clipValue1 < 0)
 	{
-		const HomogeneousPoint clippingPoint = HomogeneousPoint(cp.Intersection(Point3D(mFirst * p0), Point3D(mFirst * p1)));
-		return ClippingResult(LineSegment(mTotal*p0, mSecond*clippingPoint), false, true);
+		const HomogeneousPoint clippingPoint = HomogeneousPoint(cp.Intersection(Point3D(p0), Point3D(p1)));
+		return ClippingResult(LineSegment(p0, clippingPoint), false, true);
 	}
 	else
 	{
-		return ClippingResult(LineSegment(mTotal*p0, mTotal*p1), false, false);
+		return ClippingResult(LineSegment(p0, p1), false, false);
 	}
 }
 
-Polygon3D ApplyClippingAndViewMatrix(const Polygon3D& poly, const MatrixHomogeneous& mFirst, const MatrixHomogeneous& mSecond, const MatrixHomogeneous& mTotal, const ClippingPlane& cp)
+Polygon3D ApplyClipping(const Polygon3D& poly, const ClippingPlane& cp)
 {
 	std::vector<HomogeneousPoint> resPoints;
 	resPoints.reserve(poly.points.size());
@@ -695,7 +730,7 @@ Polygon3D ApplyClippingAndViewMatrix(const Polygon3D& poly, const MatrixHomogene
 	{
 		const HomogeneousPoint p0 = *i;
 		const HomogeneousPoint p1 = (i + 1 != poly.points.end()) ? *(i + 1) : poly.points.front();
-		const ClippingResult clipRes = ApplyClippingAndViewMatrix(p0, p1, mFirst, mSecond, mTotal, cp);
+		const ClippingResult clipRes = ApplyClipping(p0, p1, cp);
 		if ((!clipRes.clippedFirst) && (!clipRes.clippedSecond))
 		{
 			resPoints.push_back(clipRes.lineSegment.p0);
@@ -789,7 +824,7 @@ bool BinarySearchInXDataVector(const std::vector<XData>& v, int x)
 	return innerBinarySearchInXDataVector(v.begin(), v.end(), v.end(), x);
 }
 
-void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogeneous& mFirst, const MatrixHomogeneous& mSecond, const MatrixHomogeneous& mTotal, const ModelAttr& attr, COLORREF objColor, bool objColorValid, const Normals::PolygonNormalData& nd, bool fillPolygons, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0))
+void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogeneous& mTotal, const ModelAttr& attr, COLORREF objColor, bool objColorValid, const Normals::PolygonNormalData& nd, bool fillPolygons, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0))
 {
 	if (poly0.points.size() < 2)
 	{
@@ -798,7 +833,7 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 
 	FakeXYMap xyMap;
 
-	const Polygon3D poly = clip ? ApplyClippingAndViewMatrix(poly0, mFirst, mSecond, mTotal, cp) : (mTotal * poly0);
+	const Polygon3D poly = mTotal * (clip ? ApplyClipping(poly0, cp) : poly0);
 
 	MixedIntPoint p0, p1;
 	bool getP0 = true;
@@ -945,7 +980,7 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 	}
 }
 
-void DrawObject(DrawingObject& img, const PolygonalObject& obj, const MatrixHomogeneous& mFirst, const MatrixHomogeneous& mSecond, const MatrixHomogeneous& mTotal, const ModelAttr& attr, const std::vector<Normals::PolygonNormalData>& normals, bool fillPolygons, bool clip, const ClippingPlane& cp)
+void DrawObject(DrawingObject& img, const PolygonalObject& obj, const MatrixHomogeneous& mTotal, const ModelAttr& attr, const std::vector<Normals::PolygonNormalData>& normals, bool fillPolygons, bool clip, const ClippingPlane& cp)
 {
 	for (size_t i = 0; i != obj.polygons.size(); ++i)
 	{
@@ -958,14 +993,14 @@ void DrawObject(DrawingObject& img, const PolygonalObject& obj, const MatrixHomo
 		{
 			Normals::PolygonNormalData n = mTotal * normals[i];
 			Vector3D normalDir = (Vector3D(n.PolygonNormal.p1) - Vector3D(n.PolygonNormal.p0));
-			if (normalDir * Vector3D(0, 0, 1) < 0)
+			if (normalDir * Vector3D(0, 0, 1) > 0)
 			{
 				draw = true;
 			}
 		}
 		if (draw)
 		{
-			DrawPolygon(img, obj.polygons[i], mFirst, mSecond, mTotal, attr, obj.color, obj.colorValid, normals[i], fillPolygons, clip, cp);
+			DrawPolygon(img, obj.polygons[i], mTotal, attr, obj.color, obj.colorValid, normals[i], fillPolygons, clip, cp);
 		}
 	}
 }

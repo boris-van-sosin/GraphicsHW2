@@ -30,9 +30,11 @@ struct PerspectiveData
 };
 
 MatrixHomogeneous ScaleAndCenter(const BoundingBox& boundingCube);
+MatrixHomogeneous ScaleToCube(const BoundingBox& boundingCube);
+MatrixHomogeneous CenterToCube(const BoundingBox& boundingCube, bool minus = false);
 PerspectiveData PerspectiveWarpMatrix(const BoundingBox& boundingCube);
 MatrixHomogeneous OrthographicProjectMatrix(const BoundingBox& boundingCube);
-PerspectiveData PerspectiveWarpMatrix(const BoundingBox& boundingCube, double n, double f);
+PerspectiveData PerspectiveWarpMatrix(const BoundingBox& boundingCube, double n, double f, int viewSize = 2);
 
 class ZBufferPixel
 {
@@ -196,10 +198,10 @@ struct ClippingResult
 	bool clippedFirst, clippedSecond;
 };
 
-ClippingResult ApplyClippingAndViewMatrix(const HomogeneousPoint& p0, const HomogeneousPoint& p1, const MatrixHomogeneous& mFirst, const MatrixHomogeneous& mSecond, const MatrixHomogeneous& mTotal, const ClippingPlane& cp);
+ClippingResult ApplyClipping(const HomogeneousPoint& p0, const HomogeneousPoint& p1, const ClippingPlane& cp);
 void DrawLineSegment(DrawingObject& img, const Point3D& p0, const Point3D& p1, COLORREF clr, unsigned int line_width, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0));
 void DrawLineSegment(DrawingObject& img, const HomogeneousPoint& p0, const HomogeneousPoint& p1, COLORREF clr, unsigned int line_width, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0));
 void DrawLineSegment(DrawingObject& img, const LineSegment& line, COLORREF clr, unsigned int line_width, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0));
-void DrawObject(DrawingObject& img, const PolygonalObject& obj, const MatrixHomogeneous& mFirst, const MatrixHomogeneous& mSecond, const MatrixHomogeneous& mTotal, const ModelAttr& attr, const std::vector<Normals::PolygonNormalData>& normals, bool fillPolygons, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0));
+void DrawObject(DrawingObject& img, const PolygonalObject& obj, const MatrixHomogeneous& m, const ModelAttr& attr, const std::vector<Normals::PolygonNormalData>& normals, bool fillPolygons, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0));
 
 #endif

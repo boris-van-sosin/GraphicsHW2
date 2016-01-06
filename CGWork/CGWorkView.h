@@ -140,6 +140,7 @@ protected:
 private:
 	void FlipYAxis(int obj_idx);
 	void DrawScene(DrawingObject& img);
+	void ScaleAndCenterAll(model_t& model) const;
 
 private:
 	std::vector<model_t> _models;
@@ -170,7 +171,9 @@ private:
 	int active_object = 0;
 	bool _in_object_view = false;	// in what wview to apply the matrix? object or view?
 
-	double _nearClippingPlane = 0.9, _farClippingPlane = 2.1;
+	const double _initNear = 0.9, _initFar = 2.1;
+
+	double _nearClippingPlane = _initNear, _farClippingPlane = _initFar;
 
 	int _polygonFineness = 20;
 
