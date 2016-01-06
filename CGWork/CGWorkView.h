@@ -188,7 +188,7 @@ private:
 	void rotate(double rotate_angle);
 	void translate(const Axis& axis, double dist);
 	void scale(const Axis& axis, double factor);
-
+	void deleteModel();
 };
 
 #ifndef _DEBUG  // debug version in CGWorkView.cpp

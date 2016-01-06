@@ -362,6 +362,9 @@ afx_msg void CCGWorkView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags) {
 	case 68: // d
 		translate(AXIS_X, (double)nChar * (double)nRepCnt / move_gran);
 		break;
+	case VK_DELETE:
+		deleteModel();
+		break;
 	default:
 		break;
 	}
@@ -422,6 +425,45 @@ bool CCGWorkView::applyMat(const MatrixHomogeneous& mat) {
 
 
 	return true;
+}
+
+void CCGWorkView::deleteModel()
+{
+	if (active_object >= _models.size())
+		return;
+
+	_models.erase(_models.begin() + active_object);
+	_clean_models.erase(_clean_models.begin() + active_object);
+	_model_space_transformations.erase(_model_space_transformations.begin() + active_object);
+	_view_space_transformations.erase(_view_space_transformations.begin() + active_object);
+
+	_polygonNormals.erase(_polygonNormals.begin() + active_object);
+	_clean_polygonNormals.erase(_clean_polygonNormals.begin() + active_object);
+
+	_vertexNormals.erase(_vertexNormals.begin() + active_object);
+	_clean_vertexNormals.erase(_clean_vertexNormals.begin() + active_object);
+
+	_polygonAdjacencies.erase(_polygonAdjacencies.begin() + active_object);
+
+	_modelBoundingBoxes.erase(_modelBoundingBoxes.begin() + active_object);
+	_clean_modelBoundingBoxes.erase(_clean_modelBoundingBoxes.begin() + active_object);
+	
+	_subObjectBoundingBoxes.erase(_subObjectBoundingBoxes.begin() + active_object);
+	_clean_subObjectBoundingBoxes.erase(_clean_subObjectBoundingBoxes.begin() + active_object);
+
+	_model_attr.erase(_model_attr.begin() + active_object);
+
+	std::vector<BoundingBox> oldBBoxes(_bboxes.begin(), _bboxes.end());
+	_bboxes.clear();
+	for (auto i = oldBBoxes.begin(); i != oldBBoxes.end(); ++i)
+	{
+		if (i != oldBBoxes.begin() + active_object)
+			_bboxes.push_back(*i);
+	}
+
+	active_object = _models.size() - 1;
+
+	Invalidate();
 }
 
 void DrawTestLines(CDC* pDC, CImage& img)
@@ -930,6 +972,7 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 			DrawObject(img, *it, mTotal, attr, _polygonNormals[i], true, m_bIsPerspective, perspData.NearPlane);
 			shadow_attr.color = i + 1;
 			shadow_attr.forceColor = true;
+			shadow_attr.Shading = SHADING_NONE;
 			DrawObject(tmpDrawingObj, *it, mTotal, shadow_attr, _polygonNormals[i], false, m_bIsPerspective, perspData.NearPlane);
 		}
 

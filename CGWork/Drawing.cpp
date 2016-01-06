@@ -460,6 +460,7 @@ void DrawingObject::SetPixel(int x, int y, const Point3D& p0, const Point3D& p1,
 // CCGWorkView drawing
 /////////////////////////////////////////////////////////////////////////////
 
+//COLORREF ApplyLight(const std::vector<LightSource>& lights, const MixedIntPoint& pixel, const ModelAttr& attr, COLORREF clr, const Vector3D& normal, const Point3D& viewPoint, double ambient);
 
 template <typename T>
 void CGSwap(T& x, T& y) {
@@ -824,7 +825,9 @@ bool BinarySearchInXDataVector(const std::vector<XData>& v, int x)
 	return innerBinarySearchInXDataVector(v.begin(), v.end(), v.end(), x);
 }
 
-void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogeneous& mTotal, const ModelAttr& attr, COLORREF objColor, bool objColorValid, const Normals::PolygonNormalData& nd, bool fillPolygons, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0))
+COLORREF ApplyLight(const std::vector<LightSource>& lights, const MixedIntPoint& pixel, const ModelAttr& attr, COLORREF clr, const Vector3D& normal, const Point3D& viewPoint, double ambient);
+
+void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogeneous& mTotal, const ModelAttr& attr, COLORREF objColor, bool objColorValid, const Normals::PolygonNormalData& nd, bool fillPolygons, const std::vector<LightSource>& lights, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0))
 {
 	if (poly0.points.size() < 2)
 	{
@@ -840,10 +843,18 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 	bool getP0 = true;
 	for (size_t i = 0; i < poly.points.size(); ++i)
 	{
-		COLORREF actualColor = fillPolygons ?
-								GetActualColor(objColor, objColorValid, poly, HomogeneousPoint::Zeros, attr)
-								:
-								GetActualColor(objColor, objColorValid, poly, poly.points[i], attr);
+		COLORREF actualColor = GetActualColor(objColor, objColorValid, poly, poly.points[i], attr);
+		
+		switch (attr.Shading)
+		{
+		case SHADING_FLAT:
+			actualColor = ApplyLight(lights, nd.PolygonNormal.p0, attr, actualColor, Point3D(nd.PolygonNormal.p0) - Point3D(nd.PolygonNormal.p1), Point3D::Zero, 1);
+			break;
+		case SHADING_GOURAUD:
+		case SHADING_PHONG:
+		default:
+			break;
+		}
 
 		const LineSegment l = ((i + 1) < poly.points.size()) ?
 			LineSegment(poly.points[i], poly.points[i + 1]) :
@@ -968,7 +979,23 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 
 			if (draw && !BinarySearchInXDataVector(origRow, x))
 			{
-				if (img.active == DrawingObject::DRAWING_OBJECT_ZBUF)
+				COLORREF fillColor = GetActualColor(objColor, objColorValid, poly, HomogeneousPoint::Zeros, attr);
+				bool needsIterpolation = img.active == DrawingObject::DRAWING_OBJECT_ZBUF;
+				switch (attr.Shading)
+				{
+				case SHADING_FLAT:
+					fillColor = ApplyLight(lights, nd.PolygonNormal.p0, attr, fillColor, Point3D(nd.PolygonNormal.p0) - Point3D(nd.PolygonNormal.p1), Point3D::Zero, 1);
+					break;
+				case SHADING_GOURAUD:
+					needsIterpolation = true;
+					break;
+				case SHADING_PHONG:
+					needsIterpolation = true;
+					break;
+				default:
+					break;
+				}
+				if (needsIterpolation)
 				{
 					while (x > (interpolationIter0 + 1)->x)
 					{
@@ -977,11 +1004,11 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 					const int x0 = (interpolationIter0)->x, x1 = (interpolationIter0 + 1)->x;
 					const double z0 = (interpolationIter0)->z, z1 = (interpolationIter0 + 1)->z;
 					const double currZ = LinearInterpolate(x, x0, x1, z0, z1);
-					img.SetPixel(x, y, currZ, RGB(0, 0, 255));
+					img.SetPixel(x, y, currZ, fillColor);
 				}
 				else
 				{
-					img.SetPixel(x, y, 0.0, RGB(0, 0, 255));
+					img.SetPixel(x, y, 0.0, fillColor);
 				}
 			}
 		}
@@ -990,6 +1017,8 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 
 void DrawObject(DrawingObject& img, const PolygonalObject& obj, const MatrixHomogeneous& mTotal, const ModelAttr& attr, const std::vector<Normals::PolygonNormalData>& normals, bool fillPolygons, bool clip, const ClippingPlane& cp)
 {
+	std::vector<LightSource> lights;
+	lights.push_back(LightSource(Point3D(0.5, 0.5, 0.5), Point3D(0, 0, 1), LightSource::POINT, 1.0));
 	for (size_t i = 0; i != obj.polygons.size(); ++i)
 	{
 		bool draw = false;
@@ -1008,28 +1037,28 @@ void DrawObject(DrawingObject& img, const PolygonalObject& obj, const MatrixHomo
 		}
 		if (draw)
 		{
-			DrawPolygon(img, obj.polygons[i], mTotal, attr, obj.color, obj.colorValid, normals[i], fillPolygons, clip, cp);
+			DrawPolygon(img, obj.polygons[i], mTotal, attr, obj.color, obj.colorValid, normals[i], fillPolygons, lights, clip, cp);
 		}
 	}
 }
 
 LightSource::LightSource()
-	: LightSource(HomogeneousPoint::Zeros, HomogeneousPoint::Zeros, LightSource::POINT)
+	: LightSource(HomogeneousPoint::Zeros, HomogeneousPoint::Zeros, LightSource::POINT, 0.0)
 {
 }
 
-LightSource::LightSource(const Point3D& or, const Vector3D& dir, LightSourceType t)
-	: LightSource(HomogeneousPoint(or), HomogeneousPoint(dir), t)
+LightSource::LightSource(const Point3D& or, const Vector3D& dir, LightSourceType t, double p)
+	: LightSource(HomogeneousPoint(or), HomogeneousPoint(dir), t, p)
 {
 }
 
-LightSource::LightSource(const HomogeneousPoint& or, const HomogeneousPoint& dir, LightSourceType t)
-	: _origin(or), _offset(Point3D(or) + (Point3D(dir).Normalized())), _type(t)
+LightSource::LightSource(const HomogeneousPoint& or, const HomogeneousPoint& dir, LightSourceType t, double p)
+	: _origin(or), _offset(Point3D(or) + (Point3D(dir).Normalized())), _type(t), _intensity(p)
 {
 }
 
 LightSource::LightSource(const LightSource& other)
-	: _origin(other._origin), _offset(other._offset), _type(other._type)
+	: _origin(other._origin), _offset(other._offset), _type(other._type), _intensity(other._intensity)
 {
 }
 
@@ -1038,39 +1067,35 @@ Vector3D LightSource::Direction() const
 	return (Vector3D(_origin) - Vector3D(_offset)).Normalized();
 }
 
-COLORREF ApplyLight(const LightSource& ls, const MixedIntPoint& pixel, COLORREF clr,  const Vector3D& normal, const Point3D& viewPoint)
+COLORREF ApplyLight(const std::vector<LightSource>& lights, const MixedIntPoint& pixel, const ModelAttr& attr, COLORREF clr, const Vector3D& normal, const Point3D& viewPoint, double ambient)
 {
 	const Point3D pt(pixel.x, pixel.y, pixel.z);
-	double ambIntensity = 0.1;
-	const double lightIntensity = ls._intensity;
-	
-	double ambCoefficient = 1.0;
-	double diffuseCoefficient = 1.0;
-	double specularCoefficient = 1.0;
 
-	int specularPower = 4;
-
-	double normACoefficient = ambCoefficient / (ambCoefficient + diffuseCoefficient + specularCoefficient);
-	double normDCoefficient = diffuseCoefficient / (ambCoefficient + diffuseCoefficient + specularCoefficient);
-	double normSCoefficient = specularCoefficient / (ambCoefficient + diffuseCoefficient + specularCoefficient);
+	double normACoefficient = attr.AmbientCoefficient / (attr.AmbientCoefficient + attr.DiffuseCoefficient + attr.SpecularCoefficient);
+	double normDCoefficient = attr.DiffuseCoefficient / (attr.AmbientCoefficient + attr.DiffuseCoefficient + attr.SpecularCoefficient);
+	double normSCoefficient = attr.SpecularCoefficient / (attr.AmbientCoefficient + attr.DiffuseCoefficient + attr.SpecularCoefficient);
 
 	double rgbValues[] = { (double)(GetRValue(clr)), (double)(GetGValue(clr)), (double)(GetBValue(clr)) };
 
 	const Vector3D n = normal.Normalized();
-	const Vector3D lightVec = ls._type == LightSource::POINT ?
-				(Point3D(ls._origin) - pt).Normalized()
-				:
-				ls.Direction();
-	const Vector3D reflectVec = lightVec - 2 * (lightVec*n)*n;
 	const Vector3D viewVec = (viewPoint - pt).Normalized();
 
 	for (int i = 0; i < 3; ++i)
 	{
-		double dotProd = n * lightVec;
-		double viewProd = -(reflectVec * viewVec);
-		rgbValues[i] = rgbValues[i] *
-			(ambIntensity*normACoefficient + lightIntensity*(normDCoefficient*dotProd + normSCoefficient*pow(viewProd, specularPower)));
-		rgbValues[i] = max(rgbValues[i], 255.0);
+		double currLightPart = 0.0;
+		for (auto j = lights.begin(); j != lights.end(); ++j)
+		{
+			const Vector3D lightVec = j->_type == LightSource::POINT ?
+				(Point3D(j->_origin) - pt).Normalized()
+				:
+				j->Direction();
+			const Vector3D reflectVec = lightVec - 2 * (lightVec*n)*n;
+			double viewProd = -(reflectVec * viewVec);
+			double dotProd = n * lightVec;
+			currLightPart += j->_intensity * (normDCoefficient*dotProd + normSCoefficient*pow(viewProd, attr.SpecularPower));
+		}
+		rgbValues[i] = rgbValues[i] * (ambient*normACoefficient + currLightPart);
+		rgbValues[i] = min(rgbValues[i], 255.0);
 	}
 
 	int rgbInts[] = { rgbValues[0], rgbValues[1], rgbValues[2] };
