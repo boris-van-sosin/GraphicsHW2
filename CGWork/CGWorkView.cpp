@@ -895,6 +895,10 @@ void CCGWorkView::OnPerModel()
 	s.SpecularCoefficient = model.SpecularCoefficient;
 	s.SpecularPower = model.SpecularPower;
 	s.Shading = model.Shading;
+	s.silluete = model.silluete;
+	s.boundry = model.boundry;
+	s.AmbientIntensity = model.AmbientIntensity;
+
 	CPerModel dlg(s);
 	if (dlg.DoModal() == IDOK)
 	{
@@ -904,6 +908,9 @@ void CCGWorkView::OnPerModel()
 		model.SpecularCoefficient = s.SpecularCoefficient;
 		model.SpecularPower = s.SpecularPower;
 		model.Shading = s.Shading;
+		model.silluete = s.silluete;
+		model.boundry = s.boundry;
+		model.AmbientIntensity = s.AmbientIntensity;
 		Invalidate();
 	}
 }

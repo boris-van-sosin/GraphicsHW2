@@ -21,6 +21,8 @@ CPerModel::CPerModel(CPerModelParam& param, CWnd* pParent /*=NULL*/)
 	*/
 	m_shading_type = (int)param.Shading;
 	m_remove_back_face = (int)param.removeBackFace;
+	m_silluete = (int)param.silluete;
+	m_boundry = (int)param.boundry;
 }
 
 CPerModel::~CPerModel()
@@ -32,6 +34,8 @@ void CPerModel::DoDataExchange(CDataExchange* pDX)
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Radio(pDX, IDC_RADIO1, m_shading_type);
 	DDX_Radio(pDX, IDC_RADIO5, m_remove_back_face);
+	DDX_Radio(pDX, IDC_RADIO7, m_silluete);
+	DDX_Radio(pDX, IDC_RADIO9, m_boundry);
 }
 
 
@@ -64,6 +68,8 @@ BOOL CPerModel::OnInitDialog() {
 	SetDlgItemText(IDC_EDIT3, str);
 	str.Format(_T("%d"), param.SpecularPower);
 	SetDlgItemText(IDC_EDIT4, str);
+	str.Format(_T("%f"), param.AmbientIntensity);
+	SetDlgItemText(IDC_EDIT5, str);
 	return res;
 }
 
@@ -74,17 +80,21 @@ void CPerModel::OnBnClickedOk()
 	//now m_shading_type is updated
 	m_tmp_param.Shading = (ShadingMode)m_shading_type;
 	m_tmp_param.removeBackFace = (bool)m_remove_back_face;
+	m_tmp_param.silluete = bool(m_silluete);
+	m_tmp_param.boundry = (bool)m_boundry;
 
-	CString str1, str2, str3, str4;
+	CString str1, str2, str3, str4, str5;
 	GetDlgItemText(IDC_EDIT1, str1);
 	GetDlgItemText(IDC_EDIT2, str2);
 	GetDlgItemText(IDC_EDIT3, str3);
 	GetDlgItemText(IDC_EDIT4, str4);
+	GetDlgItemText(IDC_EDIT5, str5);
 
 	m_tmp_param.AmbientCoefficient = (double)_ttof(str1);
 	m_tmp_param.DiffuseCoefficient = (double)_ttof(str2);
 	m_tmp_param.SpecularCoefficient = (double)_ttof(str3);
 	m_tmp_param.SpecularPower = (int)_ttof(str4);
+	m_tmp_param.AmbientIntensity = (double)_ttof(str5);
 
 
 	m_orig_param = m_tmp_param;

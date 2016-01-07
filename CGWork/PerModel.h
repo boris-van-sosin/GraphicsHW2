@@ -10,6 +10,8 @@ public:
 	double AmbientCoefficient = 1.0, DiffuseCoefficient = 1.0, SpecularCoefficient = 1.0;
 	int SpecularPower = 4;
 	ShadingMode Shading = SHADING_GOURAUD;
+	bool silluete = true, boundry = true;
+	double AmbientIntensity = 1;
 };
 
 class CPerModel : public CDialogEx
@@ -22,6 +24,8 @@ public:
 
 	int m_shading_type;
 	int m_remove_back_face;
+	int m_silluete;
+	int m_boundry;
 	CPerModelParam m_tmp_param;
 	CPerModelParam& m_orig_param;
 	BOOL OnInitDialog();
