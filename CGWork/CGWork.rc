@@ -248,6 +248,9 @@ BEGIN
     PUSHBUTTON      "Choose Sub-Object\r\nBounding Box Color",IDC_CLR_SUB_BBOX,27,118,83,23,BS_MULTILINE
     PUSHBUTTON      "Choose Background",IDC_CLR_BG,27,69,83,14
     PUSHBUTTON      "Choose Background",IDC_BGIMAGE,118,69,83,14
+    LTEXT           "Background Image",IDC_STATIC,125,103,60,8
+    CONTROL         "Stretch",IDC_RADIO1,"Button",BS_AUTORADIOBUTTON | WS_GROUP,124,117,39,10
+    CONTROL         "Repeat",IDC_RADIO2,"Button",BS_AUTORADIOBUTTON,165,117,39,10
 END
 
 IDD_CLIPPING_DLG DIALOGEX 0, 0, 309, 176

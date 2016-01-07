@@ -184,6 +184,8 @@ private:
 	ZBufferImage _zBufferImg;
 	DrawingObject _drawObj;
 
+	ZBufferImage::BGImageMode m_bgimage_mode = ZBufferImage::BGImageMode::STRECH;
+
 	//BoundingBox* _bbox;
 	bool applyMat(const MatrixHomogeneous& mat);
 

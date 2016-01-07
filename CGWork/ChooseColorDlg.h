@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atlimage.h>
+#include "Drawing.h"
 
 // CChooseColorDlg dialog
 
@@ -13,6 +14,8 @@ public:
 	COLORREF subObj_bbox_color;
 	COLORREF background_color;
 	CImage background_image;
+	ZBufferImage::BGImageMode bg_image_mode;
+
 };
 
 class CChooseColorDlg : public CDialogEx
@@ -25,6 +28,7 @@ public:
 
 // Dialog Data
 	enum { IDD = IDD_COLOR_DIALOG };
+	int m_bgimagetype;
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
@@ -40,4 +44,6 @@ protected:
 	void OnOk();
 	void OnBGImage();
 	DECLARE_MESSAGE_MAP()
+public:
+	afx_msg void OnBnClickedOk();
 };

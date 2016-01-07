@@ -803,6 +803,9 @@ void CCGWorkView::OnChooseColors()
 	param.model_force_color = _model_attr[active_object].forceColor;
 	param.normal_color = _model_attr[active_object].normal_color;
 	param.background_color = _backgroundColor;
+
+	param.bg_image_mode = m_bgimage_mode;
+
 	CChooseColorDlg dlg(&param);
 	if (dlg.DoModal() == IDOK)
 	{
@@ -814,6 +817,8 @@ void CCGWorkView::OnChooseColors()
 
 		DeleteObject(_backgroundBrush);
 		_backgroundBrush = CreateSolidBrush(_backgroundColor = param.background_color);
+
+		m_bgimage_mode = param.bg_image_mode;
 
 		if (_useBackgroundImage = (!param.background_image.IsNull()))
 		{
