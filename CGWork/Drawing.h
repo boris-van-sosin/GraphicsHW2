@@ -124,7 +124,7 @@ public:
 	bool removeBackFace = false;
 	double AmbientCoefficient = 1.0, DiffuseCoefficient = 1.0, SpecularCoefficient = 1.0;
 	int SpecularPower = 4;
-	ShadingMode Shading = SHADING_GOURAUD;
+	ShadingMode Shading = SHADING_PHONG;
 };
 
 class LightSource

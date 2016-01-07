@@ -224,6 +224,7 @@ void CCGWorkView::OnSize(UINT nType, int cx, int cy)
 	// compute the aspect ratio
 	// this will keep all dimension scales equal
 	m_AspectRatio = (GLdouble)m_WindowWidth / (GLdouble)m_WindowHeight;
+	_zBufferImg.SetSize(m_WindowWidth, m_WindowHeight);
 }
 
 
@@ -524,14 +525,28 @@ void CCGWorkView::OnDraw(CDC* pDC)
 	CImage img;
 	img.Create(w, h, 32);
 
+	/*if (_zBufferImg.GetHeight() == 0 || _zBufferImg.GetWidth() == 0)
+	{
+		_zBufferImg.SetSize(w, h);
+	}*/
+
 	HDC imgDC = img.GetDC();
 	FillRect(imgDC, &rect, _backgroundBrush);
 	img.ReleaseDC();
 
 	_drawObj.img = &img;
+	_drawObj.zBufImg = &_zBufferImg;
 	_drawObj.active = DrawingObject::DRAWING_OBJECT_CIMG;
+	//_drawObj.active = DrawingObject::DRAWING_OBJECT_ZBUF;
+
+	//_zBufferImg.Clear();
 
 	DrawScene(_drawObj);
+
+	//
+	//_zBufferImg.DrawOnImage(img);
+	//
+
 	img.BitBlt(*pDC, 0, 0, w, h, 0, 0);
 	//temporary:
 	img.Destroy();

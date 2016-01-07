@@ -181,6 +181,7 @@ private:
 	CImage _pxl2obj; // to know the position of the objects on the screen
 					// there is 1 offset of the object index, because the bg is 0
 
+	ZBufferImage _zBufferImg;
 	DrawingObject _drawObj;
 
 	//BoundingBox* _bbox;
