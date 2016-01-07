@@ -9,6 +9,7 @@
 #define IDD_MATERIAL_DLG                136
 #define IDD_COLOR_DIALOG                139
 #define IDD_CLIPPING_DLG                140
+#define IDD_PER_MODEL_DLG               141
 #define IDC_LIGHT_SPACE                 1010
 #define IDC_RADIO_LIGHT1                1017
 #define IDC_RADIO_LIGHT2                1018
@@ -52,6 +53,11 @@
 #define IDC_EDIT4                       1047
 #define IDC_CLR_BG2                     1047
 #define IDC_BGIMAGE                     1047
+#define IDC_COMBO1                      1049
+#define IDC_RADIO1                      1050
+#define IDC_RADIO2                      1051
+#define IDC_RADIO3                      1052
+#define IDC_RADIO4                      1053
 #define ID_FILE_LOAD                    32771
 #define ID_VIEW_ORTHOGRAPHIC            32772
 #define ID_VIEW_PERSPECTIVE             32773
@@ -83,14 +89,15 @@
 #define ID_BUTTON32818                  32818
 #define ID_CHANGE_VIEW                  32819
 #define ID_SAVE                         32821
+#define ID_PER_MODEL                    32822
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        141
-#define _APS_NEXT_COMMAND_VALUE         32822
-#define _APS_NEXT_CONTROL_VALUE         1048
+#define _APS_NEXT_RESOURCE_VALUE        142
+#define _APS_NEXT_COMMAND_VALUE         32823
+#define _APS_NEXT_CONTROL_VALUE         1055
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

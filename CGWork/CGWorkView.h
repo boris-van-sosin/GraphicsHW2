@@ -133,6 +133,7 @@ protected:
 	afx_msg void OnToggleAllSubObjBBox();
 	afx_msg void OnSettings();
 	afx_msg void OnFileSave();
+	afx_msg void OnPerModel();
 
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()

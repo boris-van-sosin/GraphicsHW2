@@ -14,12 +14,14 @@ using std::cout;
 using std::endl;
 #include "MaterialDlg.h"
 #include "LightDialog.h"
+#include "PerModel.h"
 
 #include "Geometry.h"
 #include "GeometricTransformations.h"
 #include "Drawing.h"
 #include "ChooseColorDlg.h"
 #include "ClippingDlg.h"
+#include "PerModel.h"
 #include "Utils.h"
 
 #ifdef _DEBUG
@@ -75,6 +77,7 @@ BEGIN_MESSAGE_MAP(CCGWorkView, CView)
 	ON_COMMAND(ID_TOGGLE_ALL_SUB_BBOX, OnToggleAllSubObjBBox)
 	ON_COMMAND(ID_CHOOSE_COLORS, OnChooseColors)
 	ON_COMMAND(ID_GENERAL_SETTINGS, OnSettings)
+	ON_COMMAND(ID_PER_MODEL, OnPerModel)
 	ON_COMMAND(ID_LIGHT_SHADING_FLAT, OnLightShadingFlat)
 	ON_UPDATE_COMMAND_UI(ID_LIGHT_SHADING_FLAT, OnUpdateLightShadingFlat)
 	ON_COMMAND(ID_LIGHT_SHADING_GOURAUD, OnLightShadingGouraud)
@@ -861,6 +864,31 @@ void CCGWorkView::OnSettings()
 		_farClippingPlane = s._farClippingPlane;
 		if (active_object < _model_attr.size())
 			_model_attr[active_object].sensitivity = s._sensitivity;
+		Invalidate();
+	}
+}
+
+void CCGWorkView::OnPerModel()
+{
+	CPerModelParam s;
+	if (active_object >= _model_attr.size())
+		return;
+	ModelAttr& model = _model_attr[active_object];
+	s.removeBackFace = model.removeBackFace;
+	s.AmbientCoefficient = model.AmbientCoefficient;
+	s.DiffuseCoefficient = model.DiffuseCoefficient;
+	s.SpecularCoefficient = model.SpecularCoefficient;
+	s.SpecularPower = model.SpecularPower;
+	s.Shading = model.Shading;
+	CPerModel dlg(s);
+	if (dlg.DoModal() == IDOK)
+	{
+		model.removeBackFace = s.removeBackFace;
+		model.AmbientCoefficient = s.AmbientCoefficient;
+		model.DiffuseCoefficient = s.DiffuseCoefficient;
+		model.SpecularCoefficient = s.SpecularCoefficient;
+		model.SpecularPower = s.SpecularPower;
+		model.Shading = s.Shading;
 		Invalidate();
 	}
 }
