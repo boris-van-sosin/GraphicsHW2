@@ -382,7 +382,8 @@ namespace IritAdapter
 			IPObjectStruct** currObject = iritObjects->U.Lst.PObjList;
 			while ((*currObject) != NULL)
 			{
-				res.push_back(ConvertSingleObject(*currObject));
+				std::vector<PolygonalObject> currRes = Convert(*currObject);
+				res.insert(res.end(), currRes.begin(), currRes.end());
 				++currObject;
 			}
 			return res;

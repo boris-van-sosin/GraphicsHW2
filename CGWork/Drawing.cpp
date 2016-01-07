@@ -896,23 +896,53 @@ ClippingResult ApplyClipping(const HomogeneousPoint& p0, const HomogeneousPoint&
 	}
 }
 
-Polygon3D ApplyClipping(const Polygon3D& poly, const ClippingPlane& cp)
+Polygon3D ApplyClipping(const Polygon3D& poly, const ClippingPlane& cp, const Normals::PolygonNormalData& nd = Normals::PolygonNormalData(LineSegment(HomogeneousPoint::Zeros, HomogeneousPoint::Zeros)), Normals::PolygonNormalData& newNd = Normals::PolygonNormalData(LineSegment(HomogeneousPoint::Zeros, HomogeneousPoint::Zeros)))
 {
-	std::vector<HomogeneousPoint> resPoints;
-	resPoints.reserve(poly.points.size());
-	for (auto i = poly.points.begin(); i != poly.points.end(); ++i)
+	if (!nd.VertexNormals.empty())
 	{
-		const HomogeneousPoint p0 = *i;
-		const HomogeneousPoint p1 = (i + 1 != poly.points.end()) ? *(i + 1) : poly.points.front();
+		newNd.VertexNormals.clear();
+		newNd.PolygonNormal = nd.PolygonNormal;
+	}
+
+	std::vector<HomogeneousPoint> resPoints;
+	resPoints.reserve(poly.points.size() + 2);
+	newNd.VertexNormals.reserve(resPoints.size());
+	for (size_t i = 0; i < poly.points.size(); ++i)
+	{
+		const HomogeneousPoint p0 = poly.points[i];
+		const HomogeneousPoint p1 = (i + 1 < poly.points.size()) ? poly.points[i+1] : poly.points.front();
 		const ClippingResult clipRes = ApplyClipping(p0, p1, cp);
 		if ((!clipRes.clippedFirst) && (!clipRes.clippedSecond))
 		{
 			resPoints.push_back(clipRes.lineSegment.p0);
+			if (!nd.VertexNormals.empty())
+			{
+				newNd.VertexNormals.push_back(nd.VertexNormals[i]);
+			}
 		}
 		else if (clipRes.clippedFirst ^ clipRes.clippedSecond)
 		{
 			resPoints.push_back(clipRes.lineSegment.p0);
 			resPoints.push_back(clipRes.lineSegment.p1);
+			if (!nd.VertexNormals.empty())
+			{
+				if (clipRes.clippedSecond)
+				{
+					newNd.VertexNormals.push_back(nd.VertexNormals[i]);
+					const Point3D endpP0 = Point3D(nd.VertexNormals[i].p1);
+					const Point3D endpP1 = Point3D((i + 1 < poly.points.size()) ? nd.VertexNormals[i + 1].p1 : nd.VertexNormals.front().p1);
+					const HomogeneousPoint interpEndp(LinearInterpolate(clipRes.lineSegment.p1.z, p0.z, p1.z, endpP0, endpP1));
+					newNd.VertexNormals.push_back(LineSegment(clipRes.lineSegment.p1, interpEndp));
+				}
+				else
+				{
+					newNd.VertexNormals.push_back((i + 1 < poly.points.size()) ? nd.VertexNormals[i + 1] : nd.VertexNormals.front());
+					const Point3D endpP0 = Point3D(nd.VertexNormals[i].p1);
+					const Point3D endpP1 = Point3D((i + 1 < poly.points.size()) ? nd.VertexNormals[i + 1].p1 : nd.VertexNormals.front().p1);
+					const HomogeneousPoint interpEndp(LinearInterpolate(clipRes.lineSegment.p0.z, p0.z, p1.z, endpP0, endpP1));
+					newNd.VertexNormals.push_back(LineSegment(clipRes.lineSegment.p0, interpEndp));
+				}
+			}
 		}
 	}
 	return Polygon3D(resPoints);
@@ -1075,7 +1105,8 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 
 	FakeXYMap xyMap;
 
-	const Polygon3D clipPoly = clip ? ApplyClipping(poly0, cp) : poly0;
+	Normals::PolygonNormalData clipND = clip ? Normals::PolygonNormalData(nd.PolygonNormal) : nd;
+	const Polygon3D clipPoly = clip ? ApplyClipping(poly0, cp, nd ,clipND) : poly0;
 	const Polygon3D poly = mTotal * clipPoly;
 
 	COLORREF actualColor = 0;
@@ -1115,11 +1146,11 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 
 		if (attr.Shading == SHADING_GOURAUD || attr.Shading == SHADING_PHONG)
 		{
-			objSpP0.normal = Vector3D(nd.VertexNormals[i].p1) - Vector3D(nd.VertexNormals[i].p0);
-			objSpP1.normal = ((i + 1) < clipPoly.points.size()) ?
-					(Vector3D(nd.VertexNormals[i+1].p1) - Vector3D(nd.VertexNormals[i+1].p0))
+			objSpP0.normal = Vector3D(clipND.VertexNormals[i].p1) - Vector3D(clipND.VertexNormals[i].p0);
+			objSpP1.normal = ((i + 1) < clipND.VertexNormals.size()) ?
+					(Vector3D(clipND.VertexNormals[i + 1].p1) - Vector3D(clipND.VertexNormals[i + 1].p0))
 					:
-					(Vector3D(nd.VertexNormals.front().p1) - Vector3D(nd.VertexNormals.front().p0));
+					(Vector3D(clipND.VertexNormals.front().p1) - Vector3D(clipND.VertexNormals.front().p0));
 		}
 
 		ColorPhong cPhong = attr.Shading == SHADING_PHONG ? ColorPhong(objSpaceLn.p0, objSpaceLn.p1, lights, attr, actualColor, Point3D::Zero, 1.0) : ColorPhong();
@@ -1288,11 +1319,11 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 				{
 					if (lowerLeft)
 					{
-						draw = prevDraw ^ counters[XData::UPPER_LIMIT] > 0;
+						draw = prevDraw ^ (counters[XData::UPPER_LIMIT] > 0);
 					}
 					else
 					{
-						draw = prevDraw ^ counters[XData::LOWER_LIMIT] > 0;
+						draw = prevDraw ^ (counters[XData::LOWER_LIMIT] > 0);
 					}
 					lowerLeft = false;
 				}
