@@ -224,7 +224,7 @@ void CCGWorkView::OnSize(UINT nType, int cx, int cy)
 	// compute the aspect ratio
 	// this will keep all dimension scales equal
 	m_AspectRatio = (GLdouble)m_WindowWidth / (GLdouble)m_WindowHeight;
-	_zBufferImg.SetSize(m_WindowWidth, m_WindowHeight);
+	//_zBufferImg.SetSize(m_WindowWidth, m_WindowHeight);
 }
 
 
