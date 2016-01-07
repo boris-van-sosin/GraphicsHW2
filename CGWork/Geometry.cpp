@@ -660,7 +660,7 @@ void Normals::ComputeNormals(const std::vector<PolygonalObject>& objs, std::vect
 	for (auto i = vertexMap.begin(); i != vertexMap.end(); ++i)
 	{
 		const Vector3D direction = i->second.Normalized();
-		vertexNormals.push_back(LineSegment(HomogeneousPoint(i->first), HomogeneousPoint(i->first - direction)));
+		vertexNormals.push_back(LineSegment(HomogeneousPoint(i->first), HomogeneousPoint(i->first + direction)));
 	}
 
 	polygonIdx = 0;
