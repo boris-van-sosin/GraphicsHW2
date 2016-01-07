@@ -1115,7 +1115,7 @@ void CCGWorkView::OnFileSave()
 	{
 		const CString fileName = dlg.GetPathName();
 		CImage img;
-		const int h = 200, w = 200;
+		const int h = 2000, w = 2000;
 		img.Create(w, h, 32);
 
 		RECT r;
@@ -1132,7 +1132,8 @@ void CCGWorkView::OnFileSave()
 		tmpDrawingObj.active = DrawingObject::DRAWING_OBJECT_ZBUF;
 		if (_useBackgroundImage)
 		{
-			zbimg.SetBackgroundImage(_backgrounImage, ZBufferImage::REPEAT);
+			//zbimg.SetBackgroundImage(_backgrounImage, ZBufferImage::REPEAT);
+			zbimg.SetBackgroundImage(_backgrounImage, m_bgimage_mode);
 		}
 		else
 		{

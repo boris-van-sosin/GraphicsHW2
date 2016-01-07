@@ -24,7 +24,7 @@ CChooseColorDlg::CChooseColorDlg(Choose_color_param_t* _param, CWnd* pParent /*=
 		m_bgimagetype = 1;
 		break;
 	default:
-		assert(0);	// maybe deletes assert in release mode
+		ASSERT(0);	// maybe deletes assert in release mode
 		m_bgimagetype = 0;
 	}
 }
@@ -89,7 +89,7 @@ void CChooseColorDlg::OnOk() {
 		local_param.bg_image_mode = ZBufferImage::BGImageMode::REPEAT;
 		break;
 	default:
-		assert(0);
+		ASSERT(0);
 		local_param.bg_image_mode = ZBufferImage::BGImageMode::STRECH;
 		break;
 	}
