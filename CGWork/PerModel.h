@@ -21,8 +21,10 @@ public:
 	virtual ~CPerModel();
 
 	int m_shading_type;
+	int m_remove_back_face;
 	CPerModelParam m_tmp_param;
 	CPerModelParam& m_orig_param;
+	BOOL OnInitDialog();
 
 // Dialog Data
 	enum { IDD = IDD_PER_MODEL_DLG };

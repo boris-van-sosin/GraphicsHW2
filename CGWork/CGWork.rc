@@ -281,6 +281,17 @@ BEGIN
     CONTROL         "Gouraud",IDC_RADIO3,"Button",BS_AUTORADIOBUTTON,122,22,43,10
     CONTROL         "Phong",IDC_RADIO4,"Button",BS_AUTORADIOBUTTON,165,22,36,10
     LTEXT           "Shading:",IDC_STATIC,20,22,29,8
+    CONTROL         "false",IDC_RADIO5,"Button",BS_AUTORADIOBUTTON | WS_GROUP,91,39,31,10
+    CONTROL         "true",IDC_RADIO6,"Button",BS_AUTORADIOBUTTON,123,38,29,10
+    LTEXT           "Remove Back Face:",IDC_STATIC,21,40,64,8
+    LTEXT           "Ambient Coefficient",IDC_STATIC,20,57,64,8
+    LTEXT           "Diffuse Coefficient",IDC_STATIC,21,74,60,8
+    LTEXT           "SpecularCoefficient",IDC_STATIC,21,89,63,8
+    LTEXT           "SpecularPower",IDC_STATIC,22,105,48,8
+    EDITTEXT        IDC_EDIT1,89,54,40,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT2,89,70,40,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT3,89,86,40,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT4,89,102,40,14,ES_AUTOHSCROLL
 END
 
 
