@@ -121,7 +121,7 @@ public:
 	bool displayBBox = false;
 	bool displaySubObjectBBox = false;
 	double sensitivity = 0.1;
-	bool removeBackFace = true;
+	bool removeBackFace = false;
 	double AmbientCoefficient = 1.0, DiffuseCoefficient = 1.0, SpecularCoefficient = 1.0;
 	int SpecularPower = 4;
 	ShadingMode Shading = SHADING_GOURAUD;

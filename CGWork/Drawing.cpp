@@ -491,7 +491,7 @@ COLORREF ColorInterpolate(double x, double minX, double maxX, COLORREF clr0, COL
 
 struct XData
 {
-	enum PixelType { MIDDLE, UPPER_LIMIT, LOWER_LIMIT };
+	enum PixelType { MIDDLE, UPPER_LIMIT, LOWER_LIMIT, LEFT, RIGHT };
 	XData(int x_, double z_, int lid, COLORREF clr, const Vector3D& n, PixelType pt = MIDDLE)
 		: x(x_), z(z_), LineId(lid), Type(pt), color(clr), normal(n)
 	{}
@@ -563,7 +563,7 @@ struct MixedIntPoint
 
 struct FakeXYMap
 {
-	void SetPixel(int x, int y, double z, COLORREF clr, int lineId, const Vector3D& n)
+	void SetPixel(int x, int y, double z, COLORREF clr, int lineId, const Vector3D& n, XData::PixelType t = XData::MIDDLE)
 	{
 		minY = min(minY, y);
 		maxY = max(maxY, y);
@@ -571,7 +571,7 @@ struct FakeXYMap
 		{
 			xyMap[y] = std::vector<XData>();
 		}
-		xyMap[y].push_back(XData(x, z, lineId, clr, n));
+		xyMap[y].push_back(XData(x, z, lineId, clr, n, t));
 	}
 
 	void SetPixel(int x, int y, double z, COLORREF clr)
@@ -1171,25 +1171,16 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 				p0.color = p1.color = actualColor;
 				break;
 			}
-			xyMap.SetPixel(p0.x, p0.y, p0.z, p0.color, i, objSpP0.normal);
-			xyMap.SetPixel(p1.x, p1.y, p1.z, p1.color, i, objSpP0.normal);
-			for (auto pIt = xyMap.xyMap[p0.y].begin(); pIt != xyMap.xyMap[p0.y].end(); ++pIt)
+			
+			if (p0.x < p1.x)
 			{
-				if (pIt->LineId == i)
-					if (pIt->x == p0.x)
-					{
-					if (p0.x < p1.x)
-						pIt->Type = XData::UPPER_LIMIT;
-					else
-						pIt->Type = XData::LOWER_LIMIT;
-					}
-					else if (pIt->x == p0.x)
-					{
-						if (p0.x < p1.x)
-							pIt->Type = XData::LOWER_LIMIT;
-						else
-							pIt->Type = XData::UPPER_LIMIT;
-					}
+				xyMap.SetPixel(p0.x, p0.y, p0.z, p0.color, i, objSpP0.normal, XData::LEFT);
+				xyMap.SetPixel(p1.x, p1.y, p1.z, p1.color, i, objSpP0.normal, XData::RIGHT);
+			}
+			else
+			{
+				xyMap.SetPixel(p0.x, p0.y, p0.z, p0.color, i, objSpP0.normal, XData::RIGHT);
+				xyMap.SetPixel(p1.x, p1.y, p1.z, p1.color, i, objSpP0.normal, XData::LEFT);
 			}
 		}
 
@@ -1216,13 +1207,14 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 		CollapseSequences(currRow);
 
 		bool draw = false;
+		bool lowerLeft = false, prevDraw;
 		int idx = 0;
 		std::vector<XData>::const_iterator interpolationIter0 = origRow.begin();
 		for (int x = currRow.front().x; x != currRow.back().x; ++x)
 		{
 			if (x == currRow[idx].x)
 			{
-				int counters[3] = { 0, 0, 0 };
+				int counters[5] = { 0, 0, 0, 0, 0 };
 
 				while (idx < (currRow.size() - 1) && (currRow[idx].x == currRow[idx + 1].x))
 				{
@@ -1240,6 +1232,24 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 				else if (counters[XData::UPPER_LIMIT] > 0 && counters[XData::LOWER_LIMIT] > 0)
 				{
 					draw = !draw;
+				}
+				else if (counters[XData::LEFT] > 0)
+				{
+					prevDraw = draw;
+					draw = true;
+					lowerLeft = counters[XData::LOWER_LIMIT] > 0;
+				}
+				else if (counters[XData::RIGHT] > 0)
+				{
+					if (lowerLeft)
+					{
+						draw = prevDraw ^ counters[XData::UPPER_LIMIT] > 0;
+					}
+					else
+					{
+						draw = prevDraw ^ counters[XData::LOWER_LIMIT] > 0;
+					}
+					lowerLeft = false;
 				}
 
 			}
