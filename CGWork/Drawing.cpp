@@ -472,6 +472,8 @@ void CGSwap(T& x, T& y) {
 template<typename T>
 T LinearInterpolate(double x, double minX, double maxX, const T& t0, const T& t1)
 {
+	if (minX == maxX)
+		return t0;
 	double b = (x - minX) / (maxX - minX);
 	return (1 - b)*t0 + b*t1;
 }
@@ -484,7 +486,7 @@ COLORREF ColorInterpolate(double x, double minX, double maxX, COLORREF clr0, COL
 	{
 		newColors[i] = LinearInterpolate(x, minX, maxX, floatColors[i], floatColors[i + 3]);
 	}
-	return RGB(newColors[0], newColors[1], newColors[3]);
+	return RGB(newColors[0], newColors[1], newColors[2]);
 }
 
 struct XData
@@ -695,11 +697,15 @@ void innerDrawLine(FakeXYMap& img, const MixedIntPoint& p0, const MixedIntPoint&
 	int x0 = p0.x, y0 = p0.y,
 		x1 = p1.x, y1 = p1.y;
 	double z0 = p0.z, z1 = p1.z;
+	COLORREF c0 = p0.color, c1 = p1.color;
+	Vector3D n0 = p0.normal, n1 = p1.normal;
 
 	if (x0 > x1) {
 		CGSwap(x0, x1);
 		CGSwap(y0, y1);
 		CGSwap(z0, z1);
+		CGSwap(c0, c1);
+		CGSwap(n0, n1);
 	}
 
 	int dx = x1 - x0;
@@ -714,14 +720,13 @@ void innerDrawLine(FakeXYMap& img, const MixedIntPoint& p0, const MixedIntPoint&
 			CGSwap(x0, x1);
 			CGSwap(y0, y1);
 			CGSwap(z0, z1);
+			CGSwap(c0, c1);
+			CGSwap(n0, n1);
 		}
 		dx = x1 - x0;
 		dy = y1 - y0;
 		swapXY = true;
 	}
-	
-	const MixedIntPoint newP0(x0, y0, z0, p0.color, p0.normal);
-	const MixedIntPoint newP1(x1, y1, z1, p1.color, p1.normal);
 
 	bool reverseY = (dy < 0); // was: && ((-dy) < dx)
 	if (reverseY)
@@ -736,18 +741,18 @@ void innerDrawLine(FakeXYMap& img, const MixedIntPoint& p0, const MixedIntPoint&
 		{
 			if (!swapXY)
 			{
-				img.SetPixel(x0, y0, newP0.z, newP0.color, lineId, newP0.normal);
+				img.SetPixel(x0, y0, z0, c0, lineId, n0);
 				for (unsigned int i = 1; i < line_width; i++) {
-					img.SetPixel(x0, y0 + i, newP0.z, newP0.color, lineId, newP0.normal);
-					img.SetPixel(x0, y0 - i, newP0.z, newP0.color, lineId, newP0.normal);
+					img.SetPixel(x0, y0 + i, z0, c0, lineId, n0);
+					img.SetPixel(x0, y0 - i, z0, c0, lineId, n0);
 				}
 			}
 			else
 			{
-				img.SetPixel(y0, x0, newP0.z, newP0.color, lineId, newP0.normal);
+				img.SetPixel(y0, x0, z0, c0, lineId, n0);
 				for (unsigned int i = 1; i < line_width; i++) {
-					img.SetPixel(y0 + i, x0, newP0.z, newP0.color, lineId, newP0.normal);
-					img.SetPixel(y0 - i, x0, newP0.z, newP0.color, lineId, newP0.normal);
+					img.SetPixel(y0 + i, x0, z0, c0, lineId, n0);
+					img.SetPixel(y0 - i, x0, z0, c0, lineId, n0);
 				}
 			}
 		}
@@ -769,9 +774,18 @@ void innerDrawLine(FakeXYMap& img, const MixedIntPoint& p0, const MixedIntPoint&
 					--y;
 				}
 			}
-			const double currZ = swapXY ? zf(y, y0, y1, z0, z1) : zf(x, x0, x1, z0, z1);
-			const COLORREF currClr = swapXY ? clrf(y, y0, y1, p0.color, p1.color) : clrf(x, x0, x1, p0.color, p1.color);
-			const Vector3D currN = swapXY ? nf(y, y0, y1, p0.normal, p1.normal) : nf(x, x0, x1, p0.normal, p1.normal);
+			const double currZ = swapXY ?
+				(reverseY ? zf(y, y1, y0, z1, z0) : zf(y, y0, y1, z0, z1))
+				:
+				zf(x, x0, x1, z0, z1);
+			const COLORREF currClr = swapXY ?
+				(reverseY ? clrf(y, y1, y0, c0, c1)  : clrf(y, y0, y1, c0, c1))
+				:
+				clrf(x, x0, x1, c0, c1);
+			const Vector3D currN = swapXY ?
+				(reverseY ? nf(y, y1, y0, n1, n0) : nf(y, y0, y1, n0, n1))
+				:
+				nf(x, x0, x1, n0, n1);
 			if (!swapXY)
 			{
 				img.SetPixel(x, y, currZ, currClr, lineId, currN);
@@ -1044,7 +1058,7 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 	bool getP0 = true;
 	for (size_t i = 0; i < poly.points.size(); ++i)
 	{
-		if (attr.Shading == SHADING_NONE)
+		if (attr.Shading != SHADING_FLAT)
 		{
 			actualColor = GetActualColor(objColor, objColorValid, poly, poly.points[i], attr);
 		}
@@ -1070,11 +1084,11 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 
 		if (attr.Shading == SHADING_GOURAUD || attr.Shading == SHADING_PHONG)
 		{
-			objSpP0.normal = Vector3D(nd.VertexNormals[i].p0) - Vector3D(nd.VertexNormals[i].p1);
+			objSpP0.normal = Vector3D(nd.VertexNormals[i].p1) - Vector3D(nd.VertexNormals[i].p0);
 			objSpP1.normal = ((i + 1) < clipPoly.points.size()) ?
-					(Vector3D(nd.VertexNormals[i+1].p0) - Vector3D(nd.VertexNormals[i+1].p1))
+					(Vector3D(nd.VertexNormals[i+1].p1) - Vector3D(nd.VertexNormals[i+1].p0))
 					:
-					(Vector3D(nd.VertexNormals.back().p0) - Vector3D(nd.VertexNormals.back().p1));
+					(Vector3D(nd.VertexNormals.back().p1) - Vector3D(nd.VertexNormals.back().p0));
 		}
 
 		/*if (attr.line_width > 1)
@@ -1139,8 +1153,26 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 		}
 		else
 		{
-			xyMap.SetPixel(p0.x, p0.y, p0.z, objSpP0.color, i, objSpP0.normal);
-			xyMap.SetPixel(p1.x, p1.y, p1.z, objSpP0.color, i, objSpP0.normal);
+			switch (attr.Shading)
+			{
+			case SHADING_FLAT:
+				p0.color = p1.color = actualColor;
+				break;
+			case SHADING_GOURAUD:
+			{
+				p0.color = ApplyLight(lights, objSpP0, attr, actualColor, objSpP0.normal, Point3D::Zero, 1);
+				p1.color = ApplyLight(lights, objSpP1, attr, actualColor, objSpP1.normal, Point3D::Zero, 1);
+				break;
+			}
+			case SHADING_PHONG:
+				innerDrawLine(xyMap, p0, p1, i, 1, img.active == DrawingObject::DRAWING_OBJECT_ZBUF);
+				break;
+			default:
+				p0.color = p1.color = actualColor;
+				break;
+			}
+			xyMap.SetPixel(p0.x, p0.y, p0.z, p0.color, i, objSpP0.normal);
+			xyMap.SetPixel(p1.x, p1.y, p1.z, p1.color, i, objSpP0.normal);
 			for (auto pIt = xyMap.xyMap[p0.y].begin(); pIt != xyMap.xyMap[p0.y].end(); ++pIt)
 			{
 				if (pIt->LineId == i)
@@ -1239,6 +1271,11 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 					const int x0 = (interpolationIter0)->x, x1 = (interpolationIter0 + 1)->x;
 					const double z0 = (interpolationIter0)->z, z1 = (interpolationIter0 + 1)->z;
 					const double currZ = LinearInterpolate(x, x0, x1, z0, z1);
+					if (attr.Shading == SHADING_GOURAUD)
+					{
+						const COLORREF c1 = interpolationIter0->color, c2 = (interpolationIter0 + 1)->color;
+						fillColor = ColorInterpolate(x, x0, x1, c1, c2);
+					}
 					img.SetPixel(x, y, currZ, fillColor);
 				}
 				else
@@ -1265,7 +1302,7 @@ void DrawObject(DrawingObject& img, const PolygonalObject& obj, const MatrixHomo
 		{
 			Normals::PolygonNormalData n = mTotal * normals[i];
 			Vector3D normalDir = (Vector3D(n.PolygonNormal.p1) - Vector3D(n.PolygonNormal.p0));
-			if (normalDir * Vector3D(0, 0, 1) > 0)
+			if (normalDir * Vector3D(0, 0, 1) < 0)
 			{
 				draw = true;
 			}
@@ -1327,6 +1364,8 @@ COLORREF ApplyLight(const std::vector<LightSource>& lights, const MixedIntPoint&
 			const Vector3D reflectVec = lightVec - 2 * (lightVec*n)*n;
 			double viewProd = -(reflectVec * viewVec);
 			double dotProd = n * lightVec;
+			if (dotProd < 0)
+				dotProd = 0;
 			currLightPart += j->_intensity * (normDCoefficient*dotProd + normSCoefficient*pow(viewProd, attr.SpecularPower));
 		}
 		rgbValues[i] = rgbValues[i] * (ambient*normACoefficient + currLightPart);

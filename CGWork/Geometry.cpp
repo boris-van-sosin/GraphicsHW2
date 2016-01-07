@@ -620,7 +620,7 @@ void Normals::ComputeNormals(const std::vector<PolygonalObject>& objs, std::vect
 		{
 			const std::pair<double, HomogeneousPoint> areaAndCentroid = j->AreaAndCentroid();
 			const Vector3D currPolygonNormal = j->Normal();
-			PolygonNormalData d(LineSegment(areaAndCentroid.second, HomogeneousPoint(Point3D(areaAndCentroid.second) - currPolygonNormal)));
+			PolygonNormalData d(LineSegment(areaAndCentroid.second, HomogeneousPoint(Point3D(areaAndCentroid.second) + currPolygonNormal)));
 			polygonNormals.push_back(d);
 
 			polygonAreas.push_back(areaAndCentroid.first);
