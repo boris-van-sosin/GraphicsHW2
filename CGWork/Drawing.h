@@ -121,10 +121,10 @@ public:
 	bool displayBBox = false;
 	bool displaySubObjectBBox = false;
 	double sensitivity = 0.1;
-	bool removeBackFace = true; // button
-	double AmbientCoefficient = 1.0, DiffuseCoefficient = 1.0, SpecularCoefficient = 1.0; // buttons
-	int SpecularPower = 4;	// button
-	ShadingMode Shading = SHADING_GOURAUD;	// button
+	bool removeBackFace = false;
+	double AmbientCoefficient = 1.0, DiffuseCoefficient = 1.0, SpecularCoefficient = 1.0;
+	int SpecularPower = 4;
+	ShadingMode Shading = SHADING_GOURAUD;
 };
 
 class LightSource
