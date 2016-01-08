@@ -589,7 +589,7 @@ void CCGWorkView::ScaleAndCenterAll(model_t& model) const
 
 void CCGWorkView::OnFileLoad()
 {
-	TCHAR szFilters[] = _T("IRIT Data Files (*.itd)|*.itd|All Files (*.*)|*.*||");
+	TCHAR szFilters[] = _T("IRIT Data Files (*.itd)|*.itd|Obj Files (*.obj)|*.obj|All Files (*.*)|*.*||");
 
 	CFileDialog dlg(TRUE, _T("itd"), _T("*.itd"), OFN_FILEMUSTEXIST | OFN_HIDEREADONLY, szFilters);
 
