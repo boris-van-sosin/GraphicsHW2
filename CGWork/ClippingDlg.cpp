@@ -24,6 +24,7 @@ CClippingDlg::~CClippingDlg()
 void CClippingDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+	m_load_model_normals_status = _refSettings.load_normals_from_file;
 	DDX_Radio(pDX, IDC_RADIO1, m_load_model_normals_status);
 }
 
@@ -105,5 +106,6 @@ BOOL CClippingDlg::OnInitDialog()
 	SetDlgItemText(IDC_EDIT3, str); //polygon fineness
 	str.Format(_T("%f"), _refSettings._sensitivity);
 	SetDlgItemText(IDC_EDIT4, str); //sensitivity
+
 	return res;
 }

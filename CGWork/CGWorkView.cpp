@@ -941,6 +941,7 @@ void CCGWorkView::OnSettings()
 	s._nearClippingPlane = _nearClippingPlane;
 	s._farClippingPlane = _farClippingPlane;
 	s._sensitivity = 0;
+	s.load_normals_from_file = _useFileNormals;
 	if (active_object < _model_attr.size())
 		s._sensitivity = _model_attr[active_object].sensitivity;
 	CClippingDlg dlg(s);
@@ -951,7 +952,7 @@ void CCGWorkView::OnSettings()
 		_farClippingPlane = s._farClippingPlane;
 		if (active_object < _model_attr.size())
 			_model_attr[active_object].sensitivity = s._sensitivity;
-		_use_fi ###################################################################
+		_useFileNormals = s.load_normals_from_file;
 		Invalidate();
 	}
 }
