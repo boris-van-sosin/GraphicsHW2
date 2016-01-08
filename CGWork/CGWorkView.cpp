@@ -845,7 +845,15 @@ void CCGWorkView::OnZBtn()
 	if (m_z_buf)
 		m_z_buf = false;
 	else
+	{
 		m_z_buf = true;
+		RECT rect;
+		GetClientRect(&rect);
+
+		int h = rect.bottom - rect.top;
+		int w = rect.right - rect.left;
+		_zBufferImg.SetSize(w, h);
+	}
 	Invalidate();
 }
 
@@ -1168,7 +1176,7 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 		size_t normalsIdx = 0;
 		for (std::vector<PolygonalObject>::iterator it = model.begin(); it != model.end(); ++it)
 		{
-			DrawObject(img, *it, mTotal, attr, _polygonNormals[i], normalsIdx, true, m_bIsPerspective, perspData.NearPlane);
+			DrawObject(img, *it, mTotal, attr, _polygonNormals[i], normalsIdx, !attr.is_wireframe, m_bIsPerspective, perspData.NearPlane);
 			shadow_attr.color = i + 1;
 			shadow_attr.forceColor = true;
 			shadow_attr.Shading = SHADING_NONE;
