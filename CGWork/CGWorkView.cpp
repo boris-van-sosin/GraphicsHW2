@@ -706,7 +706,7 @@ void CCGWorkView::InverseNormals()
 		return;
 	}
 
-	for (size_t j = 0; j < _clean_models[active_object].size(); ++j)
+	for (size_t j = 0; j < _clean_polygonNormals[active_object].size(); ++j)
 	{
 		InverseNormal(_clean_polygonNormals[active_object][j].PolygonNormal);
 		for (auto k = _clean_polygonNormals[active_object][j].VertexNormals.begin(); k != _clean_polygonNormals[active_object][j].VertexNormals.end(); ++k)
