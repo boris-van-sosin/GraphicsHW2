@@ -1378,7 +1378,7 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 	}
 }
 
-void DrawObject(DrawingObject& img, const PolygonalObject& obj, const MatrixHomogeneous& mTotal, const ModelAttr& attr, const std::vector<Normals::PolygonNormalData>& normals, bool fillPolygons, bool clip, const ClippingPlane& cp)
+void DrawObject(DrawingObject& img, const PolygonalObject& obj, const MatrixHomogeneous& mTotal, const ModelAttr& attr, const std::vector<Normals::PolygonNormalData>& normals, size_t normalsOffset, bool fillPolygons, bool clip, const ClippingPlane& cp)
 {
 	std::vector<LightSource> lights;
 	lights.push_back(LightSource(Point3D(0.5, 0.5, 0.5), Point3D(0, 0, 1), LightSource::POINT, 1.0));
@@ -1391,7 +1391,7 @@ void DrawObject(DrawingObject& img, const PolygonalObject& obj, const MatrixHomo
 		}
 		else
 		{
-			Normals::PolygonNormalData n = mTotal * normals[i];
+			Normals::PolygonNormalData n = mTotal * normals[i + normalsOffset];;
 			Vector3D normalDir = (Vector3D(n.PolygonNormal.p1) - Vector3D(n.PolygonNormal.p0));
 			if (normalDir * Vector3D(0, 0, 1) < 0)
 			{
@@ -1400,7 +1400,7 @@ void DrawObject(DrawingObject& img, const PolygonalObject& obj, const MatrixHomo
 		}
 		if (draw)
 		{
-			DrawPolygon(img, obj.polygons[i], mTotal, attr, obj.color, obj.colorValid, normals[i], fillPolygons, lights, clip, cp);
+			DrawPolygon(img, obj.polygons[i], mTotal, attr, obj.color, obj.colorValid, normals[i + normalsOffset], fillPolygons, lights, clip, cp);
 		}
 	}
 }

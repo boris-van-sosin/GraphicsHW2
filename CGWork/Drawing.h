@@ -210,6 +210,6 @@ ClippingResult ApplyClipping(const HomogeneousPoint& p0, const HomogeneousPoint&
 void DrawLineSegment(DrawingObject& img, const Point3D& p0, const Point3D& p1, COLORREF clr, unsigned int line_width, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0));
 void DrawLineSegment(DrawingObject& img, const HomogeneousPoint& p0, const HomogeneousPoint& p1, COLORREF clr, unsigned int line_width, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0));
 void DrawLineSegment(DrawingObject& img, const LineSegment& line, COLORREF clr, unsigned int line_width, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0));
-void DrawObject(DrawingObject& img, const PolygonalObject& obj, const MatrixHomogeneous& m, const ModelAttr& attr, const std::vector<Normals::PolygonNormalData>& normals, bool fillPolygons, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0));
+void DrawObject(DrawingObject& img, const PolygonalObject& obj, const MatrixHomogeneous& m, const ModelAttr& attr, const std::vector<Normals::PolygonNormalData>& normals, size_t normalsIdx, bool fillPolygons, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0));
 
 #endif

@@ -587,7 +587,7 @@ void CCGWorkView::RenderScene() {
 void CCGWorkView::ScaleAndCenterAll(model_t& model) const
 {
 	const BoundingBox bcube = BoundingBox::OfObjects(model).BoundingCube();
-	const MatrixHomogeneous sc = Matrices::Translate(0, 0, (_initFar + _initNear) / 2) * CenterToCube(bcube) * ScaleToCube(bcube);
+	const MatrixHomogeneous sc = Matrices::Translate(0, 0, (_initFar + _initNear) / 2) * ScaleToCube(bcube) * CenterToCube(bcube);
 	for (auto i = model.begin(); i != model.end(); ++i)
 	{
 		*i = sc * (*i);
@@ -1046,13 +1046,15 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 		DrawingObject tmpDrawingObj;
 		tmpDrawingObj.img = &_pxl2obj;
 		tmpDrawingObj.active = DrawingObject::DRAWING_OBJECT_CIMG;
+		size_t normalsIdx = 0;
 		for (std::vector<PolygonalObject>::iterator it = model.begin(); it != model.end(); ++it)
 		{
-			DrawObject(img, *it, mTotal, attr, _polygonNormals[i], true, m_bIsPerspective, perspData.NearPlane);
+			DrawObject(img, *it, mTotal, attr, _polygonNormals[i], normalsIdx, true, m_bIsPerspective, perspData.NearPlane);
 			shadow_attr.color = i + 1;
 			shadow_attr.forceColor = true;
 			shadow_attr.Shading = SHADING_NONE;
-			DrawObject(tmpDrawingObj, *it, mTotal, shadow_attr, _polygonNormals[i], false, m_bIsPerspective, perspData.NearPlane);
+			DrawObject(tmpDrawingObj, *it, mTotal, shadow_attr, _polygonNormals[i], normalsIdx, false, m_bIsPerspective, perspData.NearPlane);
+			normalsIdx += it->polygons.size();
 		}
 
 		if (attr.boundry || attr.silluete)
@@ -1116,7 +1118,7 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 			ModelAttr bboxAttr;
 			bboxAttr.color = _model_attr[i].model_bbox_color;
 			bboxAttr.forceColor = true;
-			DrawObject(img, _modelBoundingBoxes[i], mTotal, bboxAttr, _polygonNormals[i], false, m_bIsPerspective, perspData.NearPlane);
+			DrawObject(img, _modelBoundingBoxes[i], mTotal, bboxAttr, _polygonNormals[i], 0, false, m_bIsPerspective, perspData.NearPlane);
 		}
 		if (attr.displaySubObjectBBox)
 		{
@@ -1125,7 +1127,7 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 			bboxAttr.forceColor = true;
 			for (auto j = _subObjectBoundingBoxes[i].begin(); j != _subObjectBoundingBoxes[i].end(); ++j)
 			{
-				DrawObject(img, *j, mTotal, bboxAttr, _polygonNormals[i], false, m_bIsPerspective, perspData.NearPlane);
+				DrawObject(img, *j, mTotal, bboxAttr, _polygonNormals[i], false, m_bIsPerspective, 0, perspData.NearPlane);
 			}
 		}
 	}
