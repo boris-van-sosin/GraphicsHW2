@@ -65,6 +65,8 @@
 #define IDC_RADIO9                      1059
 #define IDC_RADIO10                     1060
 #define IDC_EDIT5                       1061
+#define IDC_RADIO11                     1062
+#define IDC_RADIO12                     1063
 #define ID_FILE_LOAD                    32771
 #define ID_VIEW_ORTHOGRAPHIC            32772
 #define ID_VIEW_PERSPECTIVE             32773
@@ -100,7 +102,6 @@
 #define ID_BUTTON32823                  32823
 #define ID_Z_BTN                        32823
 #define ID_BTN_INV_NORMALS              32825
-#define ID_BUTTON32829                  32829
 #define ID_G_SCALE                      32829
 
 // Next default values for new objects
@@ -109,7 +110,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        142
 #define _APS_NEXT_COMMAND_VALUE         32830
-#define _APS_NEXT_CONTROL_VALUE         1062
+#define _APS_NEXT_CONTROL_VALUE         1064
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

@@ -12,6 +12,7 @@ public:
 	ShadingMode Shading = SHADING_GOURAUD;
 	bool silluete = true, boundry = true;
 	double AmbientIntensity = 1;
+	bool is_wireframe = false;
 };
 
 class CPerModel : public CDialogEx
@@ -26,6 +27,7 @@ public:
 	int m_remove_back_face;
 	int m_silluete;
 	int m_boundry;
+	int m_wireframe_solid;
 	CPerModelParam m_tmp_param;
 	CPerModelParam& m_orig_param;
 	BOOL OnInitDialog();

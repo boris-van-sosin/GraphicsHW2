@@ -128,6 +128,7 @@ public:
 	bool silluete = true;
 	bool boundry = true;
 	double AmbientIntensity = 1;
+	bool is_wireframe = false;
 };
 
 class LightSource

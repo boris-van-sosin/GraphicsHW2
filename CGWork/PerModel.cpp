@@ -36,6 +36,7 @@ void CPerModel::DoDataExchange(CDataExchange* pDX)
 	DDX_Radio(pDX, IDC_RADIO5, m_remove_back_face);
 	DDX_Radio(pDX, IDC_RADIO7, m_silluete);
 	DDX_Radio(pDX, IDC_RADIO9, m_boundry);
+	DDX_Radio(pDX, IDC_RADIO11, m_wireframe_solid);
 }
 
 
@@ -82,6 +83,7 @@ void CPerModel::OnBnClickedOk()
 	m_tmp_param.removeBackFace = (bool)m_remove_back_face;
 	m_tmp_param.silluete = bool(m_silluete);
 	m_tmp_param.boundry = (bool)m_boundry;
+	m_tmp_param.is_wireframe = (bool)m_wireframe_solid;
 
 	CString str1, str2, str3, str4, str5;
 	GetDlgItemText(IDC_EDIT1, str1);
