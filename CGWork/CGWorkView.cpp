@@ -590,7 +590,23 @@ void CCGWorkView::ScaleAndCenterAll(model_t& model) const
 	const MatrixHomogeneous sc = Matrices::Translate(0, 0, (_initFar + _initNear) / 2) * ScaleToCube(bcube) * CenterToCube(bcube);
 	for (auto i = model.begin(); i != model.end(); ++i)
 	{
-		*i = sc * (*i);
+		for (auto j = i->polygons.begin(); j != i->polygons.end(); ++j)
+		{
+			std::vector<Vector3D> tmpN = j->tmpNormals;
+			*j = sc * (*j);
+			j->tmpNormals = tmpN;
+		}
+	}
+}
+
+void CCGWorkView::RemoveTmpNormals(model_t& model)
+{
+	for (auto i = model.begin(); i != model.end(); ++i)
+	{
+		for (auto j = i->polygons.begin(); j != i->polygons.end(); ++j)
+		{
+			j->tmpNormals.clear();
+		}
 	}
 }
 
@@ -615,7 +631,7 @@ void CCGWorkView::OnFileLoad()
 		_polygonNormals.push_back(std::vector<Normals::PolygonNormalData>());
 		_vertexNormals.push_back(Normals::NormalList());
 		_polygonAdjacencies.push_back(PolygonAdjacencyGraph());
-		Normals::ComputeNormals(_models.back(), _polygonNormals.back(), _vertexNormals.back(), _polygonAdjacencies.back());
+		Normals::ComputeNormals(_models.back(), _polygonNormals.back(), _vertexNormals.back(), _polygonAdjacencies.back(), _useFileNormals);
 
 		//FlipYAxis(_models.size() - 1);
 

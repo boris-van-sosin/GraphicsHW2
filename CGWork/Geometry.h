@@ -88,16 +88,19 @@ public:
 	Polygon3D();
 	Polygon3D(const std::vector<HomogeneousPoint>& points_);
 	Polygon3D(const std::vector<HomogeneousPoint>& points_, COLORREF color_);
+	Polygon3D(const std::vector<HomogeneousPoint>& points_, const std::vector<Vector3D>& tmpN);
+	Polygon3D(const std::vector<HomogeneousPoint>& points_, const std::vector<Vector3D>& tmpN, COLORREF color_);
 
 	std::vector<LineSegment> Edges() const;
 	Vector3D Normal() const;
 	std::pair<double, HomogeneousPoint> AreaAndCentroid() const;
 
 	std::vector<HomogeneousPoint> points;
+	std::vector<Vector3D> tmpNormals;
 	COLORREF color;
 	bool colorValid;
 private:
-	Polygon3D(const std::vector<HomogeneousPoint>& points_, COLORREF color_, bool valid);
+	Polygon3D(const std::vector<HomogeneousPoint>& points_, const std::vector<Vector3D>& tmpN, COLORREF color_, bool valid);
 };
 
 class PolygonalObject
@@ -172,7 +175,7 @@ namespace Normals
 		NormalList VertexNormals;
 	};
 
-	void ComputeNormals(const std::vector<PolygonalObject>& objs, std::vector<PolygonNormalData>& polygonNormals, NormalList& vertexNormals, PolygonAdjacencyGraph& polygonAdjacency);
+	void ComputeNormals(const std::vector<PolygonalObject>& objs, std::vector<PolygonNormalData>& polygonNormals, NormalList& vertexNormals, PolygonAdjacencyGraph& polygonAdjacency,bool useFileNormals = false);
 }
 
 #endif

@@ -230,22 +230,32 @@ LineSegment::LineSegment(const HomogeneousPoint& p0_, const HomogeneousPoint& p1
 }
 
 Polygon3D::Polygon3D()
-	: Polygon3D(std::vector<HomogeneousPoint>(), RGB(255, 25, 255), false)
+	: Polygon3D(std::vector<HomogeneousPoint>(), std::vector<Vector3D>(), RGB(255, 25, 255), false)
 {
 }
 
-Polygon3D::Polygon3D(const std::vector<HomogeneousPoint>& points_, COLORREF color_, bool valid)
-	: points(points_), color(color_), colorValid(valid)
+Polygon3D::Polygon3D(const std::vector<HomogeneousPoint>& points_, const std::vector<Vector3D>& tmpN, COLORREF color_, bool valid)
+	: points(points_), color(color_), colorValid(valid), tmpNormals(tmpN)
 {
 }
 
 Polygon3D::Polygon3D(const std::vector<HomogeneousPoint>& points_)
-	: Polygon3D(points_, RGB(255, 25, 255), false)
+	: Polygon3D(points_, std::vector<Vector3D>(), RGB(255, 25, 255), false)
 {
 }
 
 Polygon3D::Polygon3D(const std::vector<HomogeneousPoint>& points_, COLORREF color_)
-	: Polygon3D(points_, color_, true)
+	: Polygon3D(points_, std::vector<Vector3D>(), color_, true)
+{
+}
+
+Polygon3D::Polygon3D(const std::vector<HomogeneousPoint>& points_, const std::vector<Vector3D>& tmpN)
+	: Polygon3D(points_, tmpN, RGB(255, 25, 255), false)
+{
+}
+
+Polygon3D::Polygon3D(const std::vector<HomogeneousPoint>& points_, const std::vector<Vector3D>& tmpN, COLORREF color_)
+	: Polygon3D(points_, tmpN, color_, true)
 {
 }
 
@@ -594,7 +604,7 @@ Normals::PolygonNormalData& Normals::PolygonNormalData::operator = (const Normal
 	return *this;
 }
 
-void Normals::ComputeNormals(const std::vector<PolygonalObject>& objs, std::vector<Normals::PolygonNormalData>& polygonNormals, NormalList& vertexNormals, PolygonAdjacencyGraph& polygonAdjacency)
+void Normals::ComputeNormals(const std::vector<PolygonalObject>& objs, std::vector<Normals::PolygonNormalData>& polygonNormals, NormalList& vertexNormals, PolygonAdjacencyGraph& polygonAdjacency, bool useFileNormals)
 {
 	polygonNormals.clear();
 	vertexNormals.clear();
@@ -626,13 +636,20 @@ void Normals::ComputeNormals(const std::vector<PolygonalObject>& objs, std::vect
 			polygonAreas.push_back(areaAndCentroid.first);
 			for (auto v = j->points.begin(); v != j->points.end(); ++v)
 			{
-				if (vertexMap.find(Point3D(*v)) == vertexMap.end())
+				if ((!useFileNormals) || j->tmpNormals.empty())
 				{
-					vertexMap[Point3D(*v)] = currPolygonNormal * areaAndCentroid.first;
+					if (vertexMap.find(Point3D(*v)) == vertexMap.end())
+					{
+						vertexMap[Point3D(*v)] = currPolygonNormal * areaAndCentroid.first;
+					}
+					else
+					{
+						vertexMap[Point3D(*v)] += currPolygonNormal * areaAndCentroid.first;
+					}
 				}
 				else
 				{
-					vertexMap[Point3D(*v)] += currPolygonNormal * areaAndCentroid.first;
+					vertexMap[Point3D(*v)] = j->tmpNormals[v - j->points.begin()];
 				}
 
 				const LineSegment currEdge(*v, (v + 1 != j->points.end()) ? *(v + 1) : j->points.front());

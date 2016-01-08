@@ -312,6 +312,10 @@ namespace IritAdapter
 	Polygon3D ConvertPolygon(IPPolygonStruct* p)
 	{
 		std::vector<HomogeneousPoint> vertices;
+		std::vector<Vector3D> tmpNormals;
+		vertices.reserve(3);
+		tmpNormals.reserve(3);
+		bool badNormal = false;
 		IPVertexStruct* v = p->PVertex;
 		while (v != NULL)
 		{
@@ -327,19 +331,29 @@ namespace IritAdapter
 			{
 				vertices.push_back(HomogeneousPoint(v->Coord[0], v->Coord[1], v->Coord[2]));
 			}
-			
+			if (v->Normal[0] == 0 && v->Normal[1] == 0 && v->Normal[2] == 0)
+			{
+				badNormal = true;
+			}
+			tmpNormals.push_back(Vector3D(v->Normal[0], v->Normal[1], v->Normal[2]));
 			
 			v = v->Pnext;
 		}
+		if (badNormal)
+		{
+			tmpNormals.clear();
+		}
+
 		IPAttributeStruct* polyAttrRGB = AttrFindAttribute(p->Attr, "rgb");
 		if (polyAttrRGB != NULL)
 		{
 			int pr, pg, pb;
 			sscanf_s(polyAttrRGB->U.Str, "%d,%d,%d", &pr, &pg, &pb);
-			return Polygon3D(vertices, RGB(pr,pg,pb));
+			return Polygon3D(vertices, tmpNormals, RGB(pr,pg,pb));
 		}
+		else
 		{
-			return Polygon3D(vertices);
+			return Polygon3D(vertices, tmpNormals);
 		}
 	}
 
