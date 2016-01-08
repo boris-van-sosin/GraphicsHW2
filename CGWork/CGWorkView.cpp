@@ -85,9 +85,11 @@ BEGIN_MESSAGE_MAP(CCGWorkView, CView)
 	ON_UPDATE_COMMAND_UI(ID_LIGHT_SHADING_GOURAUD, OnUpdateLightShadingGouraud)
 	ON_COMMAND(ID_LIGHT_CONSTANTS, OnLightConstants)
 	ON_COMMAND(ID_CHANGE_VIEW, OnChangeView)
-	ON_COMMAND(ID_Z_BTN, OnZBtn)
 	ON_UPDATE_COMMAND_UI(ID_CHANGE_VIEW, OnUpdateChangeView)
+	ON_COMMAND(ID_Z_BTN, OnZBtn)
 	ON_UPDATE_COMMAND_UI(ID_Z_BTN, OnUpdateZBtn)
+	ON_COMMAND(ID_G_SCALE, OnGlobalScaleBtn)
+	ON_UPDATE_COMMAND_UI(ID_G_SCALE, OnUpdateGlobalScaleBtn)
 	ON_WM_MOUSEMOVE()
 	ON_WM_MOUSEWHEEL()
 	ON_WM_KEYDOWN()
@@ -305,6 +307,9 @@ void CCGWorkView::translate(const Axis& axis,double dist) {
 
 void CCGWorkView::scale(const Axis& axis, double factor) {
 	MatrixHomogeneous mat = Matrices::Scale(axis == AXIS_X ? factor : 1, axis == AXIS_Y ? factor : 1, axis == AXIS_Z ? factor : 1);
+	if (global_scale_on) {	// override normal behaviour
+		mat = Matrices::Scale(factor, factor, factor);
+	}
 	applyMat(mat);
 	Invalidate();
 }
@@ -855,6 +860,22 @@ void CCGWorkView::OnUpdateChangeView(CCmdUI* pCmdUI)
 void CCGWorkView::OnUpdateZBtn(CCmdUI* pCmdUI)
 {
 	if (m_z_buf)
+		pCmdUI->SetCheck(1);
+	else
+		pCmdUI->SetCheck(0);
+}
+
+void CCGWorkView::OnGlobalScaleBtn()
+{
+	if (global_scale_on)
+		global_scale_on = false;
+	else
+		global_scale_on = true;
+}
+
+void CCGWorkView::OnUpdateGlobalScaleBtn(CCmdUI* pCmdUI)
+{
+	if (global_scale_on)
 		pCmdUI->SetCheck(1);
 	else
 		pCmdUI->SetCheck(0);
