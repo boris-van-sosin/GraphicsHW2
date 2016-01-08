@@ -1018,6 +1018,7 @@ void CCGWorkView::OnPerModel()
 	s.silluete = model.silluete;
 	s.boundry = model.boundry;
 	s.AmbientIntensity = model.AmbientIntensity;
+	s.is_wireframe = model.is_wireframe;
 
 	CPerModel dlg(s);
 	if (dlg.DoModal() == IDOK)
@@ -1031,6 +1032,7 @@ void CCGWorkView::OnPerModel()
 		model.silluete = s.silluete;
 		model.boundry = s.boundry;
 		model.AmbientIntensity = s.AmbientIntensity;
+		model.is_wireframe = s.is_wireframe;
 		Invalidate();
 	}
 }

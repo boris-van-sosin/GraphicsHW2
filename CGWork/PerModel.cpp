@@ -23,6 +23,7 @@ CPerModel::CPerModel(CPerModelParam& param, CWnd* pParent /*=NULL*/)
 	m_remove_back_face = (int)param.removeBackFace;
 	m_silluete = (int)param.silluete;
 	m_boundry = (int)param.boundry;
+	m_wireframe_solid = (int)param.is_wireframe;
 }
 
 CPerModel::~CPerModel()
