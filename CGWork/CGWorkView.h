@@ -133,6 +133,7 @@ protected:
 	afx_msg void OnToggleModelBBox();
 	afx_msg void OnToggleSubObjBBox();
 	afx_msg void OnToggleAllModelBBox();
+	afx_msg void OnInverseNormals();
 	afx_msg void OnToggleAllSubObjBBox();
 	afx_msg void OnSettings();
 	afx_msg void OnFileSave();

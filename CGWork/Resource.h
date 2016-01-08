@@ -99,13 +99,15 @@
 #define ID_PER_MODEL                    32822
 #define ID_BUTTON32823                  32823
 #define ID_Z_BTN                        32823
+#define ID_BUTTON32824                  32824
+#define ID_BTN_INV_NORMALS              32825
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        142
-#define _APS_NEXT_COMMAND_VALUE         32824
+#define _APS_NEXT_COMMAND_VALUE         32826
 #define _APS_NEXT_CONTROL_VALUE         1062
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

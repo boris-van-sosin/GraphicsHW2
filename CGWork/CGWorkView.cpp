@@ -74,6 +74,7 @@ BEGIN_MESSAGE_MAP(CCGWorkView, CView)
 	ON_COMMAND(ID_TOGGLE_MODEL_BBOX, OnToggleModelBBox)
 	ON_COMMAND(ID_TOGGLE_SUB_BBOX, OnToggleSubObjBBox)
 	ON_COMMAND(ID_TOGGLE_ALL_MODEL_BBOX, OnToggleAllModelBBox)
+	ON_COMMAND(ID_BTN_INV_NORMALS, OnInverseNormals)
 	ON_COMMAND(ID_TOGGLE_ALL_SUB_BBOX, OnToggleAllSubObjBBox)
 	ON_COMMAND(ID_CHOOSE_COLORS, OnChooseColors)
 	ON_COMMAND(ID_GENERAL_SETTINGS, OnSettings)
@@ -921,6 +922,12 @@ void CCGWorkView::OnToggleAllModelBBox()
 	{
 		i->displayBBox = _dummyDisplayModelBBox;
 	}
+	Invalidate();
+}
+
+void CCGWorkView::OnInverseNormals()
+{
+	InverseNormals();
 	Invalidate();
 }
 
