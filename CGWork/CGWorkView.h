@@ -22,6 +22,7 @@
 #include "Drawing.h"
 
 typedef std::vector<PolygonalObject> model_t;
+extern std::vector<LightSource> g_lights;
 
 class CCGWorkView : public CView
 {
@@ -198,6 +199,8 @@ private:
 	void translate(const Axis& axis, double dist);
 	void scale(const Axis& axis, double factor);
 	void deleteModel();
+
+	void translate_light_menu();
 };
 
 #ifndef _DEBUG  // debug version in CGWorkView.cpp

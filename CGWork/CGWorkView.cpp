@@ -203,6 +203,8 @@ BOOL CCGWorkView::InitializeCGWork()
 		return FALSE;
 	}
 
+	translate_light_menu();
+
 	return TRUE;
 }
 
@@ -990,6 +992,34 @@ void CCGWorkView::OnUpdateLightShadingGouraud(CCmdUI* pCmdUI)
 
 // LIGHT SETUP HANDLER ///////////////////////////////////////////
 
+void CCGWorkView::translate_light_menu() {
+	for (int id = LIGHT_ID_1; id < MAX_LIGHT; id++) {
+		if (!m_lights[id].enabled) {
+			for (int i = 0; i < 3; i++)
+				g_lights[id]._intensity[i] = 0;
+		}
+		else {
+			switch (m_lights[id].type) {
+			case LIGHT_TYPE_POINT:
+				g_lights[id]._type = LightSource::LightSourceType::POINT;
+				g_lights[id]._origin = HomogeneousPoint(m_lights[id].posX, m_lights[id].posY, m_lights[id].posZ);
+				break;
+			case LIGHT_TYPE_DIRECTIONAL:
+			case LIGHT_TYPE_SPOT:
+			default:
+				g_lights[id]._type = LightSource::LightSourceType::PLANE;
+				g_lights[id]._origin = HomogeneousPoint(0, 0, 0);
+				g_lights[id]._offset = HomogeneousPoint(m_lights[id].dirX, m_lights[id].dirY, m_lights[id].dirZ);
+				break;
+			}
+
+			g_lights[id]._intensity[0] = (double)m_lights[id].colorR / (double)255;
+			g_lights[id]._intensity[1] = (double)m_lights[id].colorG / (double)255;
+			g_lights[id]._intensity[2] = (double)m_lights[id].colorB / (double)255;
+		}
+	}
+}
+
 void CCGWorkView::OnLightConstants()
 {
 	CLightDialog dlg;
@@ -1008,6 +1038,10 @@ void CCGWorkView::OnLightConstants()
 		}
 		m_ambientLight = dlg.GetDialogData(LIGHT_ID_AMBIENT);
 	}
+
+	// Translating to our structures
+	translate_light_menu();
+	// Translating to our structures: end
 	Invalidate();
 }
 

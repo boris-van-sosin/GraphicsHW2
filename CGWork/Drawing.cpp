@@ -5,6 +5,7 @@
 #include <algorithm>
 
 const COLORREF DefaultModelColor(RGB(0, 0, 255));
+std::vector<LightSource> g_lights(10);
 
 ClippingPlane::ClippingPlane(double x_, double y_, double z_, double c_)
 	: x(x_), y(y_), z(z_), c(c_)
@@ -1380,8 +1381,7 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 
 void DrawObject(DrawingObject& img, const PolygonalObject& obj, const MatrixHomogeneous& mTotal, const ModelAttr& attr, const std::vector<Normals::PolygonNormalData>& normals, size_t normalsOffset, bool fillPolygons, bool clip, const ClippingPlane& cp)
 {
-	std::vector<LightSource> lights;
-	lights.push_back(LightSource(Point3D(0.5, 0.5, 0.5), Point3D(0, 0, 1), LightSource::POINT, 1.0));
+	//g_lights.push_back(LightSource(Point3D(0.5, 0.5, 0.5), Point3D(0, 0, 1), LightSource::POINT, 1.0));
 	for (size_t i = 0; i != obj.polygons.size(); ++i)
 	{
 		bool draw = false;
@@ -1400,14 +1400,17 @@ void DrawObject(DrawingObject& img, const PolygonalObject& obj, const MatrixHomo
 		}
 		if (draw)
 		{
-			DrawPolygon(img, obj.polygons[i], mTotal, attr, obj.color, obj.colorValid, normals[i + normalsOffset], fillPolygons, lights, clip, cp);
+			DrawPolygon(img, obj.polygons[i], mTotal, attr, obj.color, obj.colorValid, normals[i + normalsOffset], fillPolygons, g_lights, clip, cp);
 		}
 	}
 }
 
 LightSource::LightSource()
-	: LightSource(HomogeneousPoint::Zeros, HomogeneousPoint::Zeros, LightSource::POINT, 0.0)
+	: _origin(Vector3D::Zero), _offset(Vector3D::Zero), _type(LightSource::POINT)
 {
+	for (int i = 0; i < 3; i++) {
+		_intensity[i] = 0;
+	}
 }
 
 LightSource::LightSource(const Point3D& or, const Vector3D& dir, LightSourceType t, double p)
@@ -1416,13 +1419,19 @@ LightSource::LightSource(const Point3D& or, const Vector3D& dir, LightSourceType
 }
 
 LightSource::LightSource(const HomogeneousPoint& or, const HomogeneousPoint& dir, LightSourceType t, double p)
-	: _origin(or), _offset(Point3D(or) + (Point3D(dir).Normalized())), _type(t), _intensity(p)
+	: _origin(or), _offset(Point3D(or) + (Point3D(dir).Normalized())), _type(t)
 {
+	for (int i = 0; i < 3; i++) {
+		_intensity[i] = p;
+	}
 }
 
 LightSource::LightSource(const LightSource& other)
-	: _origin(other._origin), _offset(other._offset), _type(other._type), _intensity(other._intensity)
+	: _origin(other._origin), _offset(other._offset), _type(other._type)
 {
+	for (int i = 0; i < 3; i++) {
+		_intensity[i] = other._intensity[i];
+	}
 }
 
 Vector3D LightSource::Direction() const
@@ -1457,7 +1466,7 @@ COLORREF ApplyLight(const std::vector<LightSource>& lights, const MixedIntPoint&
 			double dotProd = n * lightVec;
 			if (dotProd < 0)
 				dotProd = 0;
-			currLightPart += j->_intensity * (normDCoefficient*dotProd + normSCoefficient*pow(viewProd, attr.SpecularPower));
+			currLightPart += (j->_intensity[i] * (normDCoefficient*dotProd + normSCoefficient*pow(viewProd, attr.SpecularPower)));
 		}
 		rgbValues[i] = rgbValues[i] * (ambient*normACoefficient + currLightPart);
 		rgbValues[i] = min(rgbValues[i], 255.0);

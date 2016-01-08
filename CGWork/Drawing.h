@@ -143,9 +143,9 @@ public:
 
 	Vector3D Direction() const;
 
-	HomogeneousPoint _origin, _offset;
+	HomogeneousPoint _origin, _offset; // offset - origin = direction
 	LightSourceType _type;
-	double _intensity;
+	double _intensity[3];	// RGB
 };
 
 inline COLORREF ShiftColor(COLORREF c, int shift)

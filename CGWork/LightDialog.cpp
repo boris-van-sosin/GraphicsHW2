@@ -25,9 +25,9 @@ void CLightDialog::DoDataExchange(CDataExchange* pDX)
 	CDialog::DoDataExchange(pDX);
 
 	//ambient light
-	DDX_Text(pDX, IDC_AMBL_COLOR_R, m_ambiant.colorR);
-	DDX_Text(pDX, IDC_AMBL_COLOR_G, m_ambiant.colorG);
-	DDX_Text(pDX, IDC_AMBL_COLOR_B, m_ambiant.colorB);
+	//DDX_Text(pDX, IDC_AMBL_COLOR_R, m_ambiant.colorR);
+	//DDX_Text(pDX, IDC_AMBL_COLOR_G, m_ambiant.colorG);
+	//DDX_Text(pDX, IDC_AMBL_COLOR_B, m_ambiant.colorB);
 
 	//update light parameters for the currently selected light
 	DDX_Text(pDX, IDC_LIGHT_COLOR_R, m_lights[m_currentLightIdx].colorR);

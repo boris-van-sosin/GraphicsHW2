@@ -45,12 +45,12 @@ public:
     int colorB;
 
     //position
-    double posX;
+    double posX; // for point light source
     double posY;
     double posZ;
 
     //direction
-    double dirX;
+    double dirX; // for parallel light source
     double dirY;
     double dirZ;
     
