@@ -1406,7 +1406,7 @@ void DrawObject(DrawingObject& img, const PolygonalObject& obj, const MatrixHomo
 }
 
 LightSource::LightSource()
-	: _origin(Vector3D::Zero), _offset(Vector3D::Zero), _type(LightSource::POINT)
+	: _origin(Vector3D::Zero), _offset(1, 1, 1), _type(LightSource::POINT)
 {
 	for (int i = 0; i < 3; i++) {
 		_intensity[i] = 0;

@@ -1035,8 +1035,10 @@ void CCGWorkView::translate_light_menu() {
 			case LIGHT_TYPE_SPOT:
 			default:
 				g_lights[id]._type = LightSource::LightSourceType::PLANE;
-				g_lights[id]._origin = HomogeneousPoint(0, 0, 0);
-				g_lights[id]._offset = HomogeneousPoint(m_lights[id].dirX, m_lights[id].dirY, m_lights[id].dirZ);
+				if (m_lights[id].dirX != 0 || m_lights[id].dirY != 0 || m_lights[id].dirZ != 0) {
+					g_lights[id]._origin = HomogeneousPoint(0, 0, 0);
+					g_lights[id]._offset = HomogeneousPoint(m_lights[id].dirX, m_lights[id].dirY, m_lights[id].dirZ);
+				}
 				break;
 			}
 
