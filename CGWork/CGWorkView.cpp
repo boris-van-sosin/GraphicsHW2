@@ -658,7 +658,7 @@ void CCGWorkView::OnFileLoad()
 		const BoundingBox bcube = _bboxes.back().BoundingCube();
 		_model_attr.push_back(ModelAttr());
 
-		double gran_size = fmax(bcube.maxX - bcube.minX, fmax(bcube.maxY - bcube.minY, bcube.maxZ - bcube.minZ));
+		double gran_size = fmax(bcube.maxX - bcube.minX, fmax(bcube.maxY - bcube.minY, bcube.maxZ - bcube.minZ)) * 10;
 		_model_attr.back().sensitivity = 1.0 / gran_size;
 		
 		active_object = _models.size() - 1;
@@ -1058,32 +1058,34 @@ void CCGWorkView::OnUpdateLightShadingGouraud(CCmdUI* pCmdUI)
 // LIGHT SETUP HANDLER ///////////////////////////////////////////
 
 void CCGWorkView::translate_light_menu() {
+	g_lights.erase(g_lights.begin(), g_lights.end());
+
 	for (int id = LIGHT_ID_1; id < MAX_LIGHT; id++) {
 		if (!m_lights[id].enabled) {
-			for (int i = 0; i < 3; i++)
-				g_lights[id]._intensity[i] = 0;
+			continue;
 		}
-		else {
-			switch (m_lights[id].type) {
-			case LIGHT_TYPE_POINT:
-				g_lights[id]._type = LightSource::LightSourceType::POINT;
-				g_lights[id]._origin = HomogeneousPoint(m_lights[id].posX, m_lights[id].posY, m_lights[id].posZ);
-				break;
-			case LIGHT_TYPE_DIRECTIONAL:
-			case LIGHT_TYPE_SPOT:
-			default:
-				g_lights[id]._type = LightSource::LightSourceType::PLANE;
-				if (m_lights[id].dirX != 0 || m_lights[id].dirY != 0 || m_lights[id].dirZ != 0) {
-					g_lights[id]._origin = HomogeneousPoint(0, 0, 0);
-					g_lights[id]._offset = HomogeneousPoint(m_lights[id].dirX, m_lights[id].dirY, m_lights[id].dirZ);
-				}
-				break;
+		LightSource new_light;
+		switch (m_lights[id].type) {
+		case LIGHT_TYPE_POINT:
+			new_light._type = LightSource::LightSourceType::POINT;
+			new_light._origin = HomogeneousPoint(m_lights[id].posX, m_lights[id].posY, m_lights[id].posZ);
+			break;
+		case LIGHT_TYPE_DIRECTIONAL:
+		case LIGHT_TYPE_SPOT:
+		default:
+			new_light._type = LightSource::LightSourceType::PLANE;
+			if (m_lights[id].dirX != 0 || m_lights[id].dirY != 0 || m_lights[id].dirZ != 0) {
+				new_light._origin = HomogeneousPoint(0, 0, 0);
+				new_light._offset = HomogeneousPoint(m_lights[id].dirX, m_lights[id].dirY, m_lights[id].dirZ);
 			}
-
-			g_lights[id]._intensity[0] = (double)m_lights[id].colorR / (double)255;
-			g_lights[id]._intensity[1] = (double)m_lights[id].colorG / (double)255;
-			g_lights[id]._intensity[2] = (double)m_lights[id].colorB / (double)255;
+			break;
 		}
+
+		new_light._intensity[0] = (double)m_lights[id].colorR / (double)255;
+		new_light._intensity[1] = (double)m_lights[id].colorG / (double)255;
+		new_light._intensity[2] = (double)m_lights[id].colorB / (double)255;
+
+		g_lights.push_back(new_light);
 	}
 }
 
