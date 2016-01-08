@@ -536,9 +536,19 @@ void CCGWorkView::OnDraw(CDC* pDC)
 		_zBufferImg.SetSize(w, h);
 	}
 
-	HDC imgDC = img.GetDC();
-	FillRect(imgDC, &rect, _backgroundBrush);
-	img.ReleaseDC();
+	//HDC imgDC = img.GetDC();
+	//FillRect(imgDC, &rect, _backgroundBrush);
+	//img.ReleaseDC();
+
+	if (_useBackgroundImage)
+	{
+		_zBufferImg.SetBackgroundImage(_backgrounImage, m_bgimage_mode);
+	}
+	else
+	{
+		_zBufferImg.SetBackgroundColor(_backgroundColor);
+	}
+
 
 	_drawObj.img = &img;
 	_drawObj.zBufImg = &_zBufferImg;
