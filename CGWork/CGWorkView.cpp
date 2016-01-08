@@ -677,8 +677,33 @@ void CCGWorkView::OnFileLoad()
 	}
 }
 
+inline void InverseNormal(LineSegment& n)
+{
+	const Point3D p0(n.p0), p1(n.p1);
+	n.p1 = HomogeneousPoint(p0 - (p1 - p0));
+}
 
+void CCGWorkView::InverseNormals()
+{
+	if (active_object < 0 || active_object >= _models.size())
+	{
+		return;
+	}
 
+	for (size_t j = 0; j < _clean_models[active_object].size(); ++j)
+	{
+		InverseNormal(_clean_polygonNormals[active_object][j].PolygonNormal);
+		for (auto k = _clean_polygonNormals[active_object][j].VertexNormals.begin(); k != _clean_polygonNormals[active_object][j].VertexNormals.end(); ++k)
+		{
+			InverseNormal(*k);
+		}
+	}
+	for (auto h = _clean_vertexNormals[active_object].begin(); h != _clean_vertexNormals[active_object].end(); ++h)
+	{
+		InverseNormal(*h);
+	}
+	applyMat(Matrices::UnitMatrixHomogeneous);
+}
 
 
 // VIEW HANDLERS ///////////////////////////////////////////

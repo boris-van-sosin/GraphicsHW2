@@ -146,6 +146,7 @@ private:
 	void DrawScene(DrawingObject& img);
 	void ScaleAndCenterAll(model_t& model) const;
 	static void RemoveTmpNormals(model_t& model);
+	void InverseNormals();
 
 private:
 	std::vector<model_t> _models;
