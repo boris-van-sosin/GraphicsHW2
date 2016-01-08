@@ -258,6 +258,9 @@ BEGIN
     LTEXT           "Static",IDC_STATIC,0,0,19,8
     LTEXT           "sensitivity",IDC_STATIC,49,118,33,8
     EDITTEXT        IDC_EDIT4,84,115,40,14,ES_AUTOHSCROLL
+    CONTROL         "false",IDC_RADIO1,"Button",BS_AUTORADIOBUTTON | WS_GROUP,181,50,31,10
+    CONTROL         "true",IDC_RADIO2,"Button",BS_AUTORADIOBUTTON,181,62,29,10
+    LTEXT           "Load normals from file:",IDC_STATIC,182,39,74,8
 END
 
 IDD_PER_MODEL_DLG DIALOGEX 0, 0, 309, 213

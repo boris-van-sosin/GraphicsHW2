@@ -24,6 +24,7 @@ CClippingDlg::~CClippingDlg()
 void CClippingDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+	DDX_Radio(pDX, IDC_RADIO1, m_load_model_normals_status);
 }
 
 BEGIN_MESSAGE_MAP(CClippingDlg, CDialogEx)
@@ -79,6 +80,10 @@ void CClippingDlg::OnOk() {
 		_refSettings._farClippingPlane = farNum;
 		_refSettings._polygonFineness = finenessNum;
 		_refSettings._sensitivity = sensitivityNum;
+
+		UpdateData(TRUE);
+		_refSettings.load_normals_from_file = (bool)m_load_model_normals_status;
+
 		CDialog::OnOK();
 	}
 

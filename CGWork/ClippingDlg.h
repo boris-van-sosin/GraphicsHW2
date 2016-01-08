@@ -9,6 +9,7 @@ struct GeneralSettings
 	double _nearClippingPlane;
 	double _farClippingPlane;
 	double _sensitivity;
+	bool load_normals_from_file;
 };
 
 class CClippingDlg : public CDialogEx
@@ -24,6 +25,8 @@ public:
 
 	void OnOk();
 	BOOL OnInitDialog();
+
+	int m_load_model_normals_status = 0;
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support

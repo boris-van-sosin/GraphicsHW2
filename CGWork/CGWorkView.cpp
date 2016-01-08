@@ -926,6 +926,7 @@ void CCGWorkView::OnSettings()
 		_farClippingPlane = s._farClippingPlane;
 		if (active_object < _model_attr.size())
 			_model_attr[active_object].sensitivity = s._sensitivity;
+		_use_fi ###################################################################
 		Invalidate();
 	}
 }
