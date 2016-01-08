@@ -84,7 +84,9 @@ BEGIN_MESSAGE_MAP(CCGWorkView, CView)
 	ON_UPDATE_COMMAND_UI(ID_LIGHT_SHADING_GOURAUD, OnUpdateLightShadingGouraud)
 	ON_COMMAND(ID_LIGHT_CONSTANTS, OnLightConstants)
 	ON_COMMAND(ID_CHANGE_VIEW, OnChangeView)
+	ON_COMMAND(ID_Z_BTN, OnZBtn)
 	ON_UPDATE_COMMAND_UI(ID_CHANGE_VIEW, OnUpdateChangeView)
+	ON_UPDATE_COMMAND_UI(ID_Z_BTN, OnUpdateZBtn)
 	ON_WM_MOUSEMOVE()
 	ON_WM_MOUSEWHEEL()
 	ON_WM_KEYDOWN()
@@ -224,7 +226,8 @@ void CCGWorkView::OnSize(UINT nType, int cx, int cy)
 	// compute the aspect ratio
 	// this will keep all dimension scales equal
 	m_AspectRatio = (GLdouble)m_WindowWidth / (GLdouble)m_WindowHeight;
-	//_zBufferImg.SetSize(m_WindowWidth, m_WindowHeight);
+	if (m_z_buf)
+		_zBufferImg.SetSize(m_WindowWidth, m_WindowHeight);
 }
 
 
@@ -525,10 +528,10 @@ void CCGWorkView::OnDraw(CDC* pDC)
 	CImage img;
 	img.Create(w, h, 32);
 
-	/*if (_zBufferImg.GetHeight() == 0 || _zBufferImg.GetWidth() == 0)
+	if (m_z_buf && (_zBufferImg.GetHeight() == 0 || _zBufferImg.GetWidth() == 0))
 	{
 		_zBufferImg.SetSize(w, h);
-	}*/
+	}
 
 	HDC imgDC = img.GetDC();
 	FillRect(imgDC, &rect, _backgroundBrush);
@@ -536,16 +539,20 @@ void CCGWorkView::OnDraw(CDC* pDC)
 
 	_drawObj.img = &img;
 	_drawObj.zBufImg = &_zBufferImg;
-	_drawObj.active = DrawingObject::DRAWING_OBJECT_CIMG;
-	//_drawObj.active = DrawingObject::DRAWING_OBJECT_ZBUF;
-
-	//_zBufferImg.Clear();
+	
+	if (!m_z_buf)
+		_drawObj.active = DrawingObject::DRAWING_OBJECT_CIMG;
+	else {
+		_drawObj.active = DrawingObject::DRAWING_OBJECT_ZBUF;
+		_zBufferImg.Clear();
+	}
+		
 
 	DrawScene(_drawObj);
 
-	//
-	//_zBufferImg.DrawOnImage(img);
-	//
+	if (m_z_buf)
+		_zBufferImg.DrawOnImage(img);
+	
 
 	img.BitBlt(*pDC, 0, 0, w, h, 0, 0);
 	//temporary:
@@ -774,9 +781,26 @@ void CCGWorkView::OnChangeView()
 		_in_object_view = true;
 }
 
+void CCGWorkView::OnZBtn()
+{
+	if (m_z_buf)
+		m_z_buf = false;
+	else
+		m_z_buf = true;
+	Invalidate();
+}
+
 void CCGWorkView::OnUpdateChangeView(CCmdUI* pCmdUI)
 {
 	if (_in_object_view)
+		pCmdUI->SetCheck(1);
+	else
+		pCmdUI->SetCheck(0);
+}
+
+void CCGWorkView::OnUpdateZBtn(CCmdUI* pCmdUI)
+{
+	if (m_z_buf)
 		pCmdUI->SetCheck(1);
 	else
 		pCmdUI->SetCheck(0);

@@ -120,6 +120,8 @@ protected:
 	afx_msg void OnLightConstants();
 	afx_msg void OnChangeView();
 	afx_msg void OnUpdateChangeView(CCmdUI* pCmdUI);
+	afx_msg void OnZBtn();
+	afx_msg void OnUpdateZBtn(CCmdUI* pCmdUI);
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 	afx_msg BOOL OnMouseWheel(UINT, short, CPoint);
 	afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
@@ -171,6 +173,7 @@ private:
 	int glowing_object = -1; // -1 is none
 	int active_object = 0;
 	bool _in_object_view = false;	// in what wview to apply the matrix? object or view?
+	bool m_z_buf = false;
 
 	const double _initNear = 0.9, _initFar = 2.1;
 
