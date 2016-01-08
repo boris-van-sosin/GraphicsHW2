@@ -1179,6 +1179,12 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 		for (std::vector<PolygonalObject>::iterator it = model.begin(); it != model.end(); ++it)
 		{
 			DrawObject(img, *it, mTotal, attr, _polygonNormals[i], normalsIdx, !attr.is_wireframe, m_bIsPerspective, perspData.NearPlane);
+			if (attr.line_width > 1)
+			{
+				ModelAttr widenAttr = attr;
+				widenAttr.Shading = SHADING_NONE;
+				DrawObject(img, *it, mTotal, widenAttr, _polygonNormals[i], normalsIdx, false, m_bIsPerspective, perspData.NearPlane);
+			}
 			shadow_attr.color = i + 1;
 			shadow_attr.forceColor = true;
 			shadow_attr.Shading = SHADING_NONE;

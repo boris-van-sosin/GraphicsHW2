@@ -1122,7 +1122,7 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 
 	FakeXYMap xyMap;
 
-	const int width = attr.is_wireframe ? attr.line_width : 1;
+	const int width = fillPolygons ? 1 : attr.line_width;
 
 	Normals::PolygonNormalData clipND = clip ? Normals::PolygonNormalData(nd.PolygonNormal) : nd;
 	const Polygon3D clipPoly = clip ? ApplyClipping(poly0, cp, nd ,clipND) : poly0;
@@ -1277,7 +1277,10 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 			}
 			else
 			{
-				innerDrawLine(xyMap, p0, p1, i, width, ZZero, clrFlat, NormalZero, NormalZero);
+				if (img.active == DrawingObject::DRAWING_OBJECT_ZBUF)
+					innerDrawLine(xyMap, p0, p1, i, width, LinearInterpolate<double>, clrFlat, NormalZero, NormalZero);
+				else
+					innerDrawLine(xyMap, p0, p1, i, width, ZZero, clrFlat, NormalZero, NormalZero);
 			}
 		}
 
