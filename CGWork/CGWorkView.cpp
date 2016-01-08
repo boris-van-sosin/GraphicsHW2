@@ -1031,14 +1031,14 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 			DrawObject(tmpDrawingObj, *it, mTotal, shadow_attr, _polygonNormals[i], false, m_bIsPerspective, perspData.NearPlane);
 		}
 
-		if (true)
+		if (attr.boundry || attr.silluete)
 		{
 			for (auto j = _polygonAdjacencies[i].begin(); j != _polygonAdjacencies[i].end(); ++j)
 			{
 				const Polygon3D& currPoly = _models[i][j->objIdx].polygons[j->polygonInObjIdx];
 				const LineSegment edge(currPoly.points[j->vertexIdx], currPoly.points[(j->vertexIdx+1) % currPoly.points.size()]);
 				COLORREF boundaryColor = ShiftColor(GetActualColor(_models[i][j->objIdx].color, _models[i][j->objIdx].colorValid, currPoly, edge.p0, attr), -100);
-				if (j->polygonIdxs.size() == 1)
+				if (attr.boundry && (j->polygonIdxs.size() == 1))
 				{
 					// boundary
 					if (m_bIsPerspective)
@@ -1050,7 +1050,7 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 						DrawLineSegment(img, mTotal*(edge.p0), mTotal*(edge.p1), boundaryColor, 1);
 					}
 				}
-				else
+				else if (attr.silluete)
 				{
 					const LineSegment n0 = TransformNormal(mTotal, _polygonNormals[i][j->polygonIdxs[0]].PolygonNormal);
 					const LineSegment n1 = TransformNormal(mTotal, _polygonNormals[i][j->polygonIdxs[1]].PolygonNormal);

@@ -1113,7 +1113,7 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 	if (attr.Shading == SHADING_FLAT)
 	{
 		actualColor = GetActualColor(objColor, objColorValid, poly, HomogeneousPoint::Zeros, attr);
-		actualColor = ApplyLight(lights, nd.PolygonNormal.p0, attr, actualColor, Point3D(nd.PolygonNormal.p0) - Point3D(nd.PolygonNormal.p1), Point3D::Zero, 1);
+		actualColor = ApplyLight(lights, nd.PolygonNormal.p0, attr, actualColor, Point3D(nd.PolygonNormal.p0) - Point3D(nd.PolygonNormal.p1), Point3D::Zero, attr.AmbientIntensity);
 	}	
 
 	MixedIntPoint p0, p1, objSpP0, objSpP1;
@@ -1153,7 +1153,7 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 					(Vector3D(clipND.VertexNormals.front().p1) - Vector3D(clipND.VertexNormals.front().p0));
 		}
 
-		ColorPhong cPhong = attr.Shading == SHADING_PHONG ? ColorPhong(objSpaceLn.p0, objSpaceLn.p1, lights, attr, actualColor, Point3D::Zero, 1.0) : ColorPhong();
+		ColorPhong cPhong = attr.Shading == SHADING_PHONG ? ColorPhong(objSpaceLn.p0, objSpaceLn.p1, lights, attr, actualColor, Point3D::Zero, attr.AmbientIntensity) : ColorPhong();
 
 		/*if (attr.line_width > 1)
 		{
@@ -1173,8 +1173,8 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 				break;
 			case SHADING_GOURAUD:
 			{
-				p0.color = ApplyLight(lights, objSpP0, attr, actualColor, objSpP0.normal, Point3D::Zero, 1);
-				p1.color = ApplyLight(lights, objSpP1, attr, actualColor, objSpP1.normal, Point3D::Zero, 1);
+				p0.color = ApplyLight(lights, objSpP0, attr, actualColor, objSpP0.normal, Point3D::Zero, attr.AmbientIntensity);
+				p1.color = ApplyLight(lights, objSpP1, attr, actualColor, objSpP1.normal, Point3D::Zero, attr.AmbientIntensity);
 				if (img.active == DrawingObject::DRAWING_OBJECT_ZBUF)
 					innerDrawLine(xyMap, p0, p1, i, 1, LinearInterpolate<double>, ColorInterpolateN, NormalZero);
 				else
@@ -1183,8 +1183,8 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 			}
 			case SHADING_PHONG:
 			{
-				p0.color = ApplyLight(lights, objSpP0, attr, actualColor, objSpP0.normal, Point3D::Zero, 1);
-				p1.color = ApplyLight(lights, objSpP1, attr, actualColor, objSpP1.normal, Point3D::Zero, 1);
+				p0.color = ApplyLight(lights, objSpP0, attr, actualColor, objSpP0.normal, Point3D::Zero, attr.AmbientIntensity);
+				p1.color = ApplyLight(lights, objSpP1, attr, actualColor, objSpP1.normal, Point3D::Zero, attr.AmbientIntensity);
 				p0.normal = objSpP0.normal;
 				p1.normal = objSpP1.normal;
 				if (img.active == DrawingObject::DRAWING_OBJECT_ZBUF)
@@ -1233,13 +1233,13 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 				break;
 			case SHADING_GOURAUD:
 			{
-				p0.color = ApplyLight(lights, objSpP0, attr, actualColor, objSpP0.normal, Point3D::Zero, 1);
-				p1.color = ApplyLight(lights, objSpP1, attr, actualColor, objSpP1.normal, Point3D::Zero, 1);
+				p0.color = ApplyLight(lights, objSpP0, attr, actualColor, objSpP0.normal, Point3D::Zero, attr.AmbientIntensity);
+				p1.color = ApplyLight(lights, objSpP1, attr, actualColor, objSpP1.normal, Point3D::Zero, attr.AmbientIntensity);
 				break;
 			}
 			case SHADING_PHONG:
-				p0.color = ApplyLight(lights, objSpP0, attr, actualColor, objSpP0.normal, Point3D::Zero, 1);
-				p1.color = ApplyLight(lights, objSpP1, attr, actualColor, objSpP1.normal, Point3D::Zero, 1);
+				p0.color = ApplyLight(lights, objSpP0, attr, actualColor, objSpP0.normal, Point3D::Zero, attr.AmbientIntensity);
+				p1.color = ApplyLight(lights, objSpP1, attr, actualColor, objSpP1.normal, Point3D::Zero, attr.AmbientIntensity);
 				p0.normal = objSpP0.normal;
 				p1.normal = objSpP1.normal;
 				break;
@@ -1365,7 +1365,7 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 					else if (attr.Shading == SHADING_PHONG)
 					{
 						const Vector3D n = LinearInterpolate(x, x0, x1, interpolationIter0->normal, (interpolationIter0 + 1)->normal);
-						fillColor = ApplyLight(lights, MixedIntPoint(x, y, currZ), attr, actualColor, n, Point3D::Zero, 1.0);
+						fillColor = ApplyLight(lights, MixedIntPoint(x, y, currZ), attr, actualColor, n, Point3D::Zero, attr.AmbientIntensity);
 					}
 					img.SetPixel(x, y, currZ, fillColor);
 				}
