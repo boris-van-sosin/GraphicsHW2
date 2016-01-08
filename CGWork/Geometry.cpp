@@ -277,7 +277,7 @@ Vector3D Polygon3D::Normal() const
 		const Point3D& p0 = Point3D(points[i]);
 		const Point3D& p1 = Point3D( points[(i + 1) % points.size()]);
 		const Point3D& p2 = Point3D(points[(i + 2) % points.size()]);
-		Vector3D n = (p1 - p0).Cross(p2 - p1); // with the point order
+		Vector3D n = (p1 - p0).Normalized().Cross((p2 - p1).Normalized()); // with the point order
 		if (n.SquareNorm() > GEOMETRIC_COMPUTATION_EPSILON)
 		{
 			return n.Normalized();
