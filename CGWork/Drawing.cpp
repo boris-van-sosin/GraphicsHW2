@@ -1122,6 +1122,8 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 
 	FakeXYMap xyMap;
 
+	const int width = attr.is_wireframe ? attr.line_width : 1;
+
 	Normals::PolygonNormalData clipND = clip ? Normals::PolygonNormalData(nd.PolygonNormal) : nd;
 	const Polygon3D clipPoly = clip ? ApplyClipping(poly0, cp, nd ,clipND) : poly0;
 	const Polygon3D poly = mTotal * clipPoly;
@@ -1183,18 +1185,18 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 			case SHADING_FLAT:
 				p0.color = p1.color = actualColor;
 				if (img.active == DrawingObject::DRAWING_OBJECT_ZBUF)
-					innerDrawLine(xyMap, p0, p1, i, 1, LinearInterpolate<double>, clrFlat, NormalZero, NormalZero);
+					innerDrawLine(xyMap, p0, p1, i, width, LinearInterpolate<double>, clrFlat, NormalZero, NormalZero);
 				else
-					innerDrawLine(xyMap, p0, p1, i, 1, ZZero, clrFlat, NormalZero, NormalZero);
+					innerDrawLine(xyMap, p0, p1, i, width, ZZero, clrFlat, NormalZero, NormalZero);
 				break;
 			case SHADING_GOURAUD:
 			{
 				p0.color = ApplyLight(lights, Point3D(objSpaceLn.p0), attr, actualColor, p0.normal, Point3D::Zero, attr.AmbientIntensity);
 				p1.color = ApplyLight(lights, Point3D(objSpaceLn.p1), attr, actualColor, p1.normal, Point3D::Zero, attr.AmbientIntensity);
 				if (img.active == DrawingObject::DRAWING_OBJECT_ZBUF)
-					innerDrawLine(xyMap, p0, p1, i, 1, LinearInterpolate<double>, ColorInterpolateN, NormalZero, NormalZero);
+					innerDrawLine(xyMap, p0, p1, i, width, LinearInterpolate<double>, ColorInterpolateN, NormalZero, NormalZero);
 				else
-					innerDrawLine(xyMap, p0, p1, i, 1, ZZero, ColorInterpolateN, NormalZero, NormalZero);
+					innerDrawLine(xyMap, p0, p1, i, width, ZZero, ColorInterpolateN, NormalZero, NormalZero);
 				break;
 			}
 			case SHADING_PHONG:
@@ -1202,16 +1204,16 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 				p0.color = ApplyLight(lights, Point3D(objSpaceLn.p0), attr, actualColor, p0.normal, Point3D::Zero, attr.AmbientIntensity);
 				p1.color = ApplyLight(lights, Point3D(objSpaceLn.p1), attr, actualColor, p1.normal, Point3D::Zero, attr.AmbientIntensity);
 				if (img.active == DrawingObject::DRAWING_OBJECT_ZBUF)
-					innerDrawLine(xyMap, p0, p1, i, 1, LinearInterpolate<double>, cPhong, LinearInterpolate<Vector3D>, LinearInterpolate<Point3D>);
+					innerDrawLine(xyMap, p0, p1, i, width, LinearInterpolate<double>, cPhong, LinearInterpolate<Vector3D>, LinearInterpolate<Point3D>);
 				else
-					innerDrawLine(xyMap, p0, p1, i, 1, ZZero, cPhong, LinearInterpolate<Vector3D>, LinearInterpolate<Point3D>);
+					innerDrawLine(xyMap, p0, p1, i, width, ZZero, cPhong, LinearInterpolate<Vector3D>, LinearInterpolate<Point3D>);
 				break;
 			}
 			default:
 				if (img.active == DrawingObject::DRAWING_OBJECT_ZBUF)
-					innerDrawLine(xyMap, p0, p1, i, 1, LinearInterpolate<double>, clrFlat, NormalZero, NormalZero);
+					innerDrawLine(xyMap, p0, p1, i, width, LinearInterpolate<double>, clrFlat, NormalZero, NormalZero);
 				else
-					innerDrawLine(xyMap, p0, p1, i, 1, ZZero, clrFlat, NormalZero, NormalZero);
+					innerDrawLine(xyMap, p0, p1, i, width, ZZero, clrFlat, NormalZero, NormalZero);
 				break;
 			}
 
@@ -1260,15 +1262,22 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 				break;
 			}
 			
-			if (p0.x < p1.x)
+			if (fillPolygons)
 			{
-				xyMap.SetPixel(p0.x, p0.y, p0.z, p0.color, i, p0.normal, p0.objSpacePt, XData::LEFT);
-				xyMap.SetPixel(p1.x, p1.y, p1.z, p1.color, i, p1.normal, p0.objSpacePt, XData::RIGHT);
+				if (p0.x < p1.x)
+				{
+					xyMap.SetPixel(p0.x, p0.y, p0.z, p0.color, i, p0.normal, p0.objSpacePt, XData::LEFT);
+					xyMap.SetPixel(p1.x, p1.y, p1.z, p1.color, i, p1.normal, p0.objSpacePt, XData::RIGHT);
+				}
+				else
+				{
+					xyMap.SetPixel(p0.x, p0.y, p0.z, p0.color, i, p0.normal, p0.objSpacePt, XData::RIGHT);
+					xyMap.SetPixel(p1.x, p1.y, p1.z, p1.color, i, p1.normal, p0.objSpacePt, XData::LEFT);
+				}
 			}
 			else
 			{
-				xyMap.SetPixel(p0.x, p0.y, p0.z, p0.color, i, p0.normal, p0.objSpacePt, XData::RIGHT);
-				xyMap.SetPixel(p1.x, p1.y, p1.z, p1.color, i, p1.normal, p0.objSpacePt, XData::LEFT);
+				innerDrawLine(xyMap, p0, p1, i, width, ZZero, clrFlat, NormalZero, NormalZero);
 			}
 		}
 
