@@ -559,7 +559,7 @@ struct HashAndComparePoint3D
 {
 	size_t operator()(const Point3D& p) const
 	{
-		return (size_t)(p.x * p.x + p.y * p.y + p.z * p.z);
+		return (size_t)(p.Norm() * 10000);
 	}
 	bool operator()(const Point3D& p0, const Point3D& p1) const
 	{
