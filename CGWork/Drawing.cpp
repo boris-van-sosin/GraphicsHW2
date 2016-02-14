@@ -479,7 +479,7 @@ T LinearInterpolate(double x, double minX, double maxX, const T& t0, const T& t1
 	return (1 - b)*t0 + b*t1;
 }
 
-COLORREF ColorInterpolate(double x, double minX, double maxX, COLORREF clr0, COLORREF clr1)
+COLORREF ColorInterpolate(double x, double minX, double maxX, COLORREF clr0, COLORREF clr1, bool swap = false)
 {
 	double floatColors[] = { GetRValue(clr0), GetGValue(clr0), GetBValue(clr0), GetRValue(clr1), GetGValue(clr1), GetBValue(clr1) };
 	int newColors[3];
@@ -490,9 +490,9 @@ COLORREF ColorInterpolate(double x, double minX, double maxX, COLORREF clr0, COL
 	return RGB(newColors[0], newColors[1], newColors[2]);
 }
 
-COLORREF ColorInterpolateN(double x, double minX, double maxX, COLORREF clr0, COLORREF clr1, const Vector3D&)
+COLORREF ColorInterpolateN(double x, double minX, double maxX, COLORREF clr0, COLORREF clr1, const Vector3D&, bool swap = false)
 {
-	return ColorInterpolate(x, minX, maxX, clr0, clr1);
+	return ColorInterpolate(x, minX, maxX, clr0, clr1, swap);
 }
 
 struct XData
@@ -716,6 +716,7 @@ void innerDrawLine(FakeXYMap& img, const MixedIntPoint& p0, const MixedIntPoint&
 	COLORREF c0 = p0.color, c1 = p1.color;
 	Vector3D n0 = p0.normal, n1 = p1.normal;
 	Point3D ospt0 = p0.objSpacePt, ospt1 = p1.objSpacePt;
+	bool swapX = false;
 
 	if (x0 > x1) {
 		CGSwap(x0, x1);
@@ -724,6 +725,7 @@ void innerDrawLine(FakeXYMap& img, const MixedIntPoint& p0, const MixedIntPoint&
 		CGSwap(c0, c1);
 		CGSwap(n0, n1);
 		CGSwap(ospt0, ospt1);
+		swapX = !swapX;
 	}
 
 	int dx = x1 - x0;
@@ -734,8 +736,8 @@ void innerDrawLine(FakeXYMap& img, const MixedIntPoint& p0, const MixedIntPoint&
 	{
 		CGSwap(x0, y0);
 		CGSwap(x1, y1);
-		CGSwap(ospt0.x, ospt0.y);
-		CGSwap(ospt1.x, ospt1.y);
+		//CGSwap(ospt0.x, ospt0.y);
+		//CGSwap(ospt1.x, ospt1.y);
 		if (x0 > x1) {
 			CGSwap(x0, x1);
 			CGSwap(y0, y1);
@@ -743,6 +745,7 @@ void innerDrawLine(FakeXYMap& img, const MixedIntPoint& p0, const MixedIntPoint&
 			CGSwap(c0, c1);
 			CGSwap(n0, n1);
 			CGSwap(ospt0, ospt1);
+			swapX = !swapX;
 		}
 		dx = x1 - x0;
 		dy = y1 - y0;
@@ -809,7 +812,7 @@ void innerDrawLine(FakeXYMap& img, const MixedIntPoint& p0, const MixedIntPoint&
 				clrf(x, x0, x1, c0, c1, currN);*/
 			const double currZ = zf(x, x0, x1, z0, z1);
 			const Vector3D currN = nf(x, x0, x1, n0, n1);
-			const COLORREF currClr = clrf(x, x0, x1, c0, c1, currN);
+			const COLORREF currClr = clrf(x, x0, x1, c0, c1, currN, swapX);
 			const Vector3D currObjSpPt = osptf(x, x0, x1, ospt0, ospt1);
 			if (!swapXY)
 			{
@@ -1077,7 +1080,7 @@ struct ColorFlat
 	{
 	}
 
-	COLORREF operator()(int x, int x0, int x1, COLORREF c0, COLORREF c1, const Vector3D&)
+	COLORREF operator()(int x, int x0, int x1, COLORREF c0, COLORREF c1, const Vector3D&, bool swap = false)
 	{
 		return clr;
 	}
@@ -1100,9 +1103,12 @@ struct ColorPhong
 	ColorPhong()
 	{}
 
-	COLORREF operator()(int x, int x0, int x1, COLORREF c0, COLORREF c1, const Vector3D& n)
+	COLORREF operator()(int x, int x0, int x1, COLORREF c0, COLORREF c1, const Vector3D& n, bool swap)
 	{
-		return ApplyLight(*_lights, LinearInterpolate(x, x0, x1, _p0, _p1), *_attr, _modelColor, n, _viewPoint, _ambient);
+		if (!swap)
+			return ApplyLight(*_lights, LinearInterpolate(x, x0, x1, _p0, _p1), *_attr, _modelColor, n, _viewPoint, _ambient);
+		else
+			return ApplyLight(*_lights, LinearInterpolate(x, x0, x1, _p1, _p0), *_attr, _modelColor, n, _viewPoint, _ambient);
 	}
 
 	Point3D _p0, _p1;
