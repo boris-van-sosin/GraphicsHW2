@@ -209,6 +209,7 @@
     <ClCompile Include="MaterialDlg.cpp" />
     <ClCompile Include="PerModel.cpp" />
     <ClCompile Include="PngWrapper.cpp" />
+    <ClCompile Include="ShadowVolume.cpp" />
     <ClCompile Include="StdAfx.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -244,6 +245,7 @@
     <ClInclude Include="PerModel.h" />
     <ClInclude Include="PngWrapper.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="ShadowVolume.h" />
     <ClInclude Include="StdAfx.h" />
     <ClInclude Include="..\include\allocate.h" />
     <ClInclude Include="..\include\attribut.h" />
