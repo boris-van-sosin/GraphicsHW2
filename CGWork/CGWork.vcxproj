@@ -192,6 +192,7 @@
     <ClCompile Include="ChooseColorDlg.cpp" />
     <ClCompile Include="ClippingDlg.cpp" />
     <ClCompile Include="Drawing.cpp" />
+    <ClCompile Include="DrawingSupport.cpp" />
     <ClCompile Include="GeometricTransformations.cpp" />
     <ClCompile Include="Geometry.cpp" />
     <ClCompile Include="iritSkel.cpp" />
@@ -234,6 +235,7 @@
     <ClInclude Include="ChooseColorDlg.h" />
     <ClInclude Include="ClippingDlg.h" />
     <ClInclude Include="Drawing.h" />
+    <ClInclude Include="DrawingSupport.h" />
     <ClInclude Include="GeometricTransformations.h" />
     <ClInclude Include="Geometry.h" />
     <ClInclude Include="IritAdapter.h" />
