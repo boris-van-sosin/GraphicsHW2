@@ -31,6 +31,8 @@ LightSource::LightSource(const LightSource& other)
 
 Vector3D LightSource::Direction() const
 {
+	if (_type == PLANE)
+		return Vector3D(_offset).Normalized();
 	return (Vector3D(_origin) - Vector3D(_offset)).Normalized();
 }
 

@@ -26,6 +26,7 @@ public:
 	bool boundry = true;
 	double AmbientIntensity = 1;
 	bool is_wireframe = false;
+	bool castShadow = false;
 };
 
 class LightSource

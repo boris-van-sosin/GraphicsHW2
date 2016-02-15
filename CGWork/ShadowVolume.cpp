@@ -70,7 +70,7 @@ bool ShadowVolume::ShadowEvent::operator < (const ShadowEvent& other) const
 
 void ShadowVolume::ProcessModel(const PolygonalModel& model, const MatrixHomogeneous& mTotal, const ModelAttr& attr, const std::vector<Normals::PolygonNormalData>& normals, size_t normalsOffset, bool clip, const ClippingPlane& cp, const PolygonAdjacencyGraph& polygonAdj)
 {
-	
+	const std::pair<PolygonalObject, std::vector<Normals::PolygonNormalData>> shadowObj = GenerateShadowVolume(model, mTotal, normals, polygonAdj);
 
 	ModelAttr attr2;
 	attr2.removeBackFace = true;
@@ -78,35 +78,88 @@ void ShadowVolume::ProcessModel(const PolygonalModel& model, const MatrixHomogen
 	DrawingObject img;
 	img.shadowVolume = this;
 	img.active = DrawingObject::DRAWING_OBJECT_SV;
+
+	_currShadowMode = ShadowEnter;
+	DrawObject(img, shadowObj.first, mTotal, attr2, shadowObj.second, 0, false, clip, cp);
 	for (auto obj = model.begin(); obj != model.end(); ++obj)
+	{
 		DrawObject(img, *obj, mTotal, attr2, normals, normalsOffset, true, clip, cp);
+	}
+
+	//TODO: reverse normals
+	_currShadowMode = ShadowExit;
+	DrawObject(img, shadowObj.first, mTotal, attr2, shadowObj.second, 0, false, clip, cp);
+	for (auto obj = model.begin(); obj != model.end(); ++obj)
+	{
+		DrawObject(img, *obj, mTotal, attr2, normals, normalsOffset, true, clip, cp);
+	}
+
 }
 
-PolygonalObject ShadowVolume::GenerateShadowVolume(const PolygonalModel& model, const MatrixHomogeneous& m, const std::vector<Normals::PolygonNormalData>& normals, const PolygonAdjacencyGraph& polygonAdj) const
+std::pair<PolygonalObject, std::vector<Normals::PolygonNormalData>> ShadowVolume::GenerateShadowVolume(const PolygonalModel& model, const MatrixHomogeneous& m, const std::vector<Normals::PolygonNormalData>& normals, const PolygonAdjacencyGraph& polygonAdj) const
 {
 	std::vector<Polygon3D> shadowPolygons;
+	std::vector<Normals::PolygonNormalData> shadowNormals;
+	double shadowLength = 100;
 	for (auto j = polygonAdj.begin(); j != polygonAdj.end(); ++j)
 	{
 		const Polygon3D& currPoly = model[j->objIdx].polygons[j->polygonInObjIdx];
 		const LineSegment edge(currPoly.points[j->vertexIdx], currPoly.points[(j->vertexIdx + 1) % currPoly.points.size()]);
 
+		bool addEdge = false;
+
 		if (j->polygonIdxs.size() == 1)
 		{
 			// boundary
+			addEdge = true;
 		}
 		else
 		{
 			// silhouette
 			const LineSegment n0 = TransformNormal(m, normals[j->polygonIdxs[0]].PolygonNormal);
 			const LineSegment n1 = TransformNormal(m, normals[j->polygonIdxs[1]].PolygonNormal);
-			const Vector3D optVector(0, 0, 1);
+			const Point3D midpoint = (Point3D(edge.p0) + Point3D(edge.p1)) / 2;
+			const Vector3D optVector = (_lightSource._type == LightSource::PLANE) ?
+										_lightSource.Direction() :
+										(midpoint - Point3D(_lightSource._origin));
 			const Vector3D n0Vec = Vector3D(n0.p1) - Vector3D(n0.p0);
 			const Vector3D n1Vec = Vector3D(n1.p1) - Vector3D(n1.p0);
 			if ((n0Vec * optVector) * (n1Vec * optVector) < 0)
 			{
+				addEdge = true;
 			}
+		}
+
+		if (addEdge)
+		{
+			std::vector<HomogeneousPoint> polyPoints;
+			polyPoints.reserve(4);
+
+			polyPoints.push_back(edge.p0);
+			polyPoints.push_back(edge.p1);
+
+			Vector3D ray0, ray1;
+			if (_lightSource._type == LightSource::PLANE)
+			{
+				ray0 = ray1 = _lightSource.Direction();
+			}
+			else
+			{
+				ray0 = (Point3D(edge.p0) - Point3D(_lightSource._origin)).Normalized();
+				ray1 = (Point3D(edge.p1) - Point3D(_lightSource._origin)).Normalized();
+			}
+
+			const HomogeneousPoint far0((Point3D(edge.p0) + (ray0 * shadowLength)));
+			const HomogeneousPoint far1((Point3D(edge.p1) + (ray1 * shadowLength)));
+
+			polyPoints.push_back(far1);
+			polyPoints.push_back(far0);
+
+			shadowPolygons.push_back(Polygon3D(polyPoints));
+			const HomogeneousPoint centroid = shadowPolygons.back().AreaAndCentroid().second;
+			shadowNormals.push_back(Normals::PolygonNormalData(LineSegment(centroid, HomogeneousPoint(Point3D(centroid) + shadowPolygons.back().Normal()))));
 		}
 	}
 
-	return PolygonalObject(shadowPolygons);
+	return std::pair<PolygonalObject, std::vector<Normals::PolygonNormalData>>(PolygonalObject(shadowPolygons), shadowNormals);
 }
