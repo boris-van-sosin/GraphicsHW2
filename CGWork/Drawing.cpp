@@ -364,8 +364,10 @@ int DrawingObject::GetHeight() const
 {
 	if (active == DRAWING_OBJECT_CIMG && img)
 		return img->GetHeight();
-	else if (zBufImg)
+	else if (active == DRAWING_OBJECT_ZBUF && zBufImg)
 		return zBufImg->GetHeight();
+	else if (shadowVolume)
+		return shadowVolume->GetHeight();
 	else
 		return 0;
 }
@@ -374,8 +376,10 @@ int DrawingObject::GetWidth() const
 {
 	if (active == DRAWING_OBJECT_CIMG && img)
 		return img->GetWidth();
-	else if (zBufImg)
+	else if (active == DRAWING_OBJECT_ZBUF && zBufImg)
 		return zBufImg->GetWidth();
+	else if (shadowVolume)
+		return shadowVolume->GetWidth();
 	else
 		return 0;
 }
@@ -389,8 +393,10 @@ void DrawingObject::SetPixel(int x, int y, double z, COLORREF clr)
 	}*/
 	if (active == DRAWING_OBJECT_CIMG && img)
 		ImageSetPixel(*img, x, y, clr);
-	else if (zBufImg)
+	else if (active == DRAWING_OBJECT_ZBUF && zBufImg)
 		zBufImg->PushPixel(x, y, z, clr);
+	else if (shadowVolume)
+		shadowVolume->SetPixel(x, y, z);
 }
 
 void DrawingObject::SetPixel(int x, int y, const Point3D& p0, const Point3D& p1, COLORREF clr)

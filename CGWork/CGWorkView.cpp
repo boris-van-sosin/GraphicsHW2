@@ -408,8 +408,8 @@ bool CCGWorkView::applyMat(const MatrixHomogeneous& mat) {
 	(*it) = mat * (*it);
 	}
 	*/
-	model_t& model = _models[active_object];
-	const model_t& clean_model = _clean_models[active_object];
+	PolygonalModel& model = _models[active_object];
+	const PolygonalModel& clean_model = _clean_models[active_object];
 	model = clean_model;
 	
 	if (_in_object_view)
@@ -602,7 +602,7 @@ void CCGWorkView::RenderScene() {
 	return;
 }
 
-void CCGWorkView::ScaleAndCenterAll(model_t& model) const
+void CCGWorkView::ScaleAndCenterAll(PolygonalModel& model) const
 {
 	const BoundingBox bcube = BoundingBox::OfObjects(model).BoundingCube();
 	const MatrixHomogeneous sc = Matrices::Translate(0, 0, (_initFar + _initNear) / 2) * ScaleToCube(bcube) * CenterToCube(bcube);
@@ -617,7 +617,7 @@ void CCGWorkView::ScaleAndCenterAll(model_t& model) const
 	}
 }
 
-void CCGWorkView::RemoveTmpNormals(model_t& model)
+void CCGWorkView::RemoveTmpNormals(PolygonalModel& model)
 {
 	for (auto i = model.begin(); i != model.end(); ++i)
 	{
@@ -637,7 +637,7 @@ void CCGWorkView::OnFileLoad()
 	if (dlg.DoModal() == IDOK) {
 		m_strItdFileName = dlg.GetPathName();		// Full path and filename
 		PngWrapper p;
-		_models.push_back(model_t());
+		_models.push_back(PolygonalModel());
 
 		_model_space_transformations.push_back(Matrices::UnitMatrixHomogeneous);
 		_view_space_transformations.push_back(Matrices::UnitMatrixHomogeneous);
@@ -1169,7 +1169,7 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 			(Matrices::Flip(AXIS_X)) :
 			(Matrices::Flip(AXIS_Y)));
 
-		model_t& model = _models[i];
+		PolygonalModel& model = _models[i];
 		const ModelAttr attr = _model_attr[i];
 		ModelAttr shadow_attr = attr;
 		DrawingObject tmpDrawingObj;

@@ -117,6 +117,8 @@ private:
 	PolygonalObject(const std::vector<Polygon3D>& polygons_, COLORREF color_, bool valid);
 };
 
+typedef std::vector<PolygonalObject> PolygonalModel;
+
 class EmptyBoundingBoxException {};
 
 class BoundingBox

@@ -7,6 +7,7 @@
 #include "Geometry.h"
 #include "GeometricTransformations.h"
 #include "DrawingSupport.h"
+#include "ShadowVolume.h"
 
 struct PerspectiveData
 {
@@ -80,10 +81,11 @@ public:
 	DrawingObject();
 	DrawingObject(CImage& cimg, ZBufferImage& zbimg);
 
-	enum ActiveDrawingObject { DRAWING_OBJECT_ZBUF, DRAWING_OBJECT_CIMG };
+	enum ActiveDrawingObject { DRAWING_OBJECT_ZBUF, DRAWING_OBJECT_CIMG, DRAWING_OBJECT_SV };
 
 	ZBufferImage* zBufImg;
 	CImage* img;
+	ShadowVolume* shadowVolume;
 	ActiveDrawingObject active = DRAWING_OBJECT_CIMG;
 	int GetHeight() const;
 	int GetWidth() const;

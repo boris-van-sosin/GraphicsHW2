@@ -21,7 +21,6 @@
 #include "GeometricTransformations.h"
 #include "Drawing.h"
 
-typedef std::vector<PolygonalObject> model_t;
 extern std::vector<LightSource> g_lights;
 
 class CCGWorkView : public CView
@@ -147,13 +146,13 @@ protected:
 private:
 	void FlipYAxis(int obj_idx);
 	void DrawScene(DrawingObject& img);
-	void ScaleAndCenterAll(model_t& model) const;
-	static void RemoveTmpNormals(model_t& model);
+	void ScaleAndCenterAll(PolygonalModel& model) const;
+	static void RemoveTmpNormals(PolygonalModel& model);
 	void InverseNormals();
 
 private:
-	std::vector<model_t> _models;
-	std::vector<model_t> _clean_models;
+	std::vector<PolygonalModel> _models;
+	std::vector<PolygonalModel> _clean_models;
 	std::vector<MatrixHomogeneous> _model_space_transformations;
 	std::vector<MatrixHomogeneous> _view_space_transformations;
 
@@ -165,8 +164,8 @@ private:
 
 	std::vector<PolygonalObject> _modelBoundingBoxes;
 	std::vector<PolygonalObject> _clean_modelBoundingBoxes;
-	std::vector<model_t> _subObjectBoundingBoxes;
-	std::vector<model_t> _clean_subObjectBoundingBoxes;
+	std::vector<PolygonalModel> _subObjectBoundingBoxes;
+	std::vector<PolygonalModel> _clean_subObjectBoundingBoxes;
 
 	std::vector<ModelAttr> _model_attr;
 	std::vector<BoundingBox> _bboxes;
