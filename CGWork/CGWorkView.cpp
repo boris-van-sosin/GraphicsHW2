@@ -1199,17 +1199,22 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 		//
 		// shadow volume test
 		// this displays the shadow geometry for the first light source
-		if (true)
+		if (attr.shadowVolumeWireframe >= 0 && attr.shadowVolumeWireframe < g_lights.size())
 		{
-			ShadowVolume sv(1, 1, g_lights.front());
+			ShadowVolume sv(1, 1, g_lights[attr.shadowVolumeWireframe]);
 			const std::pair<PolygonalObject, std::vector<Normals::PolygonNormalData>> svs = sv.GenerateShadowVolume(model, mTotal, _polygonNormals[i], _polygonAdjacencies[i]);
 			ModelAttr svAttr;
 			svAttr.color = RGB(50, 50, 50);
 			svAttr.forceColor = true;
 			svAttr.Shading = SHADING_NONE;
 			svAttr.castShadow = false;
-			svAttr.removeBackFace = BACKFACE_REMOVE_BACK;
-			DrawObject(img, svs.first, mTotal, svAttr, svs.second, 0, true, m_bIsPerspective, perspData.NearPlane);
+			svAttr.removeBackFace = BACKFACE_SHOW;
+			DrawObject(img, svs.first, mTotal, svAttr, svs.second, 0, false, m_bIsPerspective, perspData.NearPlane);
+			/*for (auto j = svs.second.begin(); j != svs.second.end(); ++j)
+			{
+				DrawLineSegment(img, TransformNormal(mTotal, j->PolygonNormal, 5), RGB(255, 255, 255), 2);
+				DrawLineSegment(img, TransformNormal(mTotal, j->PolygonNormal, 10), RGB(255, 255, 0), 1);
+			}*/
 		}
 		//
 

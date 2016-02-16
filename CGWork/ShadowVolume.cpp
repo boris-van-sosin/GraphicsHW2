@@ -136,8 +136,9 @@ void ShadowVolume::ProcessModel(const PolygonalModel& model, const MatrixHomogen
 	img.shadowVolume = this;
 	img.active = DrawingObject::DRAWING_OBJECT_SV;
 
-	_currShadowMode = ShadowEnter;
+	_currShadowMode = ShadowExit;
 	DrawObject(img, shadowObj.first, mTotal, attr2, shadowObj.second, 0, true, clip, cp);
+	_currShadowMode = ShadowEnter;
 	size_t normalsOffset = 0;
 	for (auto obj = model.begin(); obj != model.end(); ++obj)
 	{
@@ -146,7 +147,7 @@ void ShadowVolume::ProcessModel(const PolygonalModel& model, const MatrixHomogen
 	}
 
 	attr2.removeBackFace = BACKFACE_REMOVE_FRONT;
-	_currShadowMode = ShadowExit;
+	_currShadowMode = ShadowEnter;
 	DrawObject(img, shadowObj.first, mTotal, attr2, shadowObj.second, 0, true, clip, cp);
 }
 
@@ -154,24 +155,27 @@ std::pair<PolygonalObject, std::vector<Normals::PolygonNormalData>> ShadowVolume
 {
 	std::vector<Polygon3D> shadowPolygons;
 	std::vector<Normals::PolygonNormalData> shadowNormals;
-	double shadowLength = 10;
+	double shadowLength = 2;
 	for (auto j = polygonAdj.begin(); j != polygonAdj.end(); ++j)
 	{
 		const Polygon3D& currPoly = model[j->objIdx].polygons[j->polygonInObjIdx];
 		const LineSegment edge(currPoly.points[j->vertexIdx], currPoly.points[(j->vertexIdx + 1) % currPoly.points.size()]);
 
 		bool addEdge = false;
+		Point3D innerPoint;
 
 		if (j->polygonIdxs.size() == 1)
 		{
 			// boundary
 			addEdge = true;
+			innerPoint = Point3D(currPoly.AreaAndCentroid().second);
 		}
 		else
 		{
 			// silhouette
-			const LineSegment n0 = TransformNormal(m, normals[j->polygonIdxs[0]].PolygonNormal);
-			const LineSegment n1 = TransformNormal(m, normals[j->polygonIdxs[1]].PolygonNormal);
+			const LineSegment n0 = normals[j->polygonIdxs[0]].PolygonNormal;
+			const LineSegment n1 = normals[j->polygonIdxs[1]].PolygonNormal;
+			innerPoint = (Point3D(n0.p0) + Point3D(n1.p0)) / 2;
 			const Point3D midpoint = (Point3D(edge.p0) + Point3D(edge.p1)) / 2;
 			const Vector3D optVector = (_lightSource._type == LightSource::PLANE) ?
 										_lightSource.Direction() :
@@ -207,8 +211,13 @@ std::pair<PolygonalObject, std::vector<Normals::PolygonNormalData>> ShadowVolume
 			polyPoints.push_back(edge.p1);
 			polyPoints.push_back(far1);
 			polyPoints.push_back(far0);
+			Polygon3D currShadow(polyPoints);
+			if (currShadow.Normal() * (innerPoint - Point3D(edge.p0)) < 0)
+			{
+				std::reverse(currShadow.points.begin(), currShadow.points.end());
+			}
 
-			shadowPolygons.push_back(Polygon3D(polyPoints));
+			shadowPolygons.push_back(currShadow);
 			const HomogeneousPoint centroid = shadowPolygons.back().AreaAndCentroid().second;
 			shadowNormals.push_back(Normals::PolygonNormalData(LineSegment(centroid, HomogeneousPoint(Point3D(centroid) + shadowPolygons.back().Normal()))));
 		}
