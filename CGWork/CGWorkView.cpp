@@ -1068,7 +1068,16 @@ void CCGWorkView::OnUpdateLightShadingGouraud(CCmdUI* pCmdUI)
 // LIGHT SETUP HANDLER ///////////////////////////////////////////
 
 void CCGWorkView::translate_light_menu() {
-	g_lights.erase(g_lights.begin(), g_lights.end());
+	g_lights.clear();
+	g_ShadowVolumes.clear();
+	g_lights.reserve(MAX_LIGHT);
+	g_ShadowVolumes.reserve(MAX_LIGHT);
+
+	RECT rect;
+	GetClientRect(&rect);
+
+	int h = rect.bottom - rect.top;
+	int w = rect.right - rect.left;
 
 	for (int id = LIGHT_ID_1; id < MAX_LIGHT; id++) {
 		if (!m_lights[id].enabled) {
@@ -1096,6 +1105,7 @@ void CCGWorkView::translate_light_menu() {
 		new_light._intensity[2] = (double)m_lights[id].colorB / (double)255;
 
 		g_lights.push_back(new_light);
+		g_ShadowVolumes.push_back(ShadowVolume(w, h, new_light));
 	}
 }
 
@@ -1143,6 +1153,16 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 	int height = img.GetHeight();
 	int width = img.GetWidth();
 
+	for (auto svIt = g_ShadowVolumes.begin(); svIt != g_ShadowVolumes.end(); ++svIt)
+	{
+		if (svIt->GetHeight() != height || svIt->GetHeight() != width)
+		{
+			svIt->SetSize(width, height);
+			svIt->SetLightSource(g_lights[svIt - g_ShadowVolumes.begin()]);
+		}
+		svIt->Clear();
+	}
+
 	for (size_t i = 0; i < _models.size(); i++) {
 		const BoundingBox bCube = _bboxes[i].BoundingCube();
 		const PerspectiveData perspData = PerspectiveWarpMatrix(bCube, _nearClippingPlane, _farClippingPlane, min(width, height));
@@ -1188,9 +1208,18 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 			svAttr.forceColor = true;
 			svAttr.Shading = SHADING_NONE;
 			svAttr.castShadow = false;
+			svAttr.removeBackFace = BACKFACE_SHOW;
 			DrawObject(img, svs.first, mTotal, svAttr, svs.second, 0, false, m_bIsPerspective, perspData.NearPlane);
 		}
 		//
+
+		if (attr.castShadow)
+		{
+			for (auto svIt = g_ShadowVolumes.begin(); svIt != g_ShadowVolumes.end(); ++svIt)
+			{
+				svIt->ProcessModel(model, mTotal, _polygonNormals[i], m_bIsPerspective, perspData.NearPlane, _polygonAdjacencies[i]);
+			}
+		}
 
 		size_t normalsIdx = 0;
 		for (std::vector<PolygonalObject>::iterator it = model.begin(); it != model.end(); ++it)

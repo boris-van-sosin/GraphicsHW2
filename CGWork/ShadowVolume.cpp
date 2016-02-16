@@ -2,15 +2,44 @@
 
 #include "Drawing.h"
 
+ShadowVolume::ShadowVolume()
+	: _width(0), _height(0), _stencil(NULL)
+{
+}
+
 ShadowVolume::ShadowVolume(size_t w, size_t h, const LightSource& ls)
 	: _width(w), _height(h), _lightSource(ls)
 {
 	_stencil = new std::set<ShadowEvent>[_height * _width];
 }
 
+ShadowVolume::ShadowVolume(const ShadowVolume& other)
+	: _width(other._width), _height(other._height), _lightSource(other._lightSource)
+{
+	_stencil = new std::set<ShadowEvent>[_height * _width];
+	for (int i = 0; i < _height*_width; ++i)
+	{
+		_stencil[i] = other._stencil[i];
+	}
+}
+
 ShadowVolume::~ShadowVolume()
 {
 	delete[] _stencil;
+}
+
+ShadowVolume& ShadowVolume::operator=(const ShadowVolume& other)
+{
+	if (this == &other)
+		return *this;
+
+	_lightSource = other._lightSource;
+
+	SetSize(other._width, other._height);
+	for (int i = 0; i < _height*_width; ++i)
+	{
+		_stencil[i] = other._stencil[i];
+	}
 }
 
 size_t ShadowVolume::GetHeight() const
@@ -54,6 +83,11 @@ void ShadowVolume::SetPixel(int x, int y, double z)
 	_stencil[y*_width + x].insert(ShadowEvent(_currShadowMode, z));
 }
 
+void ShadowVolume::SetLightSource(const LightSource& ls)
+{
+	_lightSource = ls;
+}
+
 ShadowVolume::ShadowEvent::ShadowEvent(ShadowEventType t, double z)
 	: _type(t), _z(z)
 {
@@ -68,7 +102,7 @@ bool ShadowVolume::ShadowEvent::operator < (const ShadowEvent& other) const
 	return _z < other._z;
 }
 
-void ShadowVolume::ProcessModel(const PolygonalModel& model, const MatrixHomogeneous& mTotal, const ModelAttr& attr, const std::vector<Normals::PolygonNormalData>& normals, size_t normalsOffset, bool clip, const ClippingPlane& cp, const PolygonAdjacencyGraph& polygonAdj)
+void ShadowVolume::ProcessModel(const PolygonalModel& model, const MatrixHomogeneous& mTotal, const std::vector<Normals::PolygonNormalData>& normals, bool clip, const ClippingPlane& cp, const PolygonAdjacencyGraph& polygonAdj)
 {
 	const std::pair<PolygonalObject, std::vector<Normals::PolygonNormalData>> shadowObj = GenerateShadowVolume(model, mTotal, normals, polygonAdj);
 
@@ -80,26 +114,24 @@ void ShadowVolume::ProcessModel(const PolygonalModel& model, const MatrixHomogen
 	img.active = DrawingObject::DRAWING_OBJECT_SV;
 
 	_currShadowMode = ShadowEnter;
-	DrawObject(img, shadowObj.first, mTotal, attr2, shadowObj.second, 0, false, clip, cp);
-	/*for (auto obj = model.begin(); obj != model.end(); ++obj)
+	DrawObject(img, shadowObj.first, mTotal, attr2, shadowObj.second, 0, true, clip, cp);
+	size_t normalsOffset = 0;
+	for (auto obj = model.begin(); obj != model.end(); ++obj)
 	{
 		DrawObject(img, *obj, mTotal, attr2, normals, normalsOffset, true, clip, cp);
-	}*/
+		normalsOffset += obj->polygons.size();
+	}
 
 	attr2.removeBackFace = BACKFACE_REMOVE_FRONT;
 	_currShadowMode = ShadowExit;
-	DrawObject(img, shadowObj.first, mTotal, attr2, shadowObj.second, 0, false, clip, cp);
-	/*for (auto obj = model.begin(); obj != model.end(); ++obj)
-	{
-		DrawObject(img, *obj, mTotal, attr2, normals, normalsOffset, true, clip, cp);
-	}*/
+	DrawObject(img, shadowObj.first, mTotal, attr2, shadowObj.second, 0, true, clip, cp);
 }
 
 std::pair<PolygonalObject, std::vector<Normals::PolygonNormalData>> ShadowVolume::GenerateShadowVolume(const PolygonalModel& model, const MatrixHomogeneous& m, const std::vector<Normals::PolygonNormalData>& normals, const PolygonAdjacencyGraph& polygonAdj) const
 {
 	std::vector<Polygon3D> shadowPolygons;
 	std::vector<Normals::PolygonNormalData> shadowNormals;
-	double shadowLength = 100;
+	double shadowLength = 10;
 	for (auto j = polygonAdj.begin(); j != polygonAdj.end(); ++j)
 	{
 		const Polygon3D& currPoly = model[j->objIdx].polygons[j->polygonInObjIdx];

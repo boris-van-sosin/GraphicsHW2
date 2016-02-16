@@ -22,6 +22,7 @@
 #include "Drawing.h"
 
 extern std::vector<LightSource> g_lights;
+extern std::vector<ShadowVolume> g_ShadowVolumes;
 
 class CCGWorkView : public CView
 {

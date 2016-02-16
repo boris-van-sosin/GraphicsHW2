@@ -6,6 +6,7 @@
 
 const COLORREF DefaultModelColor(RGB(0, 0, 255));
 std::vector<LightSource> g_lights(10);
+std::vector<ShadowVolume> g_ShadowVolumes(10);
 
 
 PerspectiveData::PerspectiveData(const MatrixHomogeneous& ms, const MatrixHomogeneous& mp, const ClippingPlane& n, const ClippingPlane& f)
@@ -1160,14 +1161,14 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 			{
 				p0.color = ApplyLight(lights, Point3D(objSpaceLn.p0), attr, actualColor, p0.normal, Point3D::Zero, attr.AmbientIntensity);
 				p1.color = ApplyLight(lights, Point3D(objSpaceLn.p1), attr, actualColor, p1.normal, Point3D::Zero, attr.AmbientIntensity);
-				if (img.active == DrawingObject::DRAWING_OBJECT_ZBUF)
+				if (img.active == DrawingObject::DRAWING_OBJECT_ZBUF || img.active == DrawingObject::DRAWING_OBJECT_SV)
 					innerDrawLine(xyMap, p0, p1, i, width, LinearInterpolate<double>, cPhong, LinearInterpolate<Vector3D>, LinearInterpolate<Point3D>);
 				else
 					innerDrawLine(xyMap, p0, p1, i, width, ZZero, cPhong, LinearInterpolate<Vector3D>, LinearInterpolate<Point3D>);
 				break;
 			}
 			default:
-				if (img.active == DrawingObject::DRAWING_OBJECT_ZBUF)
+				if (img.active == DrawingObject::DRAWING_OBJECT_ZBUF || img.active == DrawingObject::DRAWING_OBJECT_SV)
 					innerDrawLine(xyMap, p0, p1, i, width, LinearInterpolate<double>, clrFlat, NormalZero, NormalZero);
 				else
 					innerDrawLine(xyMap, p0, p1, i, width, ZZero, clrFlat, NormalZero, NormalZero);
@@ -1234,7 +1235,7 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 			}
 			else
 			{
-				if (img.active == DrawingObject::DRAWING_OBJECT_ZBUF)
+				if (img.active == DrawingObject::DRAWING_OBJECT_ZBUF || img.active == DrawingObject::DRAWING_OBJECT_SV)
 					innerDrawLine(xyMap, p0, p1, i, width, LinearInterpolate<double>, clrFlat, NormalZero, NormalZero);
 				else
 					innerDrawLine(xyMap, p0, p1, i, width, ZZero, clrFlat, NormalZero, NormalZero);
@@ -1314,7 +1315,7 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 			if (draw && (BinarySearchInXDataVector(origRow, x) == origRow.end()))
 			{
 				COLORREF fillColor = GetActualColor(objColor, objColorValid, poly, HomogeneousPoint::Zeros, attr);
-				bool needsIterpolation = img.active == DrawingObject::DRAWING_OBJECT_ZBUF;
+				bool needsIterpolation = (img.active == DrawingObject::DRAWING_OBJECT_ZBUF || img.active == DrawingObject::DRAWING_OBJECT_SV);
 				switch (attr.Shading)
 				{
 				case SHADING_FLAT:
