@@ -6,6 +6,8 @@
 
 enum ShadingMode { SHADING_NONE, SHADING_FLAT, SHADING_GOURAUD, SHADING_PHONG };
 
+enum BackFaceBehavior { BACKFACE_SHOW, BACKFACE_REMOVE_BACK, BACKFACE_REMOVE_FRONT };
+
 class ModelAttr
 { // don't make this struct big
 public:
@@ -18,7 +20,7 @@ public:
 	bool displayBBox = false;
 	bool displaySubObjectBBox = false;
 	double sensitivity = 0.1;
-	bool removeBackFace = false;
+	BackFaceBehavior removeBackFace = BACKFACE_SHOW;
 	double AmbientCoefficient = 1.0, DiffuseCoefficient = 1.0, SpecularCoefficient = 1.0;
 	int SpecularPower = 4;
 	ShadingMode Shading = SHADING_PHONG;

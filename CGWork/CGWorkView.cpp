@@ -1023,7 +1023,7 @@ void CCGWorkView::OnPerModel()
 	CPerModel dlg(s);
 	if (dlg.DoModal() == IDOK)
 	{
-		model.removeBackFace = s.removeBackFace;
+		model.removeBackFace = s.removeBackFace ? BACKFACE_REMOVE_BACK : BACKFACE_SHOW;
 		model.AmbientCoefficient = s.AmbientCoefficient;
 		model.DiffuseCoefficient = s.DiffuseCoefficient;
 		model.SpecularCoefficient = s.SpecularCoefficient;

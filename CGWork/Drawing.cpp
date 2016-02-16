@@ -1366,7 +1366,7 @@ void DrawObject(DrawingObject& img, const PolygonalObject& obj, const MatrixHomo
 	for (size_t i = 0; i != obj.polygons.size(); ++i)
 	{
 		bool draw = false;
-		if (!attr.removeBackFace)
+		if (attr.removeBackFace == BACKFACE_SHOW)
 		{
 			draw = true;
 		}
@@ -1374,7 +1374,8 @@ void DrawObject(DrawingObject& img, const PolygonalObject& obj, const MatrixHomo
 		{
 			Normals::PolygonNormalData n = mTotal * normals[i + normalsOffset];;
 			Vector3D normalDir = (Vector3D(n.PolygonNormal.p1) - Vector3D(n.PolygonNormal.p0));
-			if (normalDir * Vector3D(0, 0, 1) < 0)
+			if ((attr.removeBackFace == BACKFACE_REMOVE_BACK && normalDir * Vector3D(0, 0, 1) < 0) ||
+				(attr.removeBackFace == BACKFACE_REMOVE_FRONT && normalDir * Vector3D(0, 0, 1) > 0))
 			{
 				draw = true;
 			}

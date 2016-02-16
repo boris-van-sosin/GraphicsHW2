@@ -73,7 +73,7 @@ void ShadowVolume::ProcessModel(const PolygonalModel& model, const MatrixHomogen
 	const std::pair<PolygonalObject, std::vector<Normals::PolygonNormalData>> shadowObj = GenerateShadowVolume(model, mTotal, normals, polygonAdj);
 
 	ModelAttr attr2;
-	attr2.removeBackFace = true;
+	attr2.removeBackFace = BACKFACE_REMOVE_BACK;
 	attr2.Shading = SHADING_NONE;
 	DrawingObject img;
 	img.shadowVolume = this;
@@ -81,19 +81,18 @@ void ShadowVolume::ProcessModel(const PolygonalModel& model, const MatrixHomogen
 
 	_currShadowMode = ShadowEnter;
 	DrawObject(img, shadowObj.first, mTotal, attr2, shadowObj.second, 0, false, clip, cp);
-	for (auto obj = model.begin(); obj != model.end(); ++obj)
+	/*for (auto obj = model.begin(); obj != model.end(); ++obj)
 	{
 		DrawObject(img, *obj, mTotal, attr2, normals, normalsOffset, true, clip, cp);
-	}
+	}*/
 
-	//TODO: reverse normals
+	attr2.removeBackFace = BACKFACE_REMOVE_FRONT;
 	_currShadowMode = ShadowExit;
 	DrawObject(img, shadowObj.first, mTotal, attr2, shadowObj.second, 0, false, clip, cp);
-	for (auto obj = model.begin(); obj != model.end(); ++obj)
+	/*for (auto obj = model.begin(); obj != model.end(); ++obj)
 	{
 		DrawObject(img, *obj, mTotal, attr2, normals, normalsOffset, true, clip, cp);
-	}
-
+	}*/
 }
 
 std::pair<PolygonalObject, std::vector<Normals::PolygonNormalData>> ShadowVolume::GenerateShadowVolume(const PolygonalModel& model, const MatrixHomogeneous& m, const std::vector<Normals::PolygonNormalData>& normals, const PolygonAdjacencyGraph& polygonAdj) const
