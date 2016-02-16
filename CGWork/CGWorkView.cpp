@@ -1166,6 +1166,32 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 	for (size_t i = 0; i < _models.size(); i++) {
 		const BoundingBox bCube = _bboxes[i].BoundingCube();
 		const PerspectiveData perspData = PerspectiveWarpMatrix(bCube, _nearClippingPlane, _farClippingPlane, min(width, height));
+		MatrixHomogeneous mProj =
+			(m_bIsPerspective ?
+			perspData.PerspectiveWarp : Matrices::UnitMatrixHomogeneous);
+		const BoundingBox displayBox = (mProj * _bboxes[i]).BoundingCube();
+		const double scalingFactor = m_bIsPerspective ? 1 :
+			(0.25 * min(width, height) / ((displayBox.maxX - displayBox.minX)));
+
+		const MatrixHomogeneous mScale = Matrices::Translate(width*0.5, height*0.5, 0) * Matrices::Scale(scalingFactor);
+
+		const MatrixHomogeneous mTotal = mScale * mProj * (m_bIsPerspective ?
+			(Matrices::Flip(AXIS_X)) :
+			(Matrices::Flip(AXIS_Y)));
+		const PolygonalModel& model = _models[i];
+		const ModelAttr attr = _model_attr[i];
+		if (attr.castShadow && img.active == DrawingObject::DRAWING_OBJECT_ZBUF)
+		{
+			for (auto svIt = g_ShadowVolumes.begin(); svIt != g_ShadowVolumes.end(); ++svIt)
+			{
+				svIt->ProcessModel(model, mTotal, _polygonNormals[i], m_bIsPerspective, perspData.NearPlane, _polygonAdjacencies[i]);
+			}
+		}
+	}
+
+	for (size_t i = 0; i < _models.size(); i++) {
+		const BoundingBox bCube = _bboxes[i].BoundingCube();
+		const PerspectiveData perspData = PerspectiveWarpMatrix(bCube, _nearClippingPlane, _farClippingPlane, min(width, height));
 
 		const COLORREF normalsColor = _model_attr[i].normal_color;
 
@@ -1217,14 +1243,6 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 			}*/
 		}
 		//
-
-		if (attr.castShadow && img.active == DrawingObject::DRAWING_OBJECT_ZBUF)
-		{
-			for (auto svIt = g_ShadowVolumes.begin(); svIt != g_ShadowVolumes.end(); ++svIt)
-			{
-				svIt->ProcessModel(model, mTotal, _polygonNormals[i], m_bIsPerspective, perspData.NearPlane, _polygonAdjacencies[i]);
-			}
-		}
 
 		size_t normalsIdx = 0;
 		for (std::vector<PolygonalObject>::iterator it = model.begin(); it != model.end(); ++it)

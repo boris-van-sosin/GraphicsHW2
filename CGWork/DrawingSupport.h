@@ -29,7 +29,7 @@ public:
 	double AmbientIntensity = 1;
 	bool is_wireframe = false;
 	bool castShadow = true;
-	int shadowVolumeWireframe = 0;
+	int shadowVolumeWireframe = -1;
 };
 
 class LightSource
