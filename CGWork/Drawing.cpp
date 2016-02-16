@@ -415,65 +415,6 @@ void DrawingObject::SetPixel(int x, int y, const Point3D& p0, const Point3D& p1,
 
 //COLORREF ApplyLight(const std::vector<LightSource>& lights, const MixedIntPoint& pixel, const ModelAttr& attr, COLORREF clr, const Vector3D& normal, const Point3D& viewPoint, double ambient);
 
-template <typename T>
-void CGSwap(T& x, T& y) {
-	T  t = x;
-	x = y;
-	y = t;
-}
-
-template<typename T>
-T LinearInterpolate(double x, double minX, double maxX, const T& t0, const T& t1)
-{
-	if (minX == maxX)
-		return t0;
-	double b = (x - minX) / (maxX - minX);
-	return (1 - b)*t0 + b*t1;
-}
-
-COLORREF ColorInterpolate(double x, double minX, double maxX, COLORREF clr0, COLORREF clr1, bool swap = false)
-{
-	double floatColors[] = { GetRValue(clr0), GetGValue(clr0), GetBValue(clr0), GetRValue(clr1), GetGValue(clr1), GetBValue(clr1) };
-	int newColors[3];
-	for (int i = 0; i < 3; ++i)
-	{
-		newColors[i] = LinearInterpolate(x, minX, maxX, floatColors[i], floatColors[i + 3]);
-	}
-	return RGB(newColors[0], newColors[1], newColors[2]);
-}
-
-COLORREF ColorInterpolateN(double x, double minX, double maxX, COLORREF clr0, COLORREF clr1, const Vector3D&, bool swap = false)
-{
-	return ColorInterpolate(x, minX, maxX, clr0, clr1, swap);
-}
-
-struct XData
-{
-	enum PixelType { MIDDLE, UPPER_LIMIT, LOWER_LIMIT, LEFT, RIGHT };
-	XData(int x_, double z_, int lid, COLORREF clr, const Vector3D& n, const Point3D& ospt, PixelType pt = MIDDLE)
-		: x(x_), z(z_), LineId(lid), Type(pt), color(clr), normal(n), objSpacePt(ospt)
-	{}
-	XData(int x_, double z_, int lid, const Point3D& ospt, PixelType pt = MIDDLE)
-		: x(x_), z(z_), LineId(lid), objSpacePt(ospt), Type(pt)
-	{}
-
-	int x;
-	int LineId;
-	PixelType Type;
-	double z;
-	COLORREF color;
-	Vector3D normal;
-	Point3D objSpacePt;
-};
-
-bool operator<(const XData& a, const XData& b)
-{
-	if (a.x != b.x)
-		return a.x < b.x;
-	else
-		return a.LineId < b.LineId;
-}
-
 struct MixedIntPoint
 {
 	MixedIntPoint(int x_, int y_, double z_, COLORREF clr, const Vector3D& n, const Point3D& ospt)
@@ -488,8 +429,13 @@ struct MixedIntPoint
 		: x(0), y(0), z(0)
 	{}
 	MixedIntPoint(int x_, int y_)
-		: MixedIntPoint(x, y, 0.0, Point3D())
+		: MixedIntPoint(x_, y_, 0.0, Point3D())
 	{}
+
+	MixedIntPoint(int x_, int y_, double z_)
+		: MixedIntPoint(x_, y_, z_, Point3D())
+	{}
+
 
 	MixedIntPoint(const MixedIntPoint& other)
 		: MixedIntPoint(other.x, other.y, other.z, other.color, other.normal, other.objSpacePt)
@@ -528,6 +474,70 @@ struct MixedIntPoint
 	Vector3D normal;
 	Point3D objSpacePt;
 };
+
+template <typename T>
+void CGSwap(T& x, T& y) {
+	T  t = x;
+	x = y;
+	y = t;
+}
+
+template<typename T>
+T LinearInterpolate(double x, double minX, double maxX, const T& t0, const T& t1)
+{
+	if (minX == maxX)
+		return t0;
+	double b = (x - minX) / (maxX - minX);
+	return (1 - b)*t0 + b*t1;
+}
+
+COLORREF ColorInterpolate(double x, double minX, double maxX, COLORREF clr0, COLORREF clr1, bool swap = false)
+{
+	double floatColors[] = { GetRValue(clr0), GetGValue(clr0), GetBValue(clr0), GetRValue(clr1), GetGValue(clr1), GetBValue(clr1) };
+	int newColors[3];
+	for (int i = 0; i < 3; ++i)
+	{
+		newColors[i] = LinearInterpolate(x, minX, maxX, floatColors[i], floatColors[i + 3]);
+	}
+	return RGB(newColors[0], newColors[1], newColors[2]);
+}
+
+COLORREF ColorInterpolateN(double x, double minX, double maxX, COLORREF clr0, COLORREF clr1, const Vector3D&, bool swap = false)
+{
+	return ColorInterpolate(x, minX, maxX, clr0, clr1, swap);
+}
+
+COLORREF ColorInterpolateSV(double x, double minX, double maxX, const MixedIntPoint&, COLORREF clr0, COLORREF clr1, const Vector3D&, bool swap = false)
+{
+	return ColorInterpolate(x, minX, maxX, clr0, clr1, swap);
+}
+
+struct XData
+{
+	enum PixelType { MIDDLE, UPPER_LIMIT, LOWER_LIMIT, LEFT, RIGHT };
+	XData(int x_, double z_, int lid, COLORREF clr, const Vector3D& n, const Point3D& ospt, PixelType pt = MIDDLE)
+		: x(x_), z(z_), LineId(lid), Type(pt), color(clr), normal(n), objSpacePt(ospt)
+	{}
+	XData(int x_, double z_, int lid, const Point3D& ospt, PixelType pt = MIDDLE)
+		: x(x_), z(z_), LineId(lid), objSpacePt(ospt), Type(pt)
+	{}
+
+	int x;
+	int LineId;
+	PixelType Type;
+	double z;
+	COLORREF color;
+	Vector3D normal;
+	Point3D objSpacePt;
+};
+
+bool operator<(const XData& a, const XData& b)
+{
+	if (a.x != b.x)
+		return a.x < b.x;
+	else
+		return a.LineId < b.LineId;
+}
 
 struct FakeXYMap
 {
@@ -764,7 +774,7 @@ void innerDrawLine(FakeXYMap& img, const MixedIntPoint& p0, const MixedIntPoint&
 				clrf(x, x0, x1, c0, c1, currN);*/
 			const double currZ = zf(x, x0, x1, z0, z1);
 			const Vector3D currN = nf(x, x0, x1, n0, n1);
-			const COLORREF currClr = clrf(x, x0, x1, c0, c1, currN, swapX);
+			const COLORREF currClr = (!swapXY) ? clrf(x, x0, x1, MixedIntPoint(x, y, currZ), c0, c1, currN, swapX) : clrf(x, x0, x1, MixedIntPoint(y, x, currZ), c0, c1, currN, swapX);
 			const Vector3D currObjSpPt = osptf(x, x0, x1, ospt0, ospt1);
 			if (!swapXY)
 			{
@@ -1011,6 +1021,7 @@ std::vector<XData>::const_iterator BinarySearchInXDataVector(const std::vector<X
 }
 
 COLORREF ApplyLight(const std::vector<LightSource>& lights, const Point3D& pt, const ModelAttr& attr, COLORREF clr, const Vector3D& normal, const Point3D& viewPoint, double ambient);
+COLORREF ApplyLight(const std::vector<LightSource>& lights, const std::vector<ShadowVolume>& svs, const MixedIntPoint& viewPt, const Point3D& pt, const ModelAttr& attr, COLORREF clr, const Vector3D& normal, const Point3D& viewPoint, double ambient);
 
 struct ZCalc
 {
@@ -1032,7 +1043,7 @@ struct ColorFlat
 	{
 	}
 
-	COLORREF operator()(int x, int x0, int x1, COLORREF c0, COLORREF c1, const Vector3D&, bool swap = false)
+	COLORREF operator()(int x, int x0, int x1, const MixedIntPoint& pt, COLORREF c0, COLORREF c1, const Vector3D&, bool swap = false)
 	{
 		return clr;
 	}
@@ -1047,31 +1058,32 @@ Vector3D NormalZero(int x, int x0, int x1, const Vector3D& v0, const Vector3D& v
 
 struct ColorPhong
 {
-	ColorPhong(const HomogeneousPoint& p0, const HomogeneousPoint& p1, const std::vector<LightSource>& lights, const ModelAttr& attr, COLORREF modelColor, const Point3D& viewPoint, double ambient)
-		: _lights(&lights), _attr(&attr), _viewPoint(viewPoint), _ambient(ambient), _p0(p0), _p1(p1), _modelColor(modelColor)
+	ColorPhong(const HomogeneousPoint& p0, const HomogeneousPoint& p1, const std::vector<LightSource>& lights, const std::vector<ShadowVolume>& svs, const ModelAttr& attr, COLORREF modelColor, const Point3D& viewPoint, double ambient)
+		: _lights(&lights), _shadowVolumes(&svs), _attr(&attr), _viewPoint(viewPoint), _ambient(ambient), _p0(p0), _p1(p1), _modelColor(modelColor)
 	{
 	}
 
 	ColorPhong()
 	{}
 
-	COLORREF operator()(int x, int x0, int x1, COLORREF c0, COLORREF c1, const Vector3D& n, bool swap)
+	COLORREF operator()(int x, int x0, int x1, const MixedIntPoint& viewPt, COLORREF c0, COLORREF c1, const Vector3D& n, bool swap)
 	{
 		if (!swap)
-			return ApplyLight(*_lights, LinearInterpolate(x, x0, x1, _p0, _p1), *_attr, _modelColor, n, _viewPoint, _ambient);
+			return ApplyLight(*_lights, *_shadowVolumes, viewPt, LinearInterpolate(x, x0, x1, _p0, _p1), *_attr, _modelColor, n, _viewPoint, _ambient);
 		else
-			return ApplyLight(*_lights, LinearInterpolate(x, x0, x1, _p1, _p0), *_attr, _modelColor, n, _viewPoint, _ambient);
+			return ApplyLight(*_lights, *_shadowVolumes, viewPt, LinearInterpolate(x, x0, x1, _p1, _p0), *_attr, _modelColor, n, _viewPoint, _ambient);
 	}
 
 	Point3D _p0, _p1;
 	const std::vector<LightSource>* _lights;
+	const std::vector<ShadowVolume>* _shadowVolumes;
 	const ModelAttr* _attr;
 	COLORREF _modelColor;
 	Point3D _viewPoint;
 	double _ambient;
 };
 
-void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogeneous& mTotal, const ModelAttr& attr, COLORREF objColor, bool objColorValid, const Normals::PolygonNormalData& nd, bool fillPolygons, const std::vector<LightSource>& lights, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0))
+void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogeneous& mTotal, const ModelAttr& attr, COLORREF objColor, bool objColorValid, const Normals::PolygonNormalData& nd, bool fillPolygons, const std::vector<LightSource>& lights, const std::vector<ShadowVolume>& svs, bool clip = false, const ClippingPlane& cp = ClippingPlane(0, 0, 0, 0))
 {
 	if (poly0.points.size() < 2)
 	{
@@ -1129,7 +1141,7 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 					(Vector3D(clipND.VertexNormals.front().p1) - Vector3D(clipND.VertexNormals.front().p0));
 		}
 
-		ColorPhong cPhong = attr.Shading == SHADING_PHONG ? ColorPhong(objSpaceLn.p0, objSpaceLn.p1, lights, attr, actualColor, Point3D::Zero, attr.AmbientIntensity) : ColorPhong();
+		ColorPhong cPhong = attr.Shading == SHADING_PHONG ? ColorPhong(objSpaceLn.p0, objSpaceLn.p1, lights, svs, attr, actualColor, Point3D::Zero, attr.AmbientIntensity) : ColorPhong();
 
 		/*if (attr.line_width > 1)
 		{
@@ -1149,18 +1161,18 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 				break;
 			case SHADING_GOURAUD:
 			{
-				p0.color = ApplyLight(lights, Point3D(objSpaceLn.p0), attr, actualColor, p0.normal, Point3D::Zero, attr.AmbientIntensity);
-				p1.color = ApplyLight(lights, Point3D(objSpaceLn.p1), attr, actualColor, p1.normal, Point3D::Zero, attr.AmbientIntensity);
+				p0.color = ApplyLight(lights, svs, p0, Point3D(objSpaceLn.p0), attr, actualColor, p0.normal, Point3D::Zero, attr.AmbientIntensity);
+				p1.color = ApplyLight(lights, svs, p1, Point3D(objSpaceLn.p1), attr, actualColor, p1.normal, Point3D::Zero, attr.AmbientIntensity);
 				if (img.active == DrawingObject::DRAWING_OBJECT_ZBUF)
-					innerDrawLine(xyMap, p0, p1, i, width, LinearInterpolate<double>, ColorInterpolateN, NormalZero, NormalZero);
+					innerDrawLine(xyMap, p0, p1, i, width, LinearInterpolate<double>, ColorInterpolateSV, NormalZero, NormalZero);
 				else
-					innerDrawLine(xyMap, p0, p1, i, width, ZZero, ColorInterpolateN, NormalZero, NormalZero);
+					innerDrawLine(xyMap, p0, p1, i, width, ZZero, ColorInterpolateSV, NormalZero, NormalZero);
 				break;
 			}
 			case SHADING_PHONG:
 			{
-				p0.color = ApplyLight(lights, Point3D(objSpaceLn.p0), attr, actualColor, p0.normal, Point3D::Zero, attr.AmbientIntensity);
-				p1.color = ApplyLight(lights, Point3D(objSpaceLn.p1), attr, actualColor, p1.normal, Point3D::Zero, attr.AmbientIntensity);
+				p0.color = ApplyLight(lights, svs, p0, Point3D(objSpaceLn.p0), attr, actualColor, p0.normal, Point3D::Zero, attr.AmbientIntensity);
+				p1.color = ApplyLight(lights, svs, p1, Point3D(objSpaceLn.p1), attr, actualColor, p1.normal, Point3D::Zero, attr.AmbientIntensity);
 				if (img.active == DrawingObject::DRAWING_OBJECT_ZBUF || img.active == DrawingObject::DRAWING_OBJECT_SV)
 					innerDrawLine(xyMap, p0, p1, i, width, LinearInterpolate<double>, cPhong, LinearInterpolate<Vector3D>, LinearInterpolate<Point3D>);
 				else
@@ -1207,13 +1219,13 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 				break;
 			case SHADING_GOURAUD:
 			{
-				p0.color = ApplyLight(lights, Point3D(objSpaceLn.p0), attr, actualColor, p0.normal, Point3D::Zero, attr.AmbientIntensity);
-				p1.color = ApplyLight(lights, Point3D(objSpaceLn.p1), attr, actualColor, p1.normal, Point3D::Zero, attr.AmbientIntensity);
+				p0.color = ApplyLight(lights, svs, p0, Point3D(objSpaceLn.p0), attr, actualColor, p0.normal, Point3D::Zero, attr.AmbientIntensity);
+				p1.color = ApplyLight(lights, svs, p1, Point3D(objSpaceLn.p1), attr, actualColor, p1.normal, Point3D::Zero, attr.AmbientIntensity);
 				break;
 			}
 			case SHADING_PHONG:
-				p0.color = ApplyLight(lights, Point3D(objSpaceLn.p0), attr, actualColor, p0.normal, Point3D::Zero, attr.AmbientIntensity);
-				p1.color = ApplyLight(lights, Point3D(objSpaceLn.p1), attr, actualColor, p1.normal, Point3D::Zero, attr.AmbientIntensity);
+				p0.color = ApplyLight(lights, svs, p0, Point3D(objSpaceLn.p0), attr, actualColor, p0.normal, Point3D::Zero, attr.AmbientIntensity);
+				p1.color = ApplyLight(lights, svs, p1, Point3D(objSpaceLn.p1), attr, actualColor, p1.normal, Point3D::Zero, attr.AmbientIntensity);
 				break;
 			default:
 				p0.color = p1.color = actualColor;
@@ -1348,7 +1360,7 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 					{
 						const Vector3D n = LinearInterpolate(x, x0, x1, interpolationIter0->normal, (interpolationIter0 + 1)->normal);
 						const Point3D currObjSpPt = LinearInterpolate(x, 0, x1, interpolationIter0->objSpacePt, (interpolationIter0 + 1)->objSpacePt);
-						fillColor = ApplyLight(lights, currObjSpPt, attr, actualColor, n, Point3D::Zero, attr.AmbientIntensity); /*FIX THIS*/
+						fillColor = ApplyLight(lights, svs, MixedIntPoint(x, y, currZ), currObjSpPt, attr, actualColor, n, Point3D::Zero, attr.AmbientIntensity); /*FIX THIS*/
 					}
 					img.SetPixel(x, y, currZ, fillColor);
 				}
@@ -1383,12 +1395,17 @@ void DrawObject(DrawingObject& img, const PolygonalObject& obj, const MatrixHomo
 		}
 		if (draw)
 		{
-			DrawPolygon(img, obj.polygons[i], mTotal, attr, obj.color, obj.colorValid, normals[i + normalsOffset], fillPolygons, g_lights, clip, cp);
+			DrawPolygon(img, obj.polygons[i], mTotal, attr, obj.color, obj.colorValid, normals[i + normalsOffset], fillPolygons, g_lights, g_ShadowVolumes, clip, cp);
 		}
 	}
 }
 
 COLORREF ApplyLight(const std::vector<LightSource>& lights, const Point3D& pt, const ModelAttr& attr, COLORREF clr, const Vector3D& normal, const Point3D& viewPoint, double ambient)
+{
+	return ApplyLight(lights, std::vector<ShadowVolume>(), MixedIntPoint(), pt, attr, clr, normal, viewPoint, ambient);
+}
+
+COLORREF ApplyLight(const std::vector<LightSource>& lights, const std::vector<ShadowVolume>& svs, const MixedIntPoint& viewPt, const Point3D& pt, const ModelAttr& attr, COLORREF clr, const Vector3D& normal, const Point3D& viewPoint, double ambient)
 {
 	//const Point3D pt(pixel.x, pixel.y, pixel.z);
 
@@ -1404,18 +1421,23 @@ COLORREF ApplyLight(const std::vector<LightSource>& lights, const Point3D& pt, c
 	for (int i = 0; i < 3; ++i)
 	{
 		double currLightPart = 0.0;
-		for (auto j = lights.begin(); j != lights.end(); ++j)
+		for (size_t j = 0; j < lights.size(); ++j)
 		{
-			const Vector3D lightVec = j->_type == LightSource::POINT ?
-				(Point3D(j->_origin) - pt).Normalized()
+			if (svs.size() > j)
+			{
+				if (!svs[j].IsPixelLit(viewPt.x, viewPt.y, viewPt.z))
+					continue;
+			}
+			const Vector3D lightVec = lights[j]._type == LightSource::POINT ?
+				(Point3D(lights[j]._origin) - pt).Normalized()
 				:
-				j->Direction();
+				lights[j].Direction();
 			const Vector3D reflectVec = lightVec - 2 * (lightVec*n)*n;
 			double viewProd = -(reflectVec * viewVec);
 			double dotProd = n * lightVec;
 			if (dotProd < 0)
 				dotProd = 0;
-			currLightPart += (j->_intensity[i] * (normDCoefficient*dotProd + normSCoefficient*pow(viewProd, attr.SpecularPower)));
+			currLightPart += (lights[j]._intensity[i] * (normDCoefficient*dotProd + normSCoefficient*pow(viewProd, attr.SpecularPower)));
 		}
 		rgbValues[i] = rgbValues[i] * (ambient*normACoefficient + currLightPart);
 		rgbValues[i] = min(rgbValues[i], 255.0);

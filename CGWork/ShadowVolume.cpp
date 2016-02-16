@@ -102,6 +102,29 @@ bool ShadowVolume::ShadowEvent::operator < (const ShadowEvent& other) const
 	return _z < other._z;
 }
 
+bool ShadowVolume::IsPixelLit(size_t x, size_t y, double z) const
+{
+	int shadowNesting = 0;
+	if (y * _width + x >= _width * _height)
+		return true;
+
+	const std::set<ShadowEvent>& currPixel = _stencil[y * _width + x];
+	for (auto i = currPixel.begin(); i != currPixel.end(); ++i)
+	{
+		if ((i->_type == ShadowEnter && i->_z >= z) || (i->_type == ShadowExit && i->_z > z))
+			break;
+
+		if (i->_type == ShadowEnter)
+			++shadowNesting;
+		else
+			--shadowNesting;
+	}
+	if (shadowNesting > 0)
+		return false;
+	return true;
+	return shadowNesting <= 0;
+}
+
 void ShadowVolume::ProcessModel(const PolygonalModel& model, const MatrixHomogeneous& mTotal, const std::vector<Normals::PolygonNormalData>& normals, bool clip, const ClippingPlane& cp, const PolygonAdjacencyGraph& polygonAdj)
 {
 	const std::pair<PolygonalObject, std::vector<Normals::PolygonNormalData>> shadowObj = GenerateShadowVolume(model, mTotal, normals, polygonAdj);
@@ -166,9 +189,6 @@ std::pair<PolygonalObject, std::vector<Normals::PolygonNormalData>> ShadowVolume
 			std::vector<HomogeneousPoint> polyPoints;
 			polyPoints.reserve(4);
 
-			polyPoints.push_back(edge.p0);
-			polyPoints.push_back(edge.p1);
-
 			Vector3D ray0, ray1;
 			if (_lightSource._type == LightSource::PLANE)
 			{
@@ -183,6 +203,8 @@ std::pair<PolygonalObject, std::vector<Normals::PolygonNormalData>> ShadowVolume
 			const HomogeneousPoint far0((Point3D(edge.p0) + (ray0 * shadowLength)));
 			const HomogeneousPoint far1((Point3D(edge.p1) + (ray1 * shadowLength)));
 
+			polyPoints.push_back(edge.p0);
+			polyPoints.push_back(edge.p1);
 			polyPoints.push_back(far1);
 			polyPoints.push_back(far0);
 

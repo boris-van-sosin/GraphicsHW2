@@ -1155,9 +1155,9 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 
 	for (auto svIt = g_ShadowVolumes.begin(); svIt != g_ShadowVolumes.end(); ++svIt)
 	{
-		if (svIt->GetHeight() != height || svIt->GetHeight() != width)
+		if (svIt->GetHeight() != img.GetHeight() || svIt->GetHeight() != img.GetWidth())
 		{
-			svIt->SetSize(width, height);
+			svIt->SetSize(img.GetWidth(), img.GetHeight());
 			svIt->SetLightSource(g_lights[svIt - g_ShadowVolumes.begin()]);
 		}
 		svIt->Clear();
@@ -1208,12 +1208,12 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 			svAttr.forceColor = true;
 			svAttr.Shading = SHADING_NONE;
 			svAttr.castShadow = false;
-			svAttr.removeBackFace = BACKFACE_SHOW;
-			DrawObject(img, svs.first, mTotal, svAttr, svs.second, 0, false, m_bIsPerspective, perspData.NearPlane);
+			svAttr.removeBackFace = BACKFACE_REMOVE_BACK;
+			DrawObject(img, svs.first, mTotal, svAttr, svs.second, 0, true, m_bIsPerspective, perspData.NearPlane);
 		}
 		//
 
-		if (attr.castShadow)
+		if (attr.castShadow && img.active == DrawingObject::DRAWING_OBJECT_ZBUF)
 		{
 			for (auto svIt = g_ShadowVolumes.begin(); svIt != g_ShadowVolumes.end(); ++svIt)
 			{
