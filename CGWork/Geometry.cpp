@@ -727,23 +727,7 @@ void Normals::ComputeNormals(const PolygonalModel& objs, std::vector<Normals::Po
 			{
 				FixNormal(*i, j - i->polygons.begin(), areaAndCentroid, currPolygonNormal);
 			}
-#ifdef DEBUG
-			{
-				int testsPassed = 0;
-				if (PolygonIntersection::IsPointInPolygon(Point3D(areaAndCentroid.second), *j, currPolygonNormal))
-				{
-					++testsPassed;
-				}
-				if (!PolygonIntersection::IsPointInPolygon(Point3D(areaAndCentroid.second) + 10 * (Point3D(j->points[1]) - Point3D(j->points[0])), *j, currPolygonNormal))
-				{
-					++testsPassed;
-				}
-				if (testsPassed != 2)
-				{
-					throw 0;
-				}
-			}
-#endif
+
 			PolygonNormalData d(LineSegment(areaAndCentroid.second, HomogeneousPoint(Point3D(areaAndCentroid.second) + currPolygonNormal)));
 			polygonNormals.push_back(d);
 
