@@ -540,6 +540,77 @@ std::vector<PolygonalObject> BoundingBox::BoundingBoxObjectsOfSubObjects(const s
 	return res;
 }
 
+inline double PolygonIntersection::PlaneLineIntersectionParam(const Point3D& pt, const Vector3D& lineDir, const Point3D& planePoint, const Vector3D& n)
+{
+	return n * (planePoint - pt) / (n * lineDir);
+}
+
+inline Point3D PolygonIntersection::PlaneLineIntersection(const Point3D& pt, const Vector3D& lineDir, const Point3D& planePoint, const Vector3D& n)
+{
+	return pt + PlaneLineIntersectionParam(pt, lineDir, planePoint, n) * lineDir;
+}
+
+inline bool IsLeft(const Point3D& pt, const Point3D& lp, const Vector3D v, const Vector3D& pn)
+{
+	return v.Cross(pt - lp) * pn > 0;
+}
+
+inline bool PolygonIntersection::IsPointInPolygon(const Point3D& pt, const Polygon3D& poly)
+{
+	return IsPointInPolygon(pt, poly, poly.Normal());
+}
+
+inline bool PolygonIntersection::IsPointInPolygon(const Point3D& pt, const Polygon3D& poly, const Vector3D& n)
+{
+	if (poly.points.size() < 3)
+		return false;
+
+	const Vector3D up = Point3D(poly.points[1]) - Point3D(poly.points[0]);
+
+	int wn = 0;    // the  winding number counter
+	// loop through all edges of the polygon
+	for (auto i = poly.points.begin(); i != poly.points.end(); ++i)
+	{
+		const Point3D p0(*i);
+		const Point3D p1((i + 1) != poly.points.end() ? *(i + 1) : poly.points.front());
+		const Vector3D ev = p1 - p0;
+
+		if ((pt - p0) * up >= 0)
+		{          // start y <= P.y
+			if ((pt - p1) * up < 0)      // an upward crossing
+				if (IsLeft(pt, p0, ev, n))  // P left of  edge
+					++wn;            // have  a valid up intersect
+		}
+		else
+		{                        // start y > P.y (no test needed)
+			if ((pt - p1) * up >= 0)     // a downward crossing
+				if (!IsLeft(pt, p0, ev, n))  // P right of  edge
+					--wn;            // have  a valid down intersect
+		}
+	}
+	return wn != 0;
+}
+
+inline std::pair<bool, double> PolygonIntersection::PolygonRayIntersectionParam(const Point3D& pt, const Vector3D& lineDir, const Polygon3D& poly)
+{
+	return PolygonRayIntersectionParam(pt, lineDir, poly, poly.Normal());
+}
+
+inline std::pair<bool, double> PolygonIntersection::PolygonRayIntersectionParam(const Point3D& pt, const Vector3D& lineDir, const Polygon3D& poly, const Vector3D& n)
+{
+	if (poly.points.size() < 3)
+		return std::pair<bool, double>(false, 0);
+
+	if (lineDir * n == 0)
+		return std::pair<bool, double>(false, 0);
+
+	const double s = PlaneLineIntersectionParam(pt, lineDir, Point3D(poly.points.front()), n);
+	const Point3D pointOnPlane = pt + s * lineDir;
+	const bool inPolygon = IsPointInPolygon(pointOnPlane, poly, n);
+	return std::pair<bool, double>(inPolygon, s);
+}
+
+
 PolygonAdjacency::PolygonAdjacency(int p, int obj, int polyInObj, int v)
 	: objIdx(obj), polygonInObjIdx(polyInObj), vertexIdx(v)
 {
@@ -604,7 +675,29 @@ Normals::PolygonNormalData& Normals::PolygonNormalData::operator = (const Normal
 	return *this;
 }
 
-void Normals::ComputeNormals(const std::vector<PolygonalObject>& objs, std::vector<Normals::PolygonNormalData>& polygonNormals, NormalList& vertexNormals, PolygonAdjacencyGraph& polygonAdjacency, bool useFileNormals)
+void FixNormal(const PolygonalObject& obj, size_t polygonIdx, const std::pair<double, HomogeneousPoint>& areaAndCentroid, Vector3D& normal)
+{
+	const Point3D centroid(areaAndCentroid.second);
+	bool evenIntersections = true; // zero is an even number
+	for (size_t i = 0; i != obj.polygons.size(); ++i)
+	{
+		if (i == polygonIdx)
+			continue;
+
+		const std::pair<bool, double> intersectionRes = PolygonIntersection::PolygonRayIntersectionParam(centroid, normal, obj.polygons[i]);
+		if (intersectionRes.first && (intersectionRes.second > 0))
+		{
+			evenIntersections = !evenIntersections;
+		}
+	}
+
+	if (!evenIntersections)
+	{
+		normal = -normal;
+	}
+}
+
+void Normals::ComputeNormals(const PolygonalModel& objs, std::vector<Normals::PolygonNormalData>& polygonNormals, NormalList& vertexNormals, PolygonAdjacencyGraph& polygonAdjacency, NormalsGeneration src)
 {
 	polygonNormals.clear();
 	vertexNormals.clear();
@@ -629,14 +722,35 @@ void Normals::ComputeNormals(const std::vector<PolygonalObject>& objs, std::vect
 		for (auto j = i->polygons.begin(); j != i->polygons.end(); ++j)
 		{
 			const std::pair<double, HomogeneousPoint> areaAndCentroid = j->AreaAndCentroid();
-			const Vector3D currPolygonNormal = j->Normal();
+			Vector3D currPolygonNormal = j->Normal();
+			if (src == NORMALS_SMART)
+			{
+				FixNormal(*i, j - i->polygons.begin(), areaAndCentroid, currPolygonNormal);
+			}
+#ifdef DEBUG
+			{
+				int testsPassed = 0;
+				if (PolygonIntersection::IsPointInPolygon(Point3D(areaAndCentroid.second), *j, currPolygonNormal))
+				{
+					++testsPassed;
+				}
+				if (!PolygonIntersection::IsPointInPolygon(Point3D(areaAndCentroid.second) + 10 * (Point3D(j->points[1]) - Point3D(j->points[0])), *j, currPolygonNormal))
+				{
+					++testsPassed;
+				}
+				if (testsPassed != 2)
+				{
+					throw 0;
+				}
+			}
+#endif
 			PolygonNormalData d(LineSegment(areaAndCentroid.second, HomogeneousPoint(Point3D(areaAndCentroid.second) + currPolygonNormal)));
 			polygonNormals.push_back(d);
 
 			polygonAreas.push_back(areaAndCentroid.first);
 			for (auto v = j->points.begin(); v != j->points.end(); ++v)
 			{
-				if ((!useFileNormals) || j->tmpNormals.empty())
+				if ((src != NORMALS_FILE) || j->tmpNormals.empty())
 				{
 					if (vertexMap.find(Point3D(*v)) == vertexMap.end())
 					{

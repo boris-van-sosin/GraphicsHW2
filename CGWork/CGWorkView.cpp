@@ -649,7 +649,7 @@ void CCGWorkView::OnFileLoad()
 		_polygonNormals.push_back(std::vector<Normals::PolygonNormalData>());
 		_vertexNormals.push_back(Normals::NormalList());
 		_polygonAdjacencies.push_back(PolygonAdjacencyGraph());
-		Normals::ComputeNormals(_models.back(), _polygonNormals.back(), _vertexNormals.back(), _polygonAdjacencies.back(), _useFileNormals);
+		Normals::ComputeNormals(_models.back(), _polygonNormals.back(), _vertexNormals.back(), _polygonAdjacencies.back(), _useFileNormals ? Normals::NORMALS_FILE : Normals::NORMALS_SMART);
 
 		//FlipYAxis(_models.size() - 1);
 

@@ -1433,8 +1433,8 @@ COLORREF ApplyLight(const std::vector<LightSource>& lights, const std::vector<Sh
 				:
 				lights[j].Direction();
 			const Vector3D reflectVec = lightVec - 2 * (lightVec*n)*n;
-			double viewProd = -(reflectVec * viewVec);
-			double dotProd = n * lightVec;
+			double viewProd = fabs(-(reflectVec * viewVec));
+			double dotProd = -(n * lightVec);
 			if (dotProd < 0)
 				dotProd = 0;
 			currLightPart += (lights[j]._intensity[i] * (normDCoefficient*dotProd + normSCoefficient*pow(viewProd, attr.SpecularPower)));

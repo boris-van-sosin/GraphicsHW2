@@ -142,7 +142,7 @@ LineSegment TransformNormal(const MatrixHomogeneous& m, const LineSegment& l, do
 {
 	const Point3D originTr(m * l.p0);
 	const Point3D endpointTr(m * l.p1);
-	const Vector3D directionDisp = (originTr - endpointTr).Normalized() * scalingFactor;
+	const Vector3D directionDisp = (endpointTr - originTr).Normalized() * scalingFactor;
 	return LineSegment(HomogeneousPoint(originTr), HomogeneousPoint(originTr + directionDisp));
 }
 

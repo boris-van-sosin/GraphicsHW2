@@ -149,6 +149,16 @@ private:
 	static BoundingBox join(const std::vector<BoundingBox>& boxes);
 };
 
+namespace PolygonIntersection
+{
+	inline double PlaneLineIntersectionParam(const Point3D& pt, const Vector3D& lineDir, const Point3D& planePoint, const Vector3D& n);
+	inline Point3D PlaneLineIntersection(const Point3D& pt, const Vector3D& lineDir, const Point3D& planePoint, const Vector3D& n);
+	inline bool IsPointInPolygon(const Point3D& pt, const Polygon3D& poly);
+	inline bool IsPointInPolygon(const Point3D& pt, const Polygon3D& poly, const Vector3D& n);
+	inline std::pair<bool, double> PolygonRayIntersectionParam(const Point3D& pt, const Vector3D& lineDir, const Polygon3D& poly);
+	inline std::pair<bool, double> PolygonRayIntersectionParam(const Point3D& pt, const Vector3D& lineDir, const Polygon3D& poly, const Vector3D& n);
+}
+
 class PolygonAdjacency
 {
 public:
@@ -165,6 +175,8 @@ typedef std::vector<PolygonAdjacency> PolygonAdjacencyGraph;
 
 namespace Normals
 {
+	enum NormalsGeneration { NORMALS_VERTEX_ORDER, NORMALS_FILE, NORMALS_SMART };
+
 	typedef std::vector<LineSegment> NormalList;
 
 	struct PolygonNormalData
@@ -177,7 +189,7 @@ namespace Normals
 		NormalList VertexNormals;
 	};
 
-	void ComputeNormals(const std::vector<PolygonalObject>& objs, std::vector<PolygonNormalData>& polygonNormals, NormalList& vertexNormals, PolygonAdjacencyGraph& polygonAdjacency,bool useFileNormals = false);
+	void ComputeNormals(const PolygonalModel& objs, std::vector<PolygonNormalData>& polygonNormals, NormalList& vertexNormals, PolygonAdjacencyGraph& polygonAdjacency, NormalsGeneration src = NORMALS_VERTEX_ORDER);
 }
 
 #endif
