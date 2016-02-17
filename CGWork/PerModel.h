@@ -13,6 +13,8 @@ public:
 	bool silluete = true, boundry = true;
 	double AmbientIntensity = 1;
 	bool is_wireframe = false;
+	bool cast_shadow = false;
+	int shadow_wireframe_light_src = -1;
 };
 
 class CPerModel : public CDialogEx
@@ -28,6 +30,7 @@ public:
 	int m_silluete;
 	int m_boundry;
 	int m_wireframe_solid;
+	int m_cast_shadow;
 	CPerModelParam m_tmp_param;
 	CPerModelParam& m_orig_param;
 	BOOL OnInitDialog();

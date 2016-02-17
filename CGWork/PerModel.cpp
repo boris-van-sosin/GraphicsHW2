@@ -24,6 +24,7 @@ CPerModel::CPerModel(CPerModelParam& param, CWnd* pParent /*=NULL*/)
 	m_silluete = (int)param.silluete;
 	m_boundry = (int)param.boundry;
 	m_wireframe_solid = (int)param.is_wireframe;
+	m_cast_shadow = (int)param.cast_shadow;
 }
 
 CPerModel::~CPerModel()
@@ -38,6 +39,7 @@ void CPerModel::DoDataExchange(CDataExchange* pDX)
 	DDX_Radio(pDX, IDC_RADIO7, m_silluete);
 	DDX_Radio(pDX, IDC_RADIO9, m_boundry);
 	DDX_Radio(pDX, IDC_RADIO11, m_wireframe_solid);
+	DDX_Radio(pDX, IDC_RADIO13, m_cast_shadow);
 }
 
 
@@ -72,6 +74,8 @@ BOOL CPerModel::OnInitDialog() {
 	SetDlgItemText(IDC_EDIT4, str);
 	str.Format(_T("%f"), param.AmbientIntensity);
 	SetDlgItemText(IDC_EDIT5, str);
+	str.Format(_T("%d"), param.shadow_wireframe_light_src);
+	SetDlgItemText(IDC_EDIT6, str);
 	return res;
 }
 
@@ -85,20 +89,22 @@ void CPerModel::OnBnClickedOk()
 	m_tmp_param.silluete = bool(m_silluete);
 	m_tmp_param.boundry = (bool)m_boundry;
 	m_tmp_param.is_wireframe = (bool)m_wireframe_solid;
+	m_tmp_param.cast_shadow = (bool)m_cast_shadow;
 
-	CString str1, str2, str3, str4, str5;
+	CString str1, str2, str3, str4, str5, str6;
 	GetDlgItemText(IDC_EDIT1, str1);
 	GetDlgItemText(IDC_EDIT2, str2);
 	GetDlgItemText(IDC_EDIT3, str3);
 	GetDlgItemText(IDC_EDIT4, str4);
 	GetDlgItemText(IDC_EDIT5, str5);
+	GetDlgItemText(IDC_EDIT6, str6);
 
 	m_tmp_param.AmbientCoefficient = (double)_ttof(str1);
 	m_tmp_param.DiffuseCoefficient = (double)_ttof(str2);
 	m_tmp_param.SpecularCoefficient = (double)_ttof(str3);
 	m_tmp_param.SpecularPower = (int)_ttof(str4);
 	m_tmp_param.AmbientIntensity = (double)_ttof(str5);
-
+	m_tmp_param.shadow_wireframe_light_src = (int)_ttof(str6);
 
 	m_orig_param = m_tmp_param;
 

@@ -67,6 +67,9 @@
 #define IDC_EDIT5                       1061
 #define IDC_RADIO11                     1062
 #define IDC_RADIO12                     1063
+#define IDC_RADIO13                     1064
+#define IDC_RADIO14                     1065
+#define IDC_EDIT6                       1066
 #define ID_FILE_LOAD                    32771
 #define ID_VIEW_ORTHOGRAPHIC            32772
 #define ID_VIEW_PERSPECTIVE             32773

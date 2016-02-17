@@ -1019,6 +1019,8 @@ void CCGWorkView::OnPerModel()
 	s.boundry = model.boundry;
 	s.AmbientIntensity = model.AmbientIntensity;
 	s.is_wireframe = model.is_wireframe;
+	s.cast_shadow = model.castShadow;
+	s.shadow_wireframe_light_src = model.shadowVolumeWireframe;
 
 	CPerModel dlg(s);
 	if (dlg.DoModal() == IDOK)
@@ -1033,6 +1035,8 @@ void CCGWorkView::OnPerModel()
 		model.boundry = s.boundry;
 		model.AmbientIntensity = s.AmbientIntensity;
 		model.is_wireframe = s.is_wireframe;
+		model.castShadow = s.cast_shadow;
+		model.shadowVolumeWireframe = s.shadow_wireframe_light_src;
 		Invalidate();
 	}
 }
