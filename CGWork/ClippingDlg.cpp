@@ -24,7 +24,7 @@ CClippingDlg::~CClippingDlg()
 void CClippingDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-	m_load_model_normals_status = _refSettings.load_normals_from_file;
+	m_load_model_normals_status = (int)_refSettings.load_normals_from_file;
 	DDX_Radio(pDX, IDC_RADIO1, m_load_model_normals_status);
 }
 
@@ -83,7 +83,7 @@ void CClippingDlg::OnOk() {
 		_refSettings._sensitivity = sensitivityNum;
 
 		UpdateData(TRUE);
-		_refSettings.load_normals_from_file = (bool)m_load_model_normals_status;
+		_refSettings.load_normals_from_file = (Normals::NormalsGeneration)m_load_model_normals_status;
 
 		CDialog::OnOK();
 	}

@@ -397,7 +397,7 @@ void DrawingObject::SetPixel(int x, int y, double z, COLORREF clr)
 	else if (active == DRAWING_OBJECT_ZBUF && zBufImg)
 		zBufImg->PushPixel(x, y, z, clr);
 	else if (shadowVolume)
-		shadowVolume->SetPixel(x, y, z);
+		shadowVolume->SetPixel(x, y, z, clr);
 }
 
 void DrawingObject::SetPixel(int x, int y, const Point3D& p0, const Point3D& p1, COLORREF clr)

@@ -107,6 +107,12 @@ void auxSolidCone(GLdouble radius, GLdouble height) {
 	gluDeleteQuadric(quad);
 }
 
+void ClearShadows()
+{
+	for (auto sv = g_ShadowVolumes.begin(); sv != g_ShadowVolumes.end(); ++sv)
+		sv->Clear();
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // CCGWorkView construction/destruction
 
@@ -263,6 +269,13 @@ BOOL CCGWorkView::OnEraseBkgnd(CDC* pDC)
 }
 
 void CCGWorkView::OnMouseMove(UINT nFlags, CPoint point) {
+	RECT rect;
+	GetClientRect(&rect);
+	int h = rect.bottom - rect.top;
+	int w = rect.right - rect.left;
+	if (point.x < 0 || point.x >= w || point.y < 0 || point.y >= h)
+		return;
+
 	COLORREF idx = _pxl2obj.GetPixel(point.x, point.y);
 	if (idx == 0) {
 		// background
@@ -379,6 +392,7 @@ afx_msg void CCGWorkView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags) {
 		break;
 	case VK_DELETE:
 		deleteModel();
+		ClearShadows();
 		break;
 	default:
 		break;
@@ -649,7 +663,7 @@ void CCGWorkView::OnFileLoad()
 		_polygonNormals.push_back(std::vector<Normals::PolygonNormalData>());
 		_vertexNormals.push_back(Normals::NormalList());
 		_polygonAdjacencies.push_back(PolygonAdjacencyGraph());
-		Normals::ComputeNormals(_models.back(), _polygonNormals.back(), _vertexNormals.back(), _polygonAdjacencies.back(), _useFileNormals ? Normals::NORMALS_FILE : Normals::NORMALS_SMART);
+		Normals::ComputeNormals(_models.back(), _polygonNormals.back(), _vertexNormals.back(), _polygonAdjacencies.back(), _useFileNormals);
 
 		//FlipYAxis(_models.size() - 1);
 
@@ -843,7 +857,10 @@ void CCGWorkView::OnChangeView()
 void CCGWorkView::OnZBtn()
 {
 	if (m_z_buf)
+	{
 		m_z_buf = false;
+		ClearShadows();
+	}
 	else
 	{
 		m_z_buf = true;
@@ -1148,6 +1165,81 @@ void CCGWorkView::FlipYAxis(int obj_idx)
 	}
 }
 
+void DbgDrawShadowSilhouette(const PolygonalModel& model, const std::vector<Normals::PolygonNormalData>& normals, const PolygonAdjacencyGraph& polygonAdj, const LightSource& ls, const MatrixHomogeneous& m, DrawingObject& img)
+{
+	std::vector<Polygon3D> shadowPolygons;
+	std::vector<Normals::PolygonNormalData> shadowNormals;
+	double shadowLength = 2;
+	for (auto j = polygonAdj.begin(); j != polygonAdj.end(); ++j)
+	{
+		const Polygon3D& currPoly = model[j->objIdx].polygons[j->polygonInObjIdx];
+		const LineSegment edge(currPoly.points[j->vertexIdx], currPoly.points[(j->vertexIdx + 1) % currPoly.points.size()]);
+
+		bool addEdge = false;
+		Point3D innerPoint;
+
+		if (j->polygonIdxs.size() == 1)
+		{
+			// boundary
+			addEdge = true;
+			innerPoint = Point3D(currPoly.AreaAndCentroid().second);
+		}
+		else
+		{
+			// silhouette
+			const LineSegment n0 = normals[j->polygonIdxs[0]].PolygonNormal;
+			const LineSegment n1 = normals[j->polygonIdxs[1]].PolygonNormal;
+			innerPoint = (Point3D(n0.p0) + Point3D(n1.p0)) / 2;
+			const Point3D midpoint = (Point3D(edge.p0) + Point3D(edge.p1)) / 2;
+			const Vector3D optVector = (ls._type == LightSource::PLANE) ?
+				ls.Direction() :
+				(midpoint - Point3D(ls._origin));
+			const Vector3D n0Vec = Vector3D(n0.p1) - Vector3D(n0.p0);
+			const Vector3D n1Vec = Vector3D(n1.p1) - Vector3D(n1.p0);
+			if ((n0Vec * optVector) * (n1Vec * optVector) < 0)
+			{
+				addEdge = true;
+			}
+		}
+
+		if (addEdge)
+		{
+			DrawLineSegment(img, m * edge, RGB(155,255,0), 1, false);
+			continue;
+			std::vector<HomogeneousPoint> polyPoints;
+			polyPoints.reserve(4);
+
+			Vector3D ray0, ray1;
+			if (ls._type == LightSource::PLANE)
+			{
+				ray0 = ray1 = ls.Direction();
+			}
+			else
+			{
+				ray0 = (Point3D(edge.p0) - Point3D(ls._origin)).Normalized();
+				ray1 = (Point3D(edge.p1) - Point3D(ls._origin)).Normalized();
+			}
+
+			const HomogeneousPoint far0((Point3D(edge.p0) + (ray0 * shadowLength)));
+			const HomogeneousPoint far1((Point3D(edge.p1) + (ray1 * shadowLength)));
+
+			polyPoints.push_back(edge.p0);
+			polyPoints.push_back(edge.p1);
+			polyPoints.push_back(far1);
+			polyPoints.push_back(far0);
+			Polygon3D currShadow(polyPoints);
+			if (currShadow.Normal() * (innerPoint - Point3D(edge.p0)) < 0)
+			{
+				std::reverse(currShadow.points.begin(), currShadow.points.end());
+			}
+
+			shadowPolygons.push_back(currShadow);
+			const HomogeneousPoint centroid = shadowPolygons.back().AreaAndCentroid().second;
+			shadowNormals.push_back(Normals::PolygonNormalData(LineSegment(centroid, HomogeneousPoint(Point3D(centroid) + shadowPolygons.back().Normal()))));
+		}
+	}
+}
+
 void CCGWorkView::DrawScene(DrawingObject& img)
 {
 	const int margin = 5;
@@ -1159,15 +1251,24 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 
 	for (auto svIt = g_ShadowVolumes.begin(); svIt != g_ShadowVolumes.end(); ++svIt)
 	{
-		if (svIt->GetHeight() != img.GetHeight() || svIt->GetHeight() != img.GetWidth())
+		if (svIt->GetHeight() != img.GetHeight() || svIt->GetWidth() != img.GetWidth())
 		{
 			svIt->SetSize(img.GetWidth(), img.GetHeight());
 			svIt->SetLightSource(g_lights[svIt - g_ShadowVolumes.begin()]);
 		}
-		svIt->Clear();
 	}
 
-	for (size_t i = 0; i < _models.size(); i++) {
+	for (auto i = _model_attr.begin(); i != _model_attr.end(); ++i)
+	{
+		if (i->castShadow && img.active == DrawingObject::DRAWING_OBJECT_ZBUF)
+		{
+			for (auto svIt = g_ShadowVolumes.begin(); svIt != g_ShadowVolumes.end(); ++svIt)
+				svIt->Clear();
+			break;
+		}
+	}
+
+	for (size_t i = 0; i < _models.size(); ++i) {
 		const BoundingBox bCube = _bboxes[i].BoundingCube();
 		const PerspectiveData perspData = PerspectiveWarpMatrix(bCube, _nearClippingPlane, _farClippingPlane, min(width, height));
 		MatrixHomogeneous mProj =
@@ -1189,6 +1290,7 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 			for (auto svIt = g_ShadowVolumes.begin(); svIt != g_ShadowVolumes.end(); ++svIt)
 			{
 				svIt->ProcessModel(model, mTotal, _polygonNormals[i], m_bIsPerspective, perspData.NearPlane, _polygonAdjacencies[i]);
+				//DbgDrawShadowSilhouette(model, _polygonNormals[i], _polygonAdjacencies[i], g_lights[svIt - g_ShadowVolumes.begin()], mTotal, img);
 			}
 		}
 	}
@@ -1232,13 +1334,16 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 		if (attr.shadowVolumeWireframe >= 0 && attr.shadowVolumeWireframe < g_lights.size())
 		{
 			ShadowVolume sv(1, 1, g_lights[attr.shadowVolumeWireframe]);
-			const std::pair<PolygonalObject, std::vector<Normals::PolygonNormalData>> svs = sv.GenerateShadowVolume(model, mTotal, _polygonNormals[i], _polygonAdjacencies[i]);
+			const std::pair<PolygonalObject, std::vector<Normals::PolygonNormalData>> svs = sv.GenerateShadowVolume(model, _polygonNormals[i], _polygonAdjacencies[i]);
 			ModelAttr svAttr;
-			svAttr.color = RGB(50, 50, 50);
+			svAttr.color = RGB(70, 70, 0);
 			svAttr.forceColor = true;
 			svAttr.Shading = SHADING_NONE;
 			svAttr.castShadow = false;
-			svAttr.removeBackFace = BACKFACE_SHOW;
+			svAttr.removeBackFace = BACKFACE_REMOVE_BACK;
+			DrawObject(img, svs.first, mTotal, svAttr, svs.second, 0, false, m_bIsPerspective, perspData.NearPlane);
+			svAttr.color = RGB(0, 70, 70);
+			svAttr.removeBackFace = BACKFACE_REMOVE_FRONT;
 			DrawObject(img, svs.first, mTotal, svAttr, svs.second, 0, false, m_bIsPerspective, perspData.NearPlane);
 			/*for (auto j = svs.second.begin(); j != svs.second.end(); ++j)
 			{

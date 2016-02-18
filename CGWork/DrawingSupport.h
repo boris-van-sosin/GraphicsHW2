@@ -28,7 +28,7 @@ public:
 	bool boundry = true;
 	double AmbientIntensity = 1;
 	bool is_wireframe = false;
-	bool castShadow = true;
+	bool castShadow = false;
 	int shadowVolumeWireframe = -1;
 };
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Geometry.h"
 
 // CClippingDlg dialog
 
@@ -9,7 +10,7 @@ struct GeneralSettings
 	double _nearClippingPlane;
 	double _farClippingPlane;
 	double _sensitivity;
-	bool load_normals_from_file;
+	Normals::NormalsGeneration load_normals_from_file;
 };
 
 class CClippingDlg : public CDialogEx

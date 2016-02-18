@@ -180,7 +180,7 @@ private:
 	int active_object = 0;
 	bool _in_object_view = false;	// in what wview to apply the matrix? object or view?
 	bool m_z_buf = false;
-	bool _useFileNormals = false;
+	Normals::NormalsGeneration _useFileNormals = Normals::NORMALS_SMART;
 	bool global_scale_on = false;
 
 	const double _initNear = 0.9, _initFar = 2.1;
