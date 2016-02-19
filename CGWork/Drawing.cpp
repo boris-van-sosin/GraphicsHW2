@@ -1418,30 +1418,44 @@ COLORREF ApplyLight(const std::vector<LightSource>& lights, const std::vector<Sh
 	const Vector3D n = normal.Normalized();
 	const Vector3D viewVec = (viewPoint - pt).Normalized();
 
+	double currLightPart[] = { 0, 0, 0 };
+	for (size_t j = 0; j < lights.size(); ++j)
+	{
+		if (svs.size() > j)
+		{
+			if (!svs[j].IsPixelLit(viewPt.x, viewPt.y, viewPt.z))
+				continue;
+		}
+		const Vector3D lightVec = lights[j]._type == LightSource::PLANE ?
+			lights[j].Direction()
+			:
+			(pt - Point3D(lights[j]._origin)).Normalized();
+
+		if (lights[j]._type == LightSource::SPOT)
+		{
+			double dotFromSpotAxis = lightVec * lights[j].Direction();
+			if (lights[j]._minDot > dotFromSpotAxis)
+				continue;
+		}
+
+		const Vector3D reflectVec = lightVec - 2 * (lightVec*n)*n;
+		double viewProd = fabs(-(reflectVec * viewVec));
+		double dotProd = -(n * lightVec);
+		if (dotProd < 0)
+			dotProd = 0;
+
+		for (int i = 0; i < 3; ++i)
+		{
+			currLightPart[i] += (lights[j]._intensity[i] * (normDCoefficient*dotProd + normSCoefficient*pow(viewProd, attr.SpecularPower)));
+		}
+	}
+
 	for (int i = 0; i < 3; ++i)
 	{
-		double currLightPart = 0.0;
-		for (size_t j = 0; j < lights.size(); ++j)
-		{
-			if (svs.size() > j)
-			{
-				if (!svs[j].IsPixelLit(viewPt.x, viewPt.y, viewPt.z))
-					continue;
-			}
-			const Vector3D lightVec = lights[j]._type == LightSource::POINT ?
-				(Point3D(lights[j]._origin) - pt).Normalized()
-				:
-				lights[j].Direction();
-			const Vector3D reflectVec = lightVec - 2 * (lightVec*n)*n;
-			double viewProd = fabs(-(reflectVec * viewVec));
-			double dotProd = -(n * lightVec);
-			if (dotProd < 0)
-				dotProd = 0;
-			currLightPart += (lights[j]._intensity[i] * (normDCoefficient*dotProd + normSCoefficient*pow(viewProd, attr.SpecularPower)));
-		}
-		rgbValues[i] = rgbValues[i] * (ambient*normACoefficient + currLightPart);
+		rgbValues[i] = rgbValues[i] * (ambient*normACoefficient + currLightPart[i]);
 		rgbValues[i] = min(rgbValues[i], 255.0);
 	}
+
 
 	int rgbInts[] = { rgbValues[0], rgbValues[1], rgbValues[2] };
 

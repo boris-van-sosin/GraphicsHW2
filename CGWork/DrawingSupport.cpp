@@ -22,7 +22,7 @@ LightSource::LightSource(const HomogeneousPoint& or, const HomogeneousPoint& dir
 }
 
 LightSource::LightSource(const LightSource& other)
-	: _origin(other._origin), _offset(other._offset), _type(other._type)
+	: _origin(other._origin), _offset(other._offset), _type(other._type), _minDot(other._minDot)
 {
 	for (int i = 0; i < 3; i++) {
 		_intensity[i] = other._intensity[i];
@@ -33,7 +33,7 @@ Vector3D LightSource::Direction() const
 {
 	if (_type == PLANE)
 		return Vector3D(_offset).Normalized();
-	return (Vector3D(_origin) - Vector3D(_offset)).Normalized();
+	return (Vector3D(_offset) - Vector3D(_origin)).Normalized();
 }
 
 ClippingPlane::ClippingPlane(double x_, double y_, double z_, double c_)

@@ -229,6 +229,11 @@ LineSegment::LineSegment(const HomogeneousPoint& p0_, const HomogeneousPoint& p1
 {
 }
 
+Vector3D LineSegment::DirectionVector() const
+{
+	return (Point3D(p1) - Point3D(p0)).Normalized();
+}
+
 Polygon3D::Polygon3D()
 	: Polygon3D(std::vector<HomogeneousPoint>(), std::vector<Vector3D>(), RGB(255, 25, 255), false)
 {
@@ -791,4 +796,9 @@ void Normals::ComputeNormals(const PolygonalModel& objs, std::vector<Normals::Po
 			++polygonIdx;
 		}
 	}
+}
+
+Vector3D Normals::PolygonNormalData::NormalDirection() const
+{
+	return PolygonNormal.DirectionVector();
 }

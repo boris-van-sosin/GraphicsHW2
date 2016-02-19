@@ -79,6 +79,7 @@ class LineSegment
 {
 public:
 	LineSegment(const HomogeneousPoint& p0_, const HomogeneousPoint& p1_);
+	Vector3D DirectionVector() const;
 	HomogeneousPoint p0, p1;
 };
 
@@ -187,6 +188,8 @@ namespace Normals
 
 		LineSegment PolygonNormal;
 		NormalList VertexNormals;
+
+		Vector3D NormalDirection() const;
 	};
 
 	void ComputeNormals(const PolygonalModel& objs, std::vector<PolygonNormalData>& polygonNormals, NormalList& vertexNormals, PolygonAdjacencyGraph& polygonAdjacency, NormalsGeneration src = NORMALS_VERTEX_ORDER);

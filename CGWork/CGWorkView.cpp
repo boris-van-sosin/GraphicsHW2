@@ -1111,13 +1111,21 @@ void CCGWorkView::translate_light_menu() {
 			new_light._origin = HomogeneousPoint(m_lights[id].posX, m_lights[id].posY, m_lights[id].posZ);
 			break;
 		case LIGHT_TYPE_DIRECTIONAL:
-		case LIGHT_TYPE_SPOT:
-		default:
 			new_light._type = LightSource::LightSourceType::PLANE;
 			if (m_lights[id].dirX != 0 || m_lights[id].dirY != 0 || m_lights[id].dirZ != 0) {
 				new_light._origin = HomogeneousPoint(0, 0, 0);
 				new_light._offset = HomogeneousPoint(m_lights[id].dirX, m_lights[id].dirY, m_lights[id].dirZ);
 			}
+			break;
+		case LIGHT_TYPE_SPOT:
+			new_light._type = LightSource::LightSourceType::SPOT;
+			if (m_lights[id].dirX != 0 || m_lights[id].dirY != 0 || m_lights[id].dirZ != 0) {
+				new_light._origin = HomogeneousPoint(m_lights[id].posX, m_lights[id].posY, m_lights[id].posZ);
+				new_light._offset = HomogeneousPoint(m_lights[id].posX + m_lights[id].dirX, m_lights[id].posY + m_lights[id].dirY, m_lights[id].posZ + m_lights[id].dirZ);
+				new_light._minDot = cos(m_lights[id].angle * M_PI / 180.0);
+			}
+			break;
+		default:
 			break;
 		}
 
@@ -1334,7 +1342,7 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 		if (attr.shadowVolumeWireframe >= 0 && attr.shadowVolumeWireframe < g_lights.size())
 		{
 			ShadowVolume sv(1, 1, g_lights[attr.shadowVolumeWireframe]);
-			const std::pair<PolygonalObject, std::vector<Normals::PolygonNormalData>> svs = sv.GenerateShadowVolume(model, _polygonNormals[i], _polygonAdjacencies[i]);
+			std::pair<PolygonalObject, std::vector<Normals::PolygonNormalData>> svs = sv.GenerateShadowVolume(model, _polygonNormals[i], _polygonAdjacencies[i]);
 			ModelAttr svAttr;
 			svAttr.color = RGB(70, 70, 0);
 			svAttr.forceColor = true;
@@ -1356,6 +1364,16 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 		size_t normalsIdx = 0;
 		for (std::vector<PolygonalObject>::iterator it = model.begin(); it != model.end(); ++it)
 		{
+			/*
+			it->polygons[131].color = RGB(150, 0, 150);
+			it->polygons[137].color = RGB(150, 0, 150);
+			it->polygons[183].color = RGB(0, 150, 0);
+			it->polygons[189].color = RGB(0, 150, 0);
+			it->polygons[131].colorValid = true;
+			it->polygons[137].colorValid = true;
+			it->polygons[183].colorValid = true;
+			it->polygons[189].colorValid = true;
+			*/
 			DrawObject(img, *it, mTotal, attr, _polygonNormals[i], normalsIdx, !attr.is_wireframe, m_bIsPerspective, perspData.NearPlane);
 			if (attr.line_width > 1)
 			{

@@ -34,6 +34,8 @@
 #define IDC_LIGHT_DIR_Z                 1037
 #define IDC_LIGHT_TYPE                  1038
 #define IDC_MATERIAL_AMBIENT            1039
+#define IDC_LIGHT_COLOR_R2              1039
+#define IDC_LIGHT_ANGLE                 1039
 #define IDC_MATERIAL_DIFFUSE            1040
 #define IDC_CLR_MODEL                   1040
 #define IDC_MATERIAL_SHININESS          1041

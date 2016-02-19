@@ -36,7 +36,7 @@ class LightSource
 {
 public:
 
-	enum LightSourceType { POINT, PLANE };
+	enum LightSourceType { POINT, PLANE, SPOT };
 
 	LightSource();
 	LightSource(const Point3D& or, const Vector3D& dir, LightSourceType t, double p);
@@ -48,6 +48,7 @@ public:
 	HomogeneousPoint _origin, _offset; // offset - origin = direction
 	LightSourceType _type;
 	double _intensity[3];	// RGB
+	double _minDot;
 };
 
 struct ClippingPlane

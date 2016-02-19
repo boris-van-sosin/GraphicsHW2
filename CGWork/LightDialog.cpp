@@ -42,6 +42,8 @@ void CLightDialog::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_LIGHT_DIR_Y, m_lights[m_currentLightIdx].dirY);
 	DDX_Text(pDX, IDC_LIGHT_DIR_Z, m_lights[m_currentLightIdx].dirZ);
 
+	DDX_Text(pDX, IDC_LIGHT_ANGLE, m_lights[m_currentLightIdx].angle);
+
 	//NOTE:Add more dialog controls which are associated with the structure below this line		
 	//...
 
