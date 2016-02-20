@@ -1180,6 +1180,7 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 				break;
 			}
 			default:
+				p0.color = p1.color = actualColor;
 				if (img.active == DrawingObject::DRAWING_OBJECT_ZBUF || img.active == DrawingObject::DRAWING_OBJECT_SV)
 					innerDrawLine(xyMap, p0, p1, i, width, LinearInterpolate<double>, clrFlat, NormalZero, NormalZero);
 				else
@@ -1423,7 +1424,7 @@ COLORREF ApplyLight(const std::vector<LightSource>& lights, const std::vector<Sh
 	{
 		if (svs.size() > j)
 		{
-			if (!svs[j].IsPixelLit(viewPt.x, viewPt.y, viewPt.z))
+			if (!svs[j].IsPixelLit(viewPt.x, viewPt.y, viewPt.z, pt))
 				continue;
 		}
 		const Vector3D lightVec = lights[j]._type == LightSource::PLANE ?

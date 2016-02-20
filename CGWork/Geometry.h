@@ -131,7 +131,7 @@ public:
 	BoundingBox(const BoundingBox& b1, const BoundingBox& b2);
 	
 	BoundingBox BoundingCube() const;
-	PolygonalObject ToObject() const;
+	PolygonalObject ToObject(bool solid = false) const;
 
 public:
 	static BoundingBox OfLineSegmnet(const LineSegment& line);

@@ -492,7 +492,7 @@ BoundingBox BoundingBox::BoundingCube() const
 					   center.z + halfMaxSize);
 }
 
-PolygonalObject BoundingBox::ToObject() const
+PolygonalObject BoundingBox::ToObject(bool solid) const
 {
 	const HomogeneousPoint corners[] = {
 		HomogeneousPoint(minX, minY, minZ),
@@ -506,32 +506,77 @@ PolygonalObject BoundingBox::ToObject() const
 		HomogeneousPoint(maxX, maxY, maxZ),
 	};
 
-	Polygon3D sides[4]; // bottom, top, left, right. no need for front and back
-	//bottom
-	sides[0].points.push_back(corners[0]);
-	sides[0].points.push_back(corners[1]);
-	sides[0].points.push_back(corners[5]);
-	sides[0].points.push_back(corners[4]);
+	if (solid)
+	{
+		Polygon3D sides[6]; // bottom, top, left, right, frott, back
+		//bottom
+		sides[0].points.push_back(corners[0]);
+		sides[0].points.push_back(corners[1]);
+		sides[0].points.push_back(corners[5]);
+		sides[0].points.push_back(corners[4]);
 
-	//top
-	sides[1].points.push_back(corners[2]);
-	sides[1].points.push_back(corners[3]);
-	sides[1].points.push_back(corners[7]);
-	sides[1].points.push_back(corners[6]);
+		//top
+		sides[1].points.push_back(corners[2]);
+		sides[1].points.push_back(corners[3]);
+		sides[1].points.push_back(corners[7]);
+		sides[1].points.push_back(corners[6]);
 
-	//left
-	sides[2].points.push_back(corners[0]);
-	sides[2].points.push_back(corners[1]);
-	sides[2].points.push_back(corners[3]);
-	sides[2].points.push_back(corners[2]);
+		//left
+		sides[2].points.push_back(corners[0]);
+		sides[2].points.push_back(corners[1]);
+		sides[2].points.push_back(corners[3]);
+		sides[2].points.push_back(corners[2]);
 
-	//right
-	sides[3].points.push_back(corners[4]);
-	sides[3].points.push_back(corners[5]);
-	sides[3].points.push_back(corners[7]);
-	sides[3].points.push_back(corners[6]);
+		//right
+		sides[3].points.push_back(corners[4]);
+		sides[3].points.push_back(corners[5]);
+		sides[3].points.push_back(corners[7]);
+		sides[3].points.push_back(corners[6]);
 
-	return PolygonalObject(std::vector<Polygon3D>(sides, sides + 4));
+		//front
+		sides[4].points.push_back(corners[0]);
+		sides[4].points.push_back(corners[2]);
+		sides[4].points.push_back(corners[6]);
+		sides[4].points.push_back(corners[4]);
+
+		//back
+		sides[5].points.push_back(corners[1]);
+		sides[5].points.push_back(corners[3]);
+		sides[5].points.push_back(corners[7]);
+		sides[5].points.push_back(corners[5]);
+
+
+		return PolygonalObject(std::vector<Polygon3D>(sides, sides + 6));
+	}
+	else
+	{
+		Polygon3D sides[4]; // bottom, top, left, right. no need for front and back
+		//bottom
+		sides[0].points.push_back(corners[0]);
+		sides[0].points.push_back(corners[1]);
+		sides[0].points.push_back(corners[5]);
+		sides[0].points.push_back(corners[4]);
+
+		//top
+		sides[1].points.push_back(corners[2]);
+		sides[1].points.push_back(corners[3]);
+		sides[1].points.push_back(corners[7]);
+		sides[1].points.push_back(corners[6]);
+
+		//left
+		sides[2].points.push_back(corners[0]);
+		sides[2].points.push_back(corners[1]);
+		sides[2].points.push_back(corners[3]);
+		sides[2].points.push_back(corners[2]);
+
+		//right
+		sides[3].points.push_back(corners[4]);
+		sides[3].points.push_back(corners[5]);
+		sides[3].points.push_back(corners[7]);
+		sides[3].points.push_back(corners[6]);
+
+		return PolygonalObject(std::vector<Polygon3D>(sides, sides + 4));
+	}
 }
 
 std::vector<PolygonalObject> BoundingBox::BoundingBoxObjectsOfSubObjects(const std::vector<PolygonalObject>& objs)
@@ -610,6 +655,9 @@ inline std::pair<bool, double> PolygonIntersection::PolygonRayIntersectionParam(
 		return std::pair<bool, double>(false, 0);
 
 	const double s = PlaneLineIntersectionParam(pt, lineDir, Point3D(poly.points.front()), n);
+	if (s < 0)
+		return std::pair<bool, double>(false, s);
+
 	const Point3D pointOnPlane = pt + s * lineDir;
 	const bool inPolygon = IsPointInPolygon(pointOnPlane, poly, n);
 	return std::pair<bool, double>(inPolygon, s);

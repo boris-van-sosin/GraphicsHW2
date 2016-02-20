@@ -38,33 +38,37 @@ private:
 };
 
 ShadowVolume::ShadowVolume()
-	: _width(1), _height(1), _stencil(NULL)
+	: _width(1), _height(1), _stencil(NULL), _stencil2(NULL)
 {
 }
 
 ShadowVolume::ShadowVolume(size_t w, size_t h, const LightSource& ls)
 	: _width(w), _height(h), _lightSource(ls)
 {
-	if (w | h == 0)
+	if ((w | h) == 0)
 	{
 		_width = _height = 1;
 	}
-	_stencil = new std::set<ShadowEvent>[_height * _width];
+	//_stencil = new std::set<ShadowEvent>[_height * _width];
+	_stencil2 = new std::map<size_t, ShadowLimits>[_height * _width];
 }
 
 ShadowVolume::ShadowVolume(const ShadowVolume& other)
 	: _width(other._width), _height(other._height), _lightSource(other._lightSource)
 {
-	_stencil = new std::set<ShadowEvent>[_height * _width];
+	//_stencil = new std::set<ShadowEvent>[_height * _width];
+	_stencil2 = new std::map<size_t, ShadowLimits>[_height * _width];
 	for (int i = 0; i < _height*_width; ++i)
 	{
-		_stencil[i] = other._stencil[i];
+		//_stencil[i] = other._stencil[i];
+		_stencil2[i] = other._stencil2[i];
 	}
 }
 
 ShadowVolume::~ShadowVolume()
 {
-	delete[] _stencil;
+	//delete[] _stencil;
+	delete[] _stencil2;
 }
 
 ShadowVolume& ShadowVolume::operator=(const ShadowVolume& other)
@@ -77,7 +81,8 @@ ShadowVolume& ShadowVolume::operator=(const ShadowVolume& other)
 	SetSize(other._width, other._height);
 	for (int i = 0; i < _height*_width; ++i)
 	{
-		_stencil[i] = other._stencil[i];
+		//_stencil[i] = other._stencil[i];
+		_stencil2[i] = other._stencil2[i];
 	}
 }
 
@@ -93,7 +98,7 @@ size_t ShadowVolume::GetWidth() const
 
 void ShadowVolume::SetSize(size_t w, size_t h)
 {
-	if (w | h == 0)
+	if ((w | h) == 0)
 	{
 		return;
 	}
@@ -106,17 +111,22 @@ void ShadowVolume::SetSize(size_t w, size_t h)
 
 	_height = h;
 	_width = w;
-	delete[] _stencil;
-	_stencil = new std::set<ShadowEvent>[_height*_width];
+	//delete[] _stencil;
+	delete[] _stencil2;
+	//_stencil = new std::set<ShadowEvent>[_height*_width];
+	_stencil2 = new std::map<size_t, ShadowLimits>[_height*_width];
 }
 
 void ShadowVolume::Clear()
 {
 	for (size_t i = 0; i < _height*_width; ++i)
 	{
-		_stencil[i].clear();
+		//_stencil[i].clear();
+		_stencil2[i].clear();
 	}
+	_boundingBoxes.clear();
 	_currPolyId = 0;
+	_currModelId = 0;
 }
 
 void ShadowVolume::SetPixel(int x, int y, double z, COLORREF id)
@@ -125,7 +135,16 @@ void ShadowVolume::SetPixel(int x, int y, double z, COLORREF id)
 	{
 		return;
 	}
-	_stencil[y*_width + x].insert(ShadowEvent(_currShadowMode, z, id));
+	//_stencil[y*_width + x].insert(ShadowEvent(_currShadowMode, z, id));
+	std::map<size_t, ShadowLimits>& currPixel = _stencil2[y*_width + x];
+	if (currPixel.find(id) == currPixel.end())
+	{
+		currPixel[id] = ShadowLimits(z, z);
+	}
+	else
+	{
+		currPixel[id].Update(z);
+	}
 }
 
 void ShadowVolume::SetLightSource(const LightSource& ls)
@@ -150,12 +169,28 @@ bool ShadowVolume::ShadowEvent::operator < (const ShadowEvent& other) const
 		return _type < other._type;
 }
 
-bool ShadowVolume::IsPixelLit(size_t x, size_t y, double z) const
+ShadowVolume::ShadowLimits::ShadowLimits()
+	: _minZ(0), _maxZ(0)
+{}
+
+ShadowVolume::ShadowLimits::ShadowLimits(double min, double max)
+	: _minZ(min), _maxZ(max)
+{}
+
+void ShadowVolume::ShadowLimits::Update(double z)
 {
-	int shadowNesting = 0;
+	if (z < _minZ)
+		_minZ = z;
+	if (z > _maxZ)
+		_maxZ = z;
+}
+
+bool ShadowVolume::IsPixelLit(size_t x, size_t y, double z, const Point3D& pt) const
+{
 	if (y * _width + x >= _width * _height)
 		return true;
-
+	/*
+	int shadowNesting = 0;
 	const std::set<ShadowEvent>& currPixel = _stencil[y * _width + x];
 	bool evenCrossings = true;
 	for (auto i = currPixel.begin(); i != currPixel.end(); ++i)
@@ -174,12 +209,62 @@ bool ShadowVolume::IsPixelLit(size_t x, size_t y, double z) const
 	if (shadowNesting > 0)
 		return false;
 	return true;
-	return shadowNesting <= 0;
+	return shadowNesting <= 0;*/
+
+	const std::map<size_t, ShadowLimits>& currPixel2 = _stencil2[y * _width + x];
+
+	bool anyInLimits = false;
+	for (auto i = currPixel2.begin(); i != currPixel2.end(); ++i)
+	{
+		if (z > i->second._minZ && z < i->second._maxZ)
+		{
+			anyInLimits = true;
+			break;
+		}
+	}
+	if (!anyInLimits)
+		return true;
+
+	const Vector3D ray = -(_lightSource._type == LightSource::PLANE ? _lightSource.Direction() : (Point3D(_lightSource._origin) - pt).Normalized());
+	for (auto it = currPixel2.begin(); it != currPixel2.end(); ++it)
+	{
+		if (z < it->second._minZ || z > it->second._maxZ)
+			continue;
+
+		const size_t currIdx = it->first;
+		for (auto subBox = _boundingBoxes[currIdx].begin(); subBox != _boundingBoxes[currIdx].end(); ++subBox)
+		{
+			bool boxIntersection = false;
+			for (auto boxPoly = subBox->_bboxObj.polygons.begin(); boxPoly != subBox->_bboxObj.polygons.end(); ++boxPoly)
+			{
+				std::pair<bool, double> bi = PolygonIntersection::PolygonRayIntersectionParam(pt, ray, *boxPoly);
+				if (bi.first)
+				{
+					boxIntersection = true;
+					break;
+				}
+			}
+			if (boxIntersection)
+			{
+				for (auto modelPoly = subBox->_polygons.begin(); modelPoly != subBox->_polygons.end(); ++modelPoly)
+				{
+					std::pair<bool, double> bi = PolygonIntersection::PolygonRayIntersectionParam(pt, ray, **modelPoly);
+					if (bi.first)
+					{
+						return false;
+					}
+				}
+			}
+		}
+	}
+	return true;
 }
 
 void ShadowVolume::ProcessModel(const PolygonalModel& model, const MatrixHomogeneous& mTotal, const std::vector<Normals::PolygonNormalData>& normals, bool clip, const ClippingPlane& cp, const PolygonAdjacencyGraph& polygonAdj)
 {
 	std::pair<PolygonalObject, std::vector<Normals::PolygonNormalData>> shadowObj = GenerateShadowVolume(model, normals, polygonAdj);
+	//_models.push_back(&model);
+	PartitionIntoBBoxes(model);
 
 	for (auto p = shadowObj.first.polygons.begin(); p != shadowObj.first.polygons.end(); ++p)
 	{
@@ -191,7 +276,8 @@ void ShadowVolume::ProcessModel(const PolygonalModel& model, const MatrixHomogen
 	ModelAttr attr2;
 	attr2.removeBackFace = BACKFACE_REMOVE_BACK;
 	attr2.Shading = SHADING_NONE;
-	attr2.forceColor = false;
+	attr2.forceColor = true;
+	attr2.color = _currModelId++;
 	DrawingObject img;
 	img.shadowVolume = this;
 	img.active = DrawingObject::DRAWING_OBJECT_SV;
@@ -386,3 +472,22 @@ std::pair<PolygonalObject, std::vector<Normals::PolygonNormalData>> ShadowVolume
 
 	return std::pair<PolygonalObject, std::vector<Normals::PolygonNormalData>>(PolygonalObject(shadowPolygons), shadowNormals);
 }
+
+void ShadowVolume::PartitionIntoBBoxes(const PolygonalModel& model)
+{
+	_boundingBoxes.push_back(std::vector<VolumeMapping>());
+	_boundingBoxes.back().push_back(VolumeMapping());
+	//
+	
+	PolygonalObject& currBBox = _boundingBoxes.back()[0]._bboxObj;
+	std::vector<const Polygon3D*>& currPolygonList = _boundingBoxes.back()[0]._polygons;
+	currBBox = BoundingBox::OfObjects(model).ToObject(true);
+	for (auto i = model.begin(); i != model.end(); ++i)
+	{
+		for (auto j = i->polygons.begin(); j != i->polygons.end(); ++j)
+		{
+			currPolygonList.push_back(&(*j));
+		}
+	}
+}
+
