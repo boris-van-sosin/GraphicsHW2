@@ -529,6 +529,36 @@ void DrawTestLines(CDC* pDC, CImage& img)
 	}
 }
 
+bool anti_aliasing_on = false;
+
+void anti_aliasing(CImage* super_img, CImage* img, int w, int h, int ratio = 3) {
+
+	const double filter[3 /* ratio */][3 /* ratio */] = { { 1 / 9.0, 1 / 9.0, 1 / 9.0 }, { 1 / 9.0, 1 / 9.0, 1 / 9.0 }, { 1 / 9.0, 1 / 9.0, 1 / 9.0 } };
+
+
+	for (int i = 0; i < h; i++) {	// i, j are in original image
+		for (int j = 0; j < w; j++) {
+			double r = 0, g = 0, b = 0;
+
+			for (int k = 0; k < ratio; k++) {
+				for (int m = 0; m < ratio; m++) {
+					COLORREF c = super_img->GetPixel(j*ratio + m, i*ratio + k);
+					
+					r += ((double)GetRValue(c)) * filter[m][k];
+					g += ((double)GetGValue(c)) * filter[m][k];
+					b += ((double)GetBValue(c)) * filter[m][k];
+
+				}
+			}
+
+			//r = 100, g = 100, b = 100;
+			img->SetPixel(j, i, RGB(r, g, b));
+		}
+	}
+
+	
+}
+
 void CCGWorkView::OnDraw(CDC* pDC)
 {
 	CCGWorkDoc* pDoc = GetDocument();
@@ -545,10 +575,22 @@ void CCGWorkView::OnDraw(CDC* pDC)
 	if (!_pxl2obj.IsNull()) {
 		_pxl2obj.Destroy();
 	}
+	if (anti_aliasing_on) {
+		h *= 3;
+		w *= 3;
+	}
+
 	_pxl2obj.Create(w, h, 32);
 
 	CImage img;
-	img.Create(w, h, 32);
+	CImage small_img;
+	if (!anti_aliasing_on)
+		img.Create(w, h, 32);
+	else {
+		img.Create(w, h, 32);
+		small_img.Create(w/3, h/3, 32);
+	}
+	
 
 	if (m_z_buf && (_zBufferImg.GetHeight() == 0 || _zBufferImg.GetWidth() == 0))
 	{
@@ -585,10 +627,20 @@ void CCGWorkView::OnDraw(CDC* pDC)
 	if (m_z_buf)
 		_zBufferImg.DrawOnImage(img);
 	
+	if (anti_aliasing_on) {
+		w /= 3;
+		h /= 3;
+		anti_aliasing(&img, &small_img, w, h, 3);
+	}
 
-	img.BitBlt(*pDC, 0, 0, w, h, 0, 0);
+	if (!anti_aliasing_on)
+		img.BitBlt(*pDC, 0, 0, w, h, 0, 0);
+	else
+		small_img.BitBlt(*pDC, 0, 0, w, h, 0, 0);
 	//temporary:
 	img.Destroy();
+	if (anti_aliasing_on)
+		small_img.Destroy();
 }
 
 
