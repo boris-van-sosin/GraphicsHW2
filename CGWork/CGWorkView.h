@@ -24,6 +24,8 @@
 extern std::vector<LightSource> g_lights;
 extern std::vector<ShadowVolume> g_ShadowVolumes;
 
+enum filter_t { NONE, BOX3, TRIANGLE3, GAUSSIAN3, SINC3, BOX5, TRIANGLE5, GAUSSIAN5, SINC5 };
+
 class CCGWorkView : public CView
 {
 protected: // create from serialization only
@@ -151,6 +153,7 @@ private:
 	void ScaleAndCenterAll(PolygonalModel& model) const;
 	static void RemoveTmpNormals(PolygonalModel& model);
 	void InverseNormals();
+	void anti_aliasing(CImage* super_img, CImage* img, int w, int h);
 
 private:
 	std::vector<PolygonalModel> _models;
@@ -207,6 +210,10 @@ private:
 	void deleteModel();
 
 	void translate_light_menu();
+
+	bool anti_aliasing_on = false;
+	enum filter_t filter_type = BOX3;
+	int filter_ratio = 3;
 };
 
 #ifndef _DEBUG  // debug version in CGWorkView.cpp

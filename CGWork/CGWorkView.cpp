@@ -537,24 +537,107 @@ void DrawTestLines(CDC* pDC, CImage& img)
 	}
 }
 
-bool anti_aliasing_on = false;
+/*
+ * filters
+*/
 
-void anti_aliasing(CImage* super_img, CImage* img, int w, int h, int ratio = 3) {
+double box3[9] = {
+		1 / 9.0, 1 / 9.0, 1 / 9.0,
+		1 / 9.0, 1 / 9.0, 1 / 9.0,
+		1 / 9.0, 1 / 9.0, 1 / 9.0,
+};
+double triangle3[9] = {
+	1 / 16.0, 2 / 16.0, 1 / 16.0,
+	2 / 16.0, 4 / 16.0, 2 / 16.0,
+	1 / 16.0, 2 / 16.0, 1 / 16.0,
+};
+double gaussian3[9] = {
+	1 / 17.0, 2 / 17.0, 1 / 17.0,
+	2 / 17.0, 5 / 17.0, 2 / 17.0,
+	1 / 17.0, 2 / 17.0, 1 / 17.0,
+};
+double sinc3[9] = { 
+	2 / 24.0, 3 / 24.0, 2 / 24.0,
+	3 / 24.0, 4 / 24.0, 3 / 24.0,
+	2 / 24.0, 3 / 24.0, 2 / 24.0,
+};
 
-	const double filter[3 /* ratio */][3 /* ratio */] = { { 1 / 9.0, 1 / 9.0, 1 / 9.0 }, { 1 / 9.0, 1 / 9.0, 1 / 9.0 }, { 1 / 9.0, 1 / 9.0, 1 / 9.0 } };
+double box5[25] = {
+	1 / 25.0, 1 / 25.0, 1 / 25.0, 1 / 25.0, 1 / 25.0,
+	1 / 25.0, 1 / 25.0, 1 / 25.0, 1 / 25.0, 1 / 25.0,
+	1 / 25.0, 1 / 25.0, 1 / 25.0, 1 / 25.0, 1 / 25.0,
+	1 / 25.0, 1 / 25.0, 1 / 25.0, 1 / 25.0, 1 / 25.0,
+	1 / 25.0, 1 / 25.0, 1 / 25.0, 1 / 25.0, 1 / 25.0,
+};
+double triangle5[25] = {
+	1 / 81.0, 2 / 81.0, 3 / 81.0, 2 / 81.0, 1 / 81.0,
+	2 / 81.0, 4 / 81.0, 6 / 81.0, 4 / 81.0, 2 / 81.0,
+	3 / 81.0, 6 / 81.0, 9 / 81.0, 6 / 81.0, 3 / 81.0,
+	2 / 81.0, 4 / 81.0, 6 / 81.0, 4 / 81.0, 2 / 81.0,
+	1 / 81.0, 2 / 81.0, 3 / 81.0, 2 / 81.0, 1 / 81.0,
+};
+double gaussian5[25] = {
+	1 / 50.0, 1 / 50.0,  1 / 50.0, 1 / 50.0, 1 / 50.0,
+	1 / 50.0, 2 / 50.0,  4 / 50.0, 2 / 50.0, 1 / 50.0,
+	1 / 50.0, 4 / 50.0, 10 / 50.0, 4 / 50.0, 1 / 50.0,
+	1 / 50.0, 2 / 50.0,  4 / 50.0, 2 / 50.0, 1 / 50.0,
+	1 / 50.0, 1 / 50.0,  1 / 50.0, 1 / 50.0, 1 / 50.0,
+};
+double sinc5[25] = {
+	-2 / 33.0, -1 / 33.0, 0 / 33.0, -1 / 33.0, -2 / 33.0,
+	-1 / 33.0,  4 / 33.0, 6 / 33.0,  4 / 33.0, -1 / 33.0,
+	 0 / 33.0,  6 / 33.0, 9 / 33.0,  6 / 33.0,  0 / 33.0,
+	-1 / 33.0,  4 / 33.0, 6 / 33.0,  4 / 33.0, -1 / 33.0,
+	-2 / 33.0, -1 / 33.0, 0 / 33.0, -1 / 33.0, -2 / 33.0,
+};
+
+void CCGWorkView::anti_aliasing(CImage* super_img, CImage* img, int w, int h) {
+
+	double* filter;
+
+	switch (filter_type) {
+	case BOX3:
+		filter = box3;
+		break;
+	case TRIANGLE3:
+		filter = triangle3;
+		break;
+	case GAUSSIAN3:
+		filter = gaussian3;
+		break;
+	case SINC3:
+		filter = sinc3;
+		break;
+	case BOX5:
+		filter = box5;
+		break;
+	case TRIANGLE5:
+		filter = triangle5;
+		break;
+	case GAUSSIAN5:
+		filter = gaussian5;
+		break;
+	case SINC5:
+		filter = sinc5;
+		break;
+	default:
+		filter = box3;
+	};
+
+	//const double filter[3 /* ratio */][3 /* ratio */] = { { 1 / 9.0, 1 / 9.0, 1 / 9.0 }, { 1 / 9.0, 1 / 9.0, 1 / 9.0 }, { 1 / 9.0, 1 / 9.0, 1 / 9.0 } };
 
 
 	for (int i = 0; i < h; i++) {	// i, j are in original image
 		for (int j = 0; j < w; j++) {
 			double r = 0, g = 0, b = 0;
 
-			for (int k = 0; k < ratio; k++) {
-				for (int m = 0; m < ratio; m++) {
-					COLORREF c = super_img->GetPixel(j*ratio + m, i*ratio + k);
+			for (int k = 0; k < filter_ratio; k++) {
+				for (int m = 0; m < filter_ratio; m++) {
+					COLORREF c = super_img->GetPixel(j*filter_ratio + m, i*filter_ratio + k);
 					
-					r += ((double)GetRValue(c)) * filter[m][k];
-					g += ((double)GetGValue(c)) * filter[m][k];
-					b += ((double)GetBValue(c)) * filter[m][k];
+					r += ((double)GetRValue(c)) * *(filter + m*filter_ratio + k);
+					g += ((double)GetGValue(c)) * *(filter + m*filter_ratio + k);
+					b += ((double)GetBValue(c)) * *(filter + m*filter_ratio + k);
 
 				}
 			}
@@ -584,8 +667,8 @@ void CCGWorkView::OnDraw(CDC* pDC)
 		_pxl2obj.Destroy();
 	}
 	if (anti_aliasing_on) {
-		h *= 3;
-		w *= 3;
+		h *= filter_ratio;
+		w *= filter_ratio;
 	}
 
 	_pxl2obj.Create(w, h, 32);
@@ -596,7 +679,7 @@ void CCGWorkView::OnDraw(CDC* pDC)
 		img.Create(w, h, 32);
 	else {
 		img.Create(w, h, 32);
-		small_img.Create(w/3, h/3, 32);
+		small_img.Create(w / filter_ratio, h / filter_ratio, 32);
 	}
 	
 
@@ -636,9 +719,9 @@ void CCGWorkView::OnDraw(CDC* pDC)
 		_zBufferImg.DrawOnImage(img);
 	
 	if (anti_aliasing_on) {
-		w /= 3;
-		h /= 3;
-		anti_aliasing(&img, &small_img, w, h, 3);
+		w /= filter_ratio;
+		h /= filter_ratio;
+		anti_aliasing(&img, &small_img, w, h);
 	}
 
 	if (!anti_aliasing_on)
@@ -1065,6 +1148,9 @@ void CCGWorkView::OnSettings()
 	s._farClippingPlane = _farClippingPlane;
 	s._sensitivity = 0;
 	s.load_normals_from_file = _useFileNormals;
+	s._anti_aliasing_on = anti_aliasing_on;
+	s._filter = filter_type;
+
 	if (active_object < _model_attr.size())
 		s._sensitivity = _model_attr[active_object].sensitivity;
 	CClippingDlg dlg(s);
@@ -1076,6 +1162,13 @@ void CCGWorkView::OnSettings()
 		if (active_object < _model_attr.size())
 			_model_attr[active_object].sensitivity = s._sensitivity;
 		_useFileNormals = s.load_normals_from_file;
+		filter_type = s._filter;
+		anti_aliasing_on = s._anti_aliasing_on;
+
+		if (filter_type >= BOX5)
+			filter_ratio = 5;
+		else
+			filter_ratio = 3;
 		Invalidate();
 	}
 }
