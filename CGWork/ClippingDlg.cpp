@@ -25,7 +25,11 @@ void CClippingDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 	m_load_model_normals_status = (int)_refSettings.load_normals_from_file;
+	m_anti_aliasing_status = 0;
+	if (_refSettings._anti_aliasing_on)
+		m_anti_aliasing_status = (int)_refSettings._filter;
 	DDX_Radio(pDX, IDC_RADIO1, m_load_model_normals_status);
+	DDX_Radio(pDX, IDC_RADIO5, m_anti_aliasing_status);
 }
 
 BEGIN_MESSAGE_MAP(CClippingDlg, CDialogEx)
@@ -84,6 +88,8 @@ void CClippingDlg::OnOk() {
 
 		UpdateData(TRUE);
 		_refSettings.load_normals_from_file = (Normals::NormalsGeneration)m_load_model_normals_status;
+		_refSettings._anti_aliasing_on = (m_anti_aliasing_status != 0);
+		_refSettings._filter = (enum filter_t)(m_anti_aliasing_status);
 
 		CDialog::OnOK();
 	}

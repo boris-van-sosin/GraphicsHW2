@@ -11,6 +11,8 @@ struct GeneralSettings
 	double _farClippingPlane;
 	double _sensitivity;
 	Normals::NormalsGeneration load_normals_from_file;
+	bool _anti_aliasing_on;
+	enum filter_t _filter;
 };
 
 class CClippingDlg : public CDialogEx
@@ -28,6 +30,7 @@ public:
 	BOOL OnInitDialog();
 
 	int m_load_model_normals_status = 0;
+	int m_anti_aliasing_status = 0;
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
