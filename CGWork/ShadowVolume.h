@@ -12,6 +12,8 @@ class ShadowVolume
 public:
 	ShadowVolume();
 	ShadowVolume(size_t w, size_t h, const LightSource& ls);
+	ShadowVolume(size_t w, size_t h, const LightSource& ls, const BoundingBox& wbox);
+	ShadowVolume(size_t w, size_t h, const LightSource& ls, double shadowLength);
 	ShadowVolume(const ShadowVolume& other);
 	~ShadowVolume();
 
@@ -20,6 +22,7 @@ public:
 	size_t GetHeight() const;
 	size_t GetWidth() const;
 	void SetSize(size_t w, size_t h);
+	void SetWorldBox(const BoundingBox& wbox);
 	void Clear();
 	void SetPixel(int x, int y, double z, COLORREF id);
 	void SetLightSource(const LightSource& ls);
@@ -71,9 +74,9 @@ private:
 	std::map<size_t, ShadowLimits>* _stencil2;
 	LightSource _lightSource;
 	ShadowEventType _currShadowMode;
-	std::vector<const PolygonalModel*> _models;
 	std::vector<std::vector<VolumeMapping>> _boundingBoxes;
 	int _currPolyId = 0;
 	int _currModelId = 0;
+	double _shadowLength;
 };
 

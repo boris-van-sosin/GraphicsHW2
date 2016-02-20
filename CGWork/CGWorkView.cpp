@@ -95,6 +95,7 @@ BEGIN_MESSAGE_MAP(CCGWorkView, CView)
 	ON_WM_KEYDOWN()
 	ON_WM_LBUTTONDOWN()
 	ON_COMMAND(ID_SAVE, OnFileSave)
+	ON_COMMAND(ID_RENDER_WITH_SHADOW, OnRenderWithShadows)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -111,6 +112,13 @@ void ClearShadows()
 {
 	for (auto sv = g_ShadowVolumes.begin(); sv != g_ShadowVolumes.end(); ++sv)
 		sv->Clear();
+}
+
+BoundingBox WorldBox(const std::vector<PolygonalModel>::const_iterator begin, const std::vector<PolygonalModel>::const_iterator end)
+{
+	if (begin + 1 == end)
+		return BoundingBox::OfObjects(*begin);
+	return BoundingBox(BoundingBox::OfObjects(*begin), WorldBox(begin + 1, end));
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1142,15 +1150,7 @@ void CCGWorkView::OnUpdateLightShadingGouraud(CCmdUI* pCmdUI)
 
 void CCGWorkView::translate_light_menu() {
 	g_lights.clear();
-	g_ShadowVolumes.clear();
 	g_lights.reserve(MAX_LIGHT);
-	g_ShadowVolumes.reserve(MAX_LIGHT);
-
-	RECT rect;
-	GetClientRect(&rect);
-
-	int h = rect.bottom - rect.top;
-	int w = rect.right - rect.left;
 
 	for (int id = LIGHT_ID_1; id < MAX_LIGHT; id++) {
 		if (!m_lights[id].enabled) {
@@ -1186,7 +1186,6 @@ void CCGWorkView::translate_light_menu() {
 		new_light._intensity[2] = (double)m_lights[id].colorB / (double)255;
 
 		g_lights.push_back(new_light);
-		g_ShadowVolumes.push_back(ShadowVolume(w, h, new_light));
 	}
 }
 
@@ -1393,7 +1392,8 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 		// this displays the shadow geometry for the first light source
 		if (attr.shadowVolumeWireframe >= 0 && attr.shadowVolumeWireframe < g_lights.size())
 		{
-			ShadowVolume sv(1, 1, g_lights[attr.shadowVolumeWireframe]);
+			const BoundingBox worldBox = WorldBox(_models.begin(), _models.end());
+			ShadowVolume sv(1, 1, g_lights[attr.shadowVolumeWireframe], worldBox);
 			std::pair<PolygonalObject, std::vector<Normals::PolygonNormalData>> svs = sv.GenerateShadowVolume(model, _polygonNormals[i], _polygonAdjacencies[i]);
 			ModelAttr svAttr;
 			svAttr.color = RGB(70, 70, 0);
@@ -1514,6 +1514,9 @@ void CCGWorkView::DrawScene(DrawingObject& img)
 			}
 		}
 	}
+
+	//consume shadow all volumes
+	g_ShadowVolumes.clear();
 }
 
 void CCGWorkView::OnFileSave()
@@ -1530,6 +1533,15 @@ void CCGWorkView::OnFileSave()
 		RECT r;
 		r.top = r.left = 0;
 		r.bottom = h; r.right = w;
+
+		if (_models.empty())
+			return;
+		const BoundingBox worldBox = WorldBox(_models.begin(), _models.end());
+
+		for (auto l = g_lights.begin(); l != g_lights.end(); ++l)
+		{
+			g_ShadowVolumes.push_back(ShadowVolume(w, h, *l, worldBox));
+		}
 
 		HDC imgDC = img.GetDC();
 		FillRect(imgDC, &r, _backgroundBrush);
@@ -1556,4 +1568,24 @@ void CCGWorkView::OnFileSave()
 		img.Save(fileName, Gdiplus::ImageFormatPNG);
 		img.Destroy();
 	}
+}
+
+void CCGWorkView::OnRenderWithShadows()
+{
+	RECT rect;
+	GetClientRect(&rect);
+
+	int h = rect.bottom - rect.top;
+	int w = rect.right - rect.left;
+
+	if (_models.empty())
+		return;
+	const BoundingBox worldBox = WorldBox(_models.begin(), _models.end());
+
+	for (auto l = g_lights.begin(); l != g_lights.end(); ++l)
+	{
+		g_ShadowVolumes.push_back(ShadowVolume(w, h, *l, worldBox));
+	}
+
+	Invalidate();
 }

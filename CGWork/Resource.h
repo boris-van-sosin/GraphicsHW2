@@ -34,7 +34,6 @@
 #define IDC_LIGHT_DIR_Z                 1037
 #define IDC_LIGHT_TYPE                  1038
 #define IDC_MATERIAL_AMBIENT            1039
-#define IDC_LIGHT_COLOR_R2              1039
 #define IDC_LIGHT_ANGLE                 1039
 #define IDC_MATERIAL_DIFFUSE            1040
 #define IDC_CLR_MODEL                   1040
@@ -108,13 +107,15 @@
 #define ID_Z_BTN                        32823
 #define ID_BTN_INV_NORMALS              32825
 #define ID_G_SCALE                      32829
+#define ID_BUTTON32830                  32830
+#define ID_RENDER_WITH_SHADOW           32831
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        142
-#define _APS_NEXT_COMMAND_VALUE         32830
+#define _APS_NEXT_COMMAND_VALUE         32832
 #define _APS_NEXT_CONTROL_VALUE         1064
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

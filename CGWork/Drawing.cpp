@@ -6,7 +6,7 @@
 
 const COLORREF DefaultModelColor(RGB(0, 0, 255));
 std::vector<LightSource> g_lights(10);
-std::vector<ShadowVolume> g_ShadowVolumes(10);
+std::vector<ShadowVolume> g_ShadowVolumes;
 
 
 PerspectiveData::PerspectiveData(const MatrixHomogeneous& ms, const MatrixHomogeneous& mp, const ClippingPlane& n, const ClippingPlane& f)

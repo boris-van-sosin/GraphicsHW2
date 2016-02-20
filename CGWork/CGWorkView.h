@@ -140,6 +140,7 @@ protected:
 	afx_msg void OnSettings();
 	afx_msg void OnFileSave();
 	afx_msg void OnPerModel();
+	afx_msg void OnRenderWithShadows();
 
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()

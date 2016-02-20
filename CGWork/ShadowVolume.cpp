@@ -37,13 +37,28 @@ private:
 	HashAndCompareSVPoint _pointHash;
 };
 
+double WorldDiagonal(const BoundingBox& bbox)
+{
+	return sqrt((bbox.maxX - bbox.minX)*(bbox.maxX - bbox.minX) +
+		(bbox.maxY - bbox.minY)*(bbox.maxY - bbox.minY) +
+		(bbox.maxZ - bbox.minZ)*(bbox.maxX - bbox.minZ));
+}
+
 ShadowVolume::ShadowVolume()
-	: _width(1), _height(1), _stencil(NULL), _stencil2(NULL)
+	: _width(1), _height(1), _stencil(NULL), _stencil2(NULL), _shadowLength(1)
 {
 }
 
+ShadowVolume::ShadowVolume(size_t w, size_t h, const LightSource& ls, const BoundingBox& wbox)
+	: ShadowVolume(w, h, ls, WorldDiagonal(wbox))
+{}
+
 ShadowVolume::ShadowVolume(size_t w, size_t h, const LightSource& ls)
-	: _width(w), _height(h), _lightSource(ls)
+	: ShadowVolume(w, h, ls, 0.1)
+{}
+
+ShadowVolume::ShadowVolume(size_t w, size_t h, const LightSource& ls, double shadowLength)
+	: _width(w), _height(h), _lightSource(ls), _shadowLength(shadowLength)
 {
 	if ((w | h) == 0)
 	{
@@ -54,7 +69,7 @@ ShadowVolume::ShadowVolume(size_t w, size_t h, const LightSource& ls)
 }
 
 ShadowVolume::ShadowVolume(const ShadowVolume& other)
-	: _width(other._width), _height(other._height), _lightSource(other._lightSource)
+	: _width(other._width), _height(other._height), _lightSource(other._lightSource), _shadowLength(other._shadowLength)
 {
 	//_stencil = new std::set<ShadowEvent>[_height * _width];
 	_stencil2 = new std::map<size_t, ShadowLimits>[_height * _width];
@@ -77,6 +92,8 @@ ShadowVolume& ShadowVolume::operator=(const ShadowVolume& other)
 		return *this;
 
 	_lightSource = other._lightSource;
+
+	_shadowLength = other._shadowLength;
 
 	SetSize(other._width, other._height);
 	for (int i = 0; i < _height*_width; ++i)
@@ -115,6 +132,11 @@ void ShadowVolume::SetSize(size_t w, size_t h)
 	delete[] _stencil2;
 	//_stencil = new std::set<ShadowEvent>[_height*_width];
 	_stencil2 = new std::map<size_t, ShadowLimits>[_height*_width];
+}
+
+void ShadowVolume::SetWorldBox(const BoundingBox& wbox)
+{
+	_shadowLength = WorldDiagonal(wbox);
 }
 
 void ShadowVolume::Clear()
@@ -222,14 +244,14 @@ bool ShadowVolume::IsPixelLit(size_t x, size_t y, double z, const Point3D& pt) c
 			break;
 		}
 	}
-	if (!anyInLimits)
-		return true;
+	//if (!anyInLimits)
+	//	return true;
 
 	const Vector3D ray = -(_lightSource._type == LightSource::PLANE ? _lightSource.Direction() : (Point3D(_lightSource._origin) - pt).Normalized());
 	for (auto it = currPixel2.begin(); it != currPixel2.end(); ++it)
 	{
-		if (z < it->second._minZ || z > it->second._maxZ)
-			continue;
+		//if (z < it->second._minZ || z > it->second._maxZ)
+		//	continue;
 
 		const size_t currIdx = it->first;
 		for (auto subBox = _boundingBoxes[currIdx].begin(); subBox != _boundingBoxes[currIdx].end(); ++subBox)
@@ -249,7 +271,7 @@ bool ShadowVolume::IsPixelLit(size_t x, size_t y, double z, const Point3D& pt) c
 				for (auto modelPoly = subBox->_polygons.begin(); modelPoly != subBox->_polygons.end(); ++modelPoly)
 				{
 					std::pair<bool, double> bi = PolygonIntersection::PolygonRayIntersectionParam(pt, ray, **modelPoly);
-					if (bi.first)
+					if (bi.first && bi.second > SV_COMPUTATION_EPSILON)
 					{
 						return false;
 					}
@@ -310,7 +332,6 @@ std::pair<PolygonalObject, std::vector<Normals::PolygonNormalData>> ShadowVolume
 {
 	std::vector<Polygon3D> shadowPolygons;
 	std::vector<Normals::PolygonNormalData> shadowNormals;
-	double shadowLength = 2;
 	for (auto j = polygonAdj.begin(); j != polygonAdj.end(); ++j)
 	{
 		const Polygon3D& currPoly = model[j->objIdx].polygons[j->polygonInObjIdx];
@@ -367,8 +388,8 @@ std::pair<PolygonalObject, std::vector<Normals::PolygonNormalData>> ShadowVolume
 				ray1 = (Point3D(edge.p1) - Point3D(_lightSource._origin)).Normalized();
 			}
 
-			const HomogeneousPoint far0((Point3D(edge.p0) + (ray0 * shadowLength)));
-			const HomogeneousPoint far1((Point3D(edge.p1) + (ray1 * shadowLength)));
+			const HomogeneousPoint far0((Point3D(edge.p0) + (ray0 * _shadowLength)));
+			const HomogeneousPoint far1((Point3D(edge.p1) + (ray1 * _shadowLength)));
 
 			polyPoints.push_back(edge.p0);
 			polyPoints.push_back(edge.p1);
