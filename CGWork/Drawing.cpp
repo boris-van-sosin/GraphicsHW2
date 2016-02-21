@@ -176,7 +176,7 @@ void ZBufferImage::PushPixel(int x, int y, double z, COLORREF clr)
 	{
 		return;
 	}
-	_img[y*_width + x].PushColor(clr, z);
+	_img[y*_width + x].PushColor(clr, z, _currOpacity);
 }
 
 void ZBufferImage::PushPixel(int x, int y, const Point3D& p0, const Point3D& p1, COLORREF clr)
@@ -184,7 +184,7 @@ void ZBufferImage::PushPixel(int x, int y, const Point3D& p0, const Point3D& p1,
 	const double relativeT = ((double)x - p0.x) / (p1.x - p0.x);
 	const double z = p0.z + (p1.z - p0.z)*relativeT;
 
-	_img[y*_width + x].PushColor(clr, z);
+	_img[y*_width + x].PushColor(clr, z, _currOpacity);
 }
 
 void ZBufferImage::DrawOnImage(CImage& img) const
@@ -258,7 +258,7 @@ void ZBufferImage::DrawOnImage(CImage& img) const
 			if (_img[y*_width + x].IsEmpty())
 				continue;
 			BYTE* pos = (BYTE*)img.GetPixelAddress(x, y);
-			const COLORREF clr = _img[y*_width + x].GetActualColor();
+			const COLORREF clr = _img[y*_width + x].GetActualColor(RGB(*pos, *(pos + 1), *(pos + 2)));
 			*pos = GetBValue(clr);
 			*(pos + 1) = GetGValue(clr);
 			*(pos + 2) = GetRValue(clr);
@@ -266,14 +266,19 @@ void ZBufferImage::DrawOnImage(CImage& img) const
 	}
 }
 
+void ZBufferImage::SetOpacity(double opacity)
+{
+	_currOpacity = opacity;
+}
+
 ZBufferPixel::ZBufferItem::ZBufferItem(COLORREF clr, double z_, double op)
 	: z(z_), color(clr), opacity(op)
 {
 }
 
-void ZBufferPixel::PushColor(COLORREF clr, double z)
+void ZBufferPixel::PushColor(COLORREF clr, double z, double opacity)
 {
-	_buffer.insert(ZBufferItem(clr, z));
+	_buffer.insert(ZBufferItem(clr, z, opacity));
 }
 
 void ZBufferPixel::Clear()
@@ -286,7 +291,7 @@ bool ZBufferPixel::IsEmpty() const
 	return _buffer.empty();
 }
 
-COLORREF ZBufferPixel::GetActualColor() const
+COLORREF ZBufferPixel::GetActualColor(COLORREF bgPixel, bool bgValid) const
 {
 	std::set<ZBufferPixel::ZBufferItem>::const_iterator it = _buffer.begin();
 
@@ -310,11 +315,21 @@ COLORREF ZBufferPixel::GetActualColor() const
 		red = red * prevOpacity + (1 - prevOpacity)*currRed;
 		green = green * prevOpacity + (1 - prevOpacity)*currGreen;
 		blue = blue * prevOpacity + (1 - prevOpacity)*currBlue;
+		prevOpacity = it->opacity;
 		if (it->opacity >= 1.0)
 		{
 			break;
 		}
-		prevOpacity = it->opacity;
+	}
+
+	if (bgValid && prevOpacity < 1.0)
+	{
+		int bgRed = GetRValue(bgPixel);
+		int bgGreen = GetGValue(bgPixel);
+		int bgBlue = GetBValue(bgPixel);
+		red = red * prevOpacity + (1 - prevOpacity)*bgRed;
+		green = green * prevOpacity + (1 - prevOpacity)*bgGreen;
+		blue = blue * prevOpacity + (1 - prevOpacity)*bgBlue;
 	}
 
 	int finalRed = (int)red;
@@ -322,6 +337,11 @@ COLORREF ZBufferPixel::GetActualColor() const
 	int finalBlue = (int)blue;
 
 	return RGB(finalRed, finalGreen, finalBlue);
+}
+
+COLORREF ZBufferPixel::GetActualColor() const
+{
+	return GetActualColor(0, false);
 }
 
 COLORREF ZBufferPixel::GetTopColor() const
@@ -1376,7 +1396,13 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 
 void DrawObject(DrawingObject& img, const PolygonalObject& obj, const MatrixHomogeneous& mTotal, const ModelAttr& attr, const std::vector<Normals::PolygonNormalData>& normals, size_t normalsOffset, bool fillPolygons, bool clip, const ClippingPlane& cp)
 {
-	//g_lights.push_back(LightSource(Point3D(0.5, 0.5, 0.5), Point3D(0, 0, 1), LightSource::POINT, 1.0));
+	if (img.active == DrawingObject::DRAWING_OBJECT_ZBUF && img.zBufImg)
+	{
+		if (attr.forceOpacity)
+			img.zBufImg->SetOpacity(attr.opacity);
+		else if (obj.opacityValid)
+			img.zBufImg->SetOpacity(obj.opacity);
+	}
 	for (size_t i = 0; i != obj.polygons.size(); ++i)
 	{
 		bool draw = false;
@@ -1398,6 +1424,10 @@ void DrawObject(DrawingObject& img, const PolygonalObject& obj, const MatrixHomo
 		{
 			DrawPolygon(img, obj.polygons[i], mTotal, attr, obj.color, obj.colorValid, normals[i + normalsOffset], fillPolygons, g_lights, g_ShadowVolumes, clip, cp);
 		}
+	}
+	if (img.active == DrawingObject::DRAWING_OBJECT_ZBUF && img.zBufImg)
+	{
+		img.zBufImg->SetOpacity();
 	}
 }
 

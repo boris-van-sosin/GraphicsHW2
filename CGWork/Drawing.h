@@ -27,9 +27,10 @@ PerspectiveData PerspectiveWarpMatrix(const BoundingBox& boundingCube, double n,
 class ZBufferPixel
 {
 public:
-	void PushColor(COLORREF clr, double z);
+	void PushColor(COLORREF clr, double z, double opacity = 1.0);
 	void Clear();
 	COLORREF GetActualColor() const;
+	COLORREF GetActualColor(COLORREF bgPixel, bool bgValid = true) const;
 	COLORREF GetTopColor() const;
 	bool IsEmpty() const;
 
@@ -66,6 +67,7 @@ public:
 	void SetBackgroundColor(COLORREF clr);
 	void SetBackgroundImage(CImage& img, BGImageMode imMode);
 	void DrawOnImage(CImage& img) const;
+	void SetOpacity(double opacity = 1.0);
 private:
 	size_t _height, _width;
 	ZBufferPixel* _img;
@@ -73,6 +75,7 @@ private:
 	COLORREF _backgroundColor;
 	CImage _backgroundImage;
 	BGImageMode _bgImageMode;
+	double _currOpacity = 1.0;
 };
 
 class DrawingObject

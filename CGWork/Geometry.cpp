@@ -315,23 +315,34 @@ std::pair<double, HomogeneousPoint> Polygon3D::AreaAndCentroid() const
 	return std::pair<double, HomogeneousPoint>(area, HomogeneousPoint(p / (area * 6)));
 }
 
-PolygonalObject::PolygonalObject(const std::vector<Polygon3D>& polygons_, COLORREF color_, bool valid)
-	: polygons(polygons_), color(color_), colorValid(valid)
+PolygonalObject::PolygonalObject(const std::vector<Polygon3D>& polygons_, COLORREF color_, bool valid, double opacity_, bool opacityValid_)
+	: polygons(polygons_), color(color_), colorValid(valid), opacity(opacity_), opacityValid(opacityValid_)
 {
 }
 
 PolygonalObject::PolygonalObject()
-	: PolygonalObject(std::vector<Polygon3D>(), RGB(255, 255, 255), false)
+	: PolygonalObject(std::vector<Polygon3D>(), RGB(255, 255, 255), false, 1.0, false)
 {
 }
 
 PolygonalObject::PolygonalObject(const std::vector<Polygon3D>& polygons_, COLORREF color_)
-	: PolygonalObject(polygons_, color_, true)
+	: PolygonalObject(polygons_, color_, true, 1.0, false)
 {
 }
 
+PolygonalObject::PolygonalObject(const std::vector<Polygon3D>& polygons_, double opacity_)
+	: PolygonalObject(polygons_, RGB(255, 255, 255), false, opacity_, true)
+{
+}
+
+PolygonalObject::PolygonalObject(const std::vector<Polygon3D>& polygons_, COLORREF color_, double opacity_)
+	: PolygonalObject(polygons_, color_, true, opacity_, true)
+{
+}
+
+
 PolygonalObject::PolygonalObject(const std::vector<Polygon3D>& polygons_)
-	: PolygonalObject(polygons_, RGB(255, 255, 255), false)
+	: PolygonalObject(polygons_, RGB(255, 255, 255), false, 1.0, false)
 {
 }
 

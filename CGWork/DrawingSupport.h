@@ -30,6 +30,8 @@ public:
 	bool is_wireframe = false;
 	bool castShadow = false;
 	int shadowVolumeWireframe = -1;
+	double opacity = 1.0;
+	bool forceOpacity = false;
 };
 
 class LightSource

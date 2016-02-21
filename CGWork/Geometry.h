@@ -109,13 +109,17 @@ class PolygonalObject
 public:
 	PolygonalObject();
 	PolygonalObject(const std::vector<Polygon3D>& polygons_);
-	PolygonalObject(const std::vector<Polygon3D>& polygons_, COLORREF color);
+	PolygonalObject(const std::vector<Polygon3D>& polygons_, COLORREF color_);
+	PolygonalObject(const std::vector<Polygon3D>& polygons_, double opacity_);
+	PolygonalObject(const std::vector<Polygon3D>& polygons_, COLORREF color_, double opacity_);
 
 	std::vector<Polygon3D> polygons;
 	COLORREF color;
 	bool colorValid;
+	double opacity;
+	bool opacityValid;
 private:
-	PolygonalObject(const std::vector<Polygon3D>& polygons_, COLORREF color_, bool valid);
+	PolygonalObject(const std::vector<Polygon3D>& polygons_, COLORREF color_, bool valid, double opacity_, bool opacityValid_);
 };
 
 typedef std::vector<PolygonalObject> PolygonalModel;

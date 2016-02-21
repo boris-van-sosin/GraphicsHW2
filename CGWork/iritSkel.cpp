@@ -370,15 +370,25 @@ namespace IritAdapter
 			currPolys.push_back(ConvertPolygon(currPoly));
 			currPoly = currPoly->Pnext;
 		}
+
+		double transp;
+		bool transpValid = CGSkelGetObjectTransp(iritObjects, &transp);
+
 		IPAttributeStruct* attrRGB = AttrFindAttribute(iritObjects->Attr, "rgb");
 		if (attrRGB != NULL)
 		{
 			int r, g, b;
 			sscanf_s(attrRGB->U.Str, "%d,%d,%d", &r, &g, &b);
-			return PolygonalObject(currPolys, RGB(r, g, b));
+			if (transpValid)
+				return PolygonalObject(currPolys, RGB(r, g, b), 1 - transp);
+			else
+				return PolygonalObject(currPolys, RGB(r, g, b));
 		}
 		{
-			return PolygonalObject(currPolys);
+			if (transpValid)
+				return PolygonalObject(currPolys, 1 - transp);
+			else
+				return PolygonalObject(currPolys);
 		}
 	}
 

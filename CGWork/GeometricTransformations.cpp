@@ -71,11 +71,17 @@ PolygonalObject operator*(const Matrix3D& m, const PolygonalObject& obj)
 	}
 	if (obj.colorValid)
 	{
-		return PolygonalObject(polygons, obj.color);
+		if (obj.opacityValid)
+			return PolygonalObject(polygons, obj.color, obj.opacity);
+		else
+			return PolygonalObject(polygons, obj.color);
 	}
 	else
 	{
-		return PolygonalObject(polygons);
+		if (obj.opacityValid)
+			return PolygonalObject(polygons, obj.opacity);
+		else
+			return PolygonalObject(polygons);
 	}
 }
 
@@ -89,11 +95,17 @@ PolygonalObject operator*(const MatrixHomogeneous& m, const PolygonalObject& obj
 	}
 	if (obj.colorValid)
 	{
-		return PolygonalObject(polygons, obj.color);
+		if (obj.opacityValid)
+			return PolygonalObject(polygons, obj.color, obj.opacity);
+		else
+			return PolygonalObject(polygons, obj.color);
 	}
 	else
 	{
-		return PolygonalObject(polygons);
+		if (obj.opacityValid)
+			return PolygonalObject(polygons, obj.opacity);
+		else
+			return PolygonalObject(polygons);
 	}
 }
 
