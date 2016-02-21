@@ -1191,6 +1191,8 @@ void CCGWorkView::OnPerModel()
 	s.is_wireframe = model.is_wireframe;
 	s.cast_shadow = model.castShadow;
 	s.shadow_wireframe_light_src = model.shadowVolumeWireframe;
+	s.opacity = model.opacity;
+	s.forceOpacity = model.forceOpacity;
 
 	CPerModel dlg(s);
 	if (dlg.DoModal() == IDOK)
@@ -1207,6 +1209,8 @@ void CCGWorkView::OnPerModel()
 		model.is_wireframe = s.is_wireframe;
 		model.castShadow = s.cast_shadow;
 		model.shadowVolumeWireframe = s.shadow_wireframe_light_src;
+		model.opacity = s.opacity;
+		model.forceOpacity = s.forceOpacity;
 		Invalidate();
 	}
 }
