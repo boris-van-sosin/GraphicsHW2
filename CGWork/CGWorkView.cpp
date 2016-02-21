@@ -642,6 +642,9 @@ void CCGWorkView::anti_aliasing(CImage* super_img, CImage* img, int w, int h) {
 				}
 			}
 
+			if (r < 0) r = 0;
+			if (g < 0) g = 0;
+			if (b < 0) b = 0;
 			//r = 100, g = 100, b = 100;
 			img->SetPixel(j, i, RGB(r, g, b));
 		}
