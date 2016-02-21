@@ -636,6 +636,12 @@ inline bool PolygonIntersection::IsPointInPolygon(const Point3D& pt, const Polyg
 		const Point3D p1((i + 1) != poly.points.end() ? *(i + 1) : poly.points.front());
 		const Vector3D ev = p1 - p0;
 
+		if (abs(ev.Normalized() * (pt - p0).Normalized()) >= 1 - GEOMETRIC_COMPUTATION_EPSILON)
+		{
+			// on one of the edges
+			return true;
+		}
+
 		if ((pt - p0) * up >= 0)
 		{          // start y <= P.y
 			if ((pt - p1) * up < 0)      // an upward crossing

@@ -65,25 +65,25 @@ ShadowVolume::ShadowVolume(size_t w, size_t h, const LightSource& ls, double sha
 		_width = _height = 1;
 	}
 	//_stencil = new std::set<ShadowEvent>[_height * _width];
-	_stencil2 = new std::map<size_t, ShadowLimits>[_height * _width];
+	//_stencil2 = new std::map<size_t, ShadowLimits>[_height * _width];
 }
 
 ShadowVolume::ShadowVolume(const ShadowVolume& other)
 	: _width(other._width), _height(other._height), _lightSource(other._lightSource), _shadowLength(other._shadowLength)
 {
 	//_stencil = new std::set<ShadowEvent>[_height * _width];
-	_stencil2 = new std::map<size_t, ShadowLimits>[_height * _width];
+	//_stencil2 = new std::map<size_t, ShadowLimits>[_height * _width];
 	for (int i = 0; i < _height*_width; ++i)
 	{
 		//_stencil[i] = other._stencil[i];
-		_stencil2[i] = other._stencil2[i];
+		//_stencil2[i] = other._stencil2[i];
 	}
 }
 
 ShadowVolume::~ShadowVolume()
 {
 	//delete[] _stencil;
-	delete[] _stencil2;
+	//delete[] _stencil2;
 }
 
 ShadowVolume& ShadowVolume::operator=(const ShadowVolume& other)
@@ -99,7 +99,7 @@ ShadowVolume& ShadowVolume::operator=(const ShadowVolume& other)
 	for (int i = 0; i < _height*_width; ++i)
 	{
 		//_stencil[i] = other._stencil[i];
-		_stencil2[i] = other._stencil2[i];
+		//_stencil2[i] = other._stencil2[i];
 	}
 }
 
@@ -129,9 +129,9 @@ void ShadowVolume::SetSize(size_t w, size_t h)
 	_height = h;
 	_width = w;
 	//delete[] _stencil;
-	delete[] _stencil2;
+	//delete[] _stencil2;
 	//_stencil = new std::set<ShadowEvent>[_height*_width];
-	_stencil2 = new std::map<size_t, ShadowLimits>[_height*_width];
+	//_stencil2 = new std::map<size_t, ShadowLimits>[_height*_width];
 }
 
 void ShadowVolume::SetWorldBox(const BoundingBox& wbox)
@@ -144,9 +144,11 @@ void ShadowVolume::Clear()
 	for (size_t i = 0; i < _height*_width; ++i)
 	{
 		//_stencil[i].clear();
-		_stencil2[i].clear();
+		//_stencil2[i].clear();
 	}
 	_boundingBoxes.clear();
+	_shadowSurfaces.clear();
+	_shadowSurfaceNormals.clear();
 	_currPolyId = 0;
 	_currModelId = 0;
 }
@@ -158,6 +160,7 @@ void ShadowVolume::SetPixel(int x, int y, double z, COLORREF id)
 		return;
 	}
 	//_stencil[y*_width + x].insert(ShadowEvent(_currShadowMode, z, id));
+	return;
 	std::map<size_t, ShadowLimits>& currPixel = _stencil2[y*_width + x];
 	if (currPixel.find(id) == currPixel.end())
 	{
@@ -233,22 +236,28 @@ bool ShadowVolume::IsPixelLit(size_t x, size_t y, double z, const Point3D& pt) c
 	return true;
 	return shadowNesting <= 0;*/
 
-	const std::map<size_t, ShadowLimits>& currPixel2 = _stencil2[y * _width + x];
-
-	bool anyInLimits = false;
-	for (auto i = currPixel2.begin(); i != currPixel2.end(); ++i)
+	//const Vector3D ray = -(_lightSource._type == LightSource::PLANE ? _lightSource.Direction() : (Point3D(_lightSource._origin) - pt).Normalized());
+	//const Point3D pt2 = pt;
+	const Point3D pt2(x, y, z);
+	const Vector3D ray(0, 0, -1);
+	int shadowNesting = 0;
+	for (auto i = _shadowSurfaces.begin(); i != _shadowSurfaces.end(); ++i)
 	{
-		if (z > i->second._minZ && z < i->second._maxZ)
+		std::pair<bool, double> bi = PolygonIntersection::PolygonRayIntersectionParam(pt2, ray, *i);
+		if (bi.first && bi.second > SV_COMPUTATION_EPSILON)
 		{
-			anyInLimits = true;
-			break;
+			if (_shadowSurfaceNormals[i - _shadowSurfaces.begin()].PolygonNormal.DirectionVector().z < 0)
+			{
+				--shadowNesting;
+			}
+			else if (_shadowSurfaceNormals[i - _shadowSurfaces.begin()].PolygonNormal.DirectionVector().z > 0)
+			{
+				++shadowNesting;
+			}
 		}
 	}
-	//if (!anyInLimits)
-	//	return true;
-
-	const Vector3D ray = -(_lightSource._type == LightSource::PLANE ? _lightSource.Direction() : (Point3D(_lightSource._origin) - pt).Normalized());
-	for (auto it = currPixel2.begin(); it != currPixel2.end(); ++it)
+	return shadowNesting <= 0;
+	/*for (auto it = currPixel2.begin(); it != currPixel2.end(); ++it)
 	{
 		//if (z < it->second._minZ || z > it->second._maxZ)
 		//	continue;
@@ -279,14 +288,19 @@ bool ShadowVolume::IsPixelLit(size_t x, size_t y, double z, const Point3D& pt) c
 			}
 		}
 	}
-	return true;
+	return true;*/
 }
 
 void ShadowVolume::ProcessModel(const PolygonalModel& model, const MatrixHomogeneous& mTotal, const std::vector<Normals::PolygonNormalData>& normals, bool clip, const ClippingPlane& cp, const PolygonAdjacencyGraph& polygonAdj)
 {
 	std::pair<PolygonalObject, std::vector<Normals::PolygonNormalData>> shadowObj = GenerateShadowVolume(model, normals, polygonAdj);
+	shadowObj.first = mTotal * shadowObj.first;
+	for (auto i = shadowObj.second.begin(); i != shadowObj.second.end(); ++i)
+		*i = mTotal * *i;
 	//_models.push_back(&model);
 	PartitionIntoBBoxes(model);
+	_shadowSurfaces.insert(_shadowSurfaces.end(), shadowObj.first.polygons.begin(), shadowObj.first.polygons.end());
+	_shadowSurfaceNormals.insert(_shadowSurfaceNormals.end(), shadowObj.second.begin(), shadowObj.second.end());
 
 	for (auto p = shadowObj.first.polygons.begin(); p != shadowObj.first.polygons.end(); ++p)
 	{
@@ -332,10 +346,12 @@ std::pair<PolygonalObject, std::vector<Normals::PolygonNormalData>> ShadowVolume
 {
 	std::vector<Polygon3D> shadowPolygons;
 	std::vector<Normals::PolygonNormalData> shadowNormals;
+	std::vector<HomogeneousPoint> pointsObserved;
+	pointsObserved.reserve(1000);
 	for (auto j = polygonAdj.begin(); j != polygonAdj.end(); ++j)
 	{
 		const Polygon3D& currPoly = model[j->objIdx].polygons[j->polygonInObjIdx];
-		const LineSegment edge(currPoly.points[j->vertexIdx], currPoly.points[(j->vertexIdx + 1) % currPoly.points.size()]);
+		LineSegment edge(currPoly.points[j->vertexIdx], currPoly.points[(j->vertexIdx + 1) % currPoly.points.size()]);
 
 		bool addEdge = false;
 		Point3D innerPoint;
@@ -388,8 +404,33 @@ std::pair<PolygonalObject, std::vector<Normals::PolygonNormalData>> ShadowVolume
 				ray1 = (Point3D(edge.p1) - Point3D(_lightSource._origin)).Normalized();
 			}
 
-			const HomogeneousPoint far0((Point3D(edge.p0) + (ray0 * _shadowLength)));
-			const HomogeneousPoint far1((Point3D(edge.p1) + (ray1 * _shadowLength)));
+			HomogeneousPoint far0((Point3D(edge.p0) + (ray0 * _shadowLength)));
+			HomogeneousPoint far1((Point3D(edge.p1) + (ray1 * _shadowLength)));
+
+			for (auto prevP = pointsObserved.begin(); prevP != pointsObserved.end(); ++prevP)
+			{
+				if ((Point3D(edge.p0) - Point3D(*prevP)).Norm() <= SV_COMPUTATION_EPSILON)
+				{
+					edge.p0 = *prevP;
+				}
+				if ((Point3D(edge.p1) - Point3D(*prevP)).Norm() <= SV_COMPUTATION_EPSILON)
+				{
+					edge.p1 = *prevP;
+				}
+				if ((Point3D(far0) - Point3D(*prevP)).Norm() <= SV_COMPUTATION_EPSILON)
+				{
+					far0 = *prevP;
+				}
+				if ((Point3D(far1) - Point3D(*prevP)).Norm() <= SV_COMPUTATION_EPSILON)
+				{
+					far1 = *prevP;
+				}
+			}
+
+			pointsObserved.push_back(edge.p0);
+			pointsObserved.push_back(edge.p1);
+			pointsObserved.push_back(far0);
+			pointsObserved.push_back(far1);
 
 			polyPoints.push_back(edge.p0);
 			polyPoints.push_back(edge.p1);
@@ -411,86 +452,7 @@ std::pair<PolygonalObject, std::vector<Normals::PolygonNormalData>> ShadowVolume
 		}
 	}
 
-	/*const size_t approxNumPolygons = model.front().polygons.size() * model.size();
-	const size_t approxNumVertices = approxNumPolygons * (model.front().polygons.empty() ? 1 : model.front().polygons.front().points.size());
-
-	std::unordered_set<Point3D, HashAndCompareSVPoint, HashAndCompareSVPoint> points;
-	points.reserve(approxNumVertices);
-	std::unordered_map<LineSegment, PolygonAdjacency, HashAndCompareSVEdge, HashAndCompareSVEdge> edgeMap;
-	edgeMap.reserve(2 * approxNumVertices);
-
-	size_t polygonIdx = 0;
-	for (auto p = shadowPolygons.begin(); p != shadowPolygons.end(); ++p)
-	{
-		for (auto v = p->points.begin(); v != p->points.end(); ++v)
-		{
-			std::unordered_set<Point3D, HashAndCompareSVPoint, HashAndCompareSVPoint>::iterator prevV;
-			if ((prevV = points.find(Point3D(*v))) == points.end())
-				points.insert(Point3D(*v));
-			else
-			{
-				*v = HomogeneousPoint(*prevV);
-			}
-
-			const LineSegment currEdge(*v, (v + 1 != p->points.end()) ? *(v + 1) : p->points.front());
-			if (edgeMap.find(currEdge) == edgeMap.end())
-			{
-				edgeMap[currEdge] = PolygonAdjacency(polygonIdx, 0, (p - shadowPolygons.begin()), v - p->points.begin());
-			}
-			else
-			{
-				edgeMap[currEdge].polygonIdxs.push_back(polygonIdx);
-			}
-		}
-		++polygonIdx;
-	}
-
-	bool fr = true;
-	std::map<size_t, size_t> polygonsBoundaryEdges;
-	for (auto e = edgeMap.begin(); e != edgeMap.end(); ++e)
-	{
-		const size_t numIncidentPolygons = e->second.polygonIdxs.size();
-		if (numIncidentPolygons == 1)
-		{
-			if (polygonsBoundaryEdges.find(e->second.polygonInObjIdx) == polygonsBoundaryEdges.end())
-			{
-				polygonsBoundaryEdges[e->second.polygonInObjIdx] = 1;
-			}
-			else
-			{
-				polygonsBoundaryEdges[e->second.polygonInObjIdx] += 1;
-			}
-		}
-		else if (numIncidentPolygons == 2)
-		{
-			const size_t i0 = e->second.polygonIdxs[0];
-			const size_t i1 = e->second.polygonIdxs[1];
-			double t = shadowNormals[i0].PolygonNormal.DirectionVector() * shadowNormals[i1].PolygonNormal.DirectionVector();
-			const Normals::PolygonNormalData& n0 = shadowNormals[i0];
-			const Normals::PolygonNormalData& n1 = shadowNormals[i1];
-			Polygon3D& p0 = shadowPolygons[e->second.polygonIdxs[0]];
-			Polygon3D& p1 = shadowPolygons[e->second.polygonIdxs[1]];
-			if ((t >= 1.1 || t < 0) && fr)
-			{
-				fr = false;
-				//continue;
-			}
-		}
-	}
-
-	size_t numDeleted = 0;
-	for (auto p = polygonsBoundaryEdges.begin(); p != polygonsBoundaryEdges.end(); ++p)
-	{
-		
-		if (p->second == 4)
-		{
-			const size_t currIdxToDelete = p->first - numDeleted;
-			shadowPolygons.erase(shadowPolygons.begin() + currIdxToDelete);
-			shadowNormals.erase(shadowNormals.begin() + currIdxToDelete);
-			++numDeleted;
-		}
-	}*/
-
+	
 	return std::pair<PolygonalObject, std::vector<Normals::PolygonNormalData>>(PolygonalObject(shadowPolygons), shadowNormals);
 }
 

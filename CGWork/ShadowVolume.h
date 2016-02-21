@@ -78,5 +78,7 @@ private:
 	int _currPolyId = 0;
 	int _currModelId = 0;
 	double _shadowLength;
+	std::vector<Polygon3D> _shadowSurfaces;
+	std::vector<Normals::PolygonNormalData> _shadowSurfaceNormals;
 };
 
