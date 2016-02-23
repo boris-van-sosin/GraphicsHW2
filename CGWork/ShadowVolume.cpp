@@ -240,7 +240,24 @@ bool ShadowVolume::IsPixelLit(size_t x, size_t y, double z, const Point3D& pt) c
 	//const Point3D pt2 = pt;
 	const Point3D pt2(x, y, z);
 	const Vector3D ray(0, 0, -1);
-	bool shadowCrossings = true;
+	for (size_t i = 0; i < _shadowSurfaces.size(); ++i)
+	{
+		const std::vector<Polygon3D>& currShadowSrfs = _shadowSurfaces[i];
+		const std::vector<Normals::PolygonNormalData>& currShadowNormals = _shadowSurfaceNormals[i];
+		bool shadowCrossings = true;
+		for (size_t j = 0; j < currShadowSrfs.size(); ++j)
+		{
+			std::pair<bool, double> bi = PolygonIntersection::PolygonRayIntersectionParam(pt2, ray, currShadowSrfs[j]);
+			if (bi.first && bi.second > SV_COMPUTATION_EPSILON)
+			{
+				shadowCrossings = !shadowCrossings;
+			}
+		}
+		if (!shadowCrossings)
+			return false;
+	}
+	return true;
+	/*bool shadowCrossings = true;
 	for (auto i = _shadowSurfaces.begin(); i != _shadowSurfaces.end(); ++i)
 	{
 		std::pair<bool, double> bi = PolygonIntersection::PolygonRayIntersectionParam(pt2, ray, *i);
@@ -249,39 +266,7 @@ bool ShadowVolume::IsPixelLit(size_t x, size_t y, double z, const Point3D& pt) c
 			shadowCrossings = !shadowCrossings;
 		}
 	}
-	return shadowCrossings;
-	/*for (auto it = currPixel2.begin(); it != currPixel2.end(); ++it)
-	{
-		//if (z < it->second._minZ || z > it->second._maxZ)
-		//	continue;
-
-		const size_t currIdx = it->first;
-		for (auto subBox = _boundingBoxes[currIdx].begin(); subBox != _boundingBoxes[currIdx].end(); ++subBox)
-		{
-			bool boxIntersection = false;
-			for (auto boxPoly = subBox->_bboxObj.polygons.begin(); boxPoly != subBox->_bboxObj.polygons.end(); ++boxPoly)
-			{
-				std::pair<bool, double> bi = PolygonIntersection::PolygonRayIntersectionParam(pt, ray, *boxPoly);
-				if (bi.first)
-				{
-					boxIntersection = true;
-					break;
-				}
-			}
-			if (boxIntersection)
-			{
-				for (auto modelPoly = subBox->_polygons.begin(); modelPoly != subBox->_polygons.end(); ++modelPoly)
-				{
-					std::pair<bool, double> bi = PolygonIntersection::PolygonRayIntersectionParam(pt, ray, **modelPoly);
-					if (bi.first && bi.second > SV_COMPUTATION_EPSILON)
-					{
-						return false;
-					}
-				}
-			}
-		}
-	}
-	return true;*/
+	return shadowCrossings;*/
 }
 
 void ShadowVolume::ProcessModel(const PolygonalModel& model, const MatrixHomogeneous& mTotal, const std::vector<Normals::PolygonNormalData>& normals, bool clip, const ClippingPlane& cp, const PolygonAdjacencyGraph& polygonAdj)
@@ -290,10 +275,9 @@ void ShadowVolume::ProcessModel(const PolygonalModel& model, const MatrixHomogen
 	shadowObj.first = mTotal * shadowObj.first;
 	for (auto i = shadowObj.second.begin(); i != shadowObj.second.end(); ++i)
 		*i = mTotal * *i;
-	//_models.push_back(&model);
-	PartitionIntoBBoxes(model);
-	_shadowSurfaces.insert(_shadowSurfaces.end(), shadowObj.first.polygons.begin(), shadowObj.first.polygons.end());
-	_shadowSurfaceNormals.insert(_shadowSurfaceNormals.end(), shadowObj.second.begin(), shadowObj.second.end());
+
+	_shadowSurfaces.push_back(shadowObj.first.polygons);
+	_shadowSurfaceNormals.push_back(shadowObj.second);
 
 	for (auto p = shadowObj.first.polygons.begin(); p != shadowObj.first.polygons.end(); ++p)
 	{
