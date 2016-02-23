@@ -528,7 +528,7 @@ COLORREF ColorInterpolateN(double x, double minX, double maxX, COLORREF clr0, CO
 	return ColorInterpolate(x, minX, maxX, clr0, clr1, swap);
 }
 
-COLORREF ColorInterpolateSV(double x, double minX, double maxX, const MixedIntPoint&, COLORREF clr0, COLORREF clr1, const Vector3D&, bool swap = false)
+COLORREF ColorInterpolateSV(double x, double minX, double maxX, const MixedIntPoint&, COLORREF clr0, COLORREF clr1, const Point3D&, const Vector3D&, bool swap = false)
 {
 	return ColorInterpolate(x, minX, maxX, clr0, clr1, swap);
 }
@@ -795,8 +795,8 @@ void innerDrawLine(FakeXYMap& img, const MixedIntPoint& p0, const MixedIntPoint&
 				clrf(x, x0, x1, c0, c1, currN);*/
 			const double currZ = zf(x, x0, x1, z0, z1);
 			const Vector3D currN = nf(x, x0, x1, n0, n1);
-			const COLORREF currClr = (!swapXY) ? clrf(x, x0, x1, MixedIntPoint(x, y, currZ), c0, c1, currN, swapX) : clrf(x, x0, x1, MixedIntPoint(y, x, currZ), c0, c1, currN, swapX);
 			const Vector3D currObjSpPt = osptf(x, x0, x1, ospt0, ospt1);
+			const COLORREF currClr = (!swapXY) ? clrf(x, x0, x1, MixedIntPoint(x, y, currZ), c0, c1, currObjSpPt, currN, swapX) : clrf(x, x0, x1, MixedIntPoint(y, x, currZ), c0, c1, currObjSpPt, currN, swapX);
 			if (!swapXY)
 			{
 				img.SetPixel(x, y, currZ, currClr, lineId, currN, currObjSpPt);
@@ -1069,6 +1069,12 @@ struct ColorFlat
 		return clr;
 	}
 
+	COLORREF operator()(int x, int x0, int x1, const MixedIntPoint& pt, COLORREF c0, COLORREF c1, const Point3D&, const Vector3D&, bool swap = false)
+	{
+		return clr;
+	}
+
+
 	COLORREF clr;
 };
 
@@ -1094,6 +1100,15 @@ struct ColorPhong
 		else
 			return ApplyLight(*_lights, *_shadowVolumes, viewPt, LinearInterpolate(x, x0, x1, _p1, _p0), *_attr, _modelColor, n, _viewPoint, _ambient);
 	}
+
+	COLORREF operator()(int x, int x0, int x1, const MixedIntPoint& viewPt, COLORREF c0, COLORREF c1, const Point3D& ospt, const Vector3D& n, bool swap)
+	{
+		if (!swap)
+			return ApplyLight(*_lights, *_shadowVolumes, viewPt, ospt, *_attr, _modelColor, n, _viewPoint, _ambient);
+		else
+			return ApplyLight(*_lights, *_shadowVolumes, viewPt, ospt, *_attr, _modelColor, n, _viewPoint, _ambient);
+	}
+
 
 	Point3D _p0, _p1;
 	const std::vector<LightSource>* _lights;
@@ -1740,7 +1755,6 @@ COLORREF ApplyLight(const std::vector<LightSource>& lights, const std::vector<Sh
 		rgbValues[i] = rgbValues[i] * (ambient*normACoefficient + currLightPart[i]);
 		rgbValues[i] = min(rgbValues[i], 255.0);
 	}
-
 
 	int rgbInts[] = { rgbValues[0], rgbValues[1], rgbValues[2] };
 
