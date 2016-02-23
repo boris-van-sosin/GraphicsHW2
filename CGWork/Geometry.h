@@ -128,7 +128,7 @@ class EmptyBoundingBoxException {};
 
 class BoundingBox
 {
-private:
+public:
 	BoundingBox(double minX_, double maxX_, double minY_, double maxY_, double minZ_, double maxZ_);
 public:
 	BoundingBox(const BoundingBox& other);

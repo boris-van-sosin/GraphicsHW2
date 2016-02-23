@@ -1,6 +1,7 @@
 #include "Drawing.h"
 #include "Utils.h"
 
+#include <assert.h>
 #include <map>
 #include <algorithm>
 
@@ -1381,6 +1382,9 @@ void DrawPolygon(DrawingObject& img, const Polygon3D& poly0, const MatrixHomogen
 					{
 						const Vector3D n = LinearInterpolate(x, x0, x1, interpolationIter0->normal, (interpolationIter0 + 1)->normal);
 						const Point3D currObjSpPt = LinearInterpolate(x, 0, x1, interpolationIter0->objSpacePt, (interpolationIter0 + 1)->objSpacePt);
+
+						// v_texture
+						//actualColor = RGB(abs(sin(x) * 255), abs(sin(x) * 255), abs(sin(x) * 255));
 						fillColor = ApplyLight(lights, svs, MixedIntPoint(x, y, currZ), currObjSpPt, attr, actualColor, n, Point3D::Zero, attr.AmbientIntensity); /*FIX THIS*/
 					}
 					img.SetPixel(x, y, currZ, fillColor);
@@ -1436,6 +1440,196 @@ COLORREF ApplyLight(const std::vector<LightSource>& lights, const Point3D& pt, c
 	return ApplyLight(lights, std::vector<ShadowVolume>(), MixedIntPoint(), pt, attr, clr, normal, viewPoint, ambient);
 }
 
+inline int mod(int a, int b) {
+	int r = a % b;
+	return r < 0 ? r + b : r;
+}
+
+const int nr_random = 200;
+const int noise_margin = 0;
+double noise[nr_random + noise_margin + 1][nr_random + noise_margin +1][nr_random + noise_margin + 1]; // in [0,1)
+bool inited = false;
+
+double noise_at_xy(const Point3D& pt1, const BoundingBox& bbox1) {
+
+	if (!inited) {
+		for (int i = 0; i < nr_random + noise_margin + 1; i++) {
+			for (int j = 0; j < nr_random + noise_margin + 1; j++) {
+				for (int k = 0; k < nr_random + noise_margin + 1; k++) {
+					noise[i][j][k] = (rand() % 32768) / 32768.0;
+					//noise[i][j][k] = (rand() % 100) / 100.0;
+				}
+			}
+		}
+		inited = true;
+	}
+	double diffs[3];
+	diffs[0] = (bbox1.maxX - bbox1.minX) / (double)nr_random;
+	diffs[1] = (bbox1.maxY - bbox1.minY) / (double)nr_random;
+	diffs[2] = (bbox1.maxZ - bbox1.minZ) / (double)nr_random;
+
+	int nearestXidx = noise_margin / 2 + int((pt1.x) / diffs[0]);// / nr_random;
+	int nearestYidx = noise_margin / 2 + int((pt1.y) / diffs[1]);// / nr_random;
+	int nearestZidx = noise_margin / 2 + int((pt1.z) / diffs[2]);// / nr_random;
+	
+	//assert(nearestXidx <= nr_random);
+	//assert(nearestXidx >= 0);
+
+	nearestXidx = mod(nearestXidx, nr_random + noise_margin);
+	nearestYidx = mod(nearestYidx, nr_random + noise_margin);
+	nearestZidx = mod(nearestZidx, nr_random + noise_margin);
+
+	//if (nearestXidx < 0) nearestXidx = 0;
+	//if (nearestYidx < 0) nearestYidx = 0;
+	//if (nearestZidx < 0) nearestZidx = 0;
+
+	/*double w1x = fabs(pt1.x - (nearestXidx * diffs[0] + (double)bbox1.minX));
+	double w2x = fabs(pt1.x - ((nearestXidx + 1) * (diffs[0]) + (double)bbox1.minX));
+
+	double w1y = fabs(pt1.y - (nearestYidx * (diffs[1]) + (double)bbox1.minY));
+	double w2y = fabs(pt1.y - ((nearestYidx + 1) * (diffs[1]) + (double)bbox1.minY));
+
+	double w1z = fabs(pt1.z - (nearestZidx * (diffs[2]) + (double)bbox1.minZ));
+	double w2z = fabs(pt1.z - ((nearestZidx + 1) * (diffs[2]) + (double)bbox1.minZ));*/
+
+	double w1x = fabs(pt1.x / diffs[0] - nearestXidx + noise_margin/2);
+	double w2x = 1 - w1x;
+	//double w2x = fabs(pt1.x - ((nearestXidx + 1) * (diffs[0])));
+
+	double w1y = fabs(pt1.y / diffs[1] - nearestYidx + noise_margin / 2);
+	double w2y = 1 - w1y;
+	//double w2y = fabs(pt1.y - ((nearestYidx + 1) * (diffs[1])));
+
+	double w1z = fabs(pt1.z / diffs[2] - nearestZidx + noise_margin / 2);
+	double w2z = 1 - w1z;
+	//double w2z = fabs(pt1.z - ((nearestZidx + 1) * (diffs[2])));
+
+	double local_noise = 0;
+	
+	local_noise += ((double)noise[nearestXidx][nearestYidx][nearestZidx]) * w1x * w1y * w1z;
+	local_noise += ((double)noise[nearestXidx][nearestYidx][nearestZidx + 1]) * w1x * w1y * w2z;
+	local_noise += ((double)noise[nearestXidx][nearestYidx + 1][nearestZidx]) * w1x * w2y * w1z;
+	local_noise += ((double)noise[nearestXidx][nearestYidx + 1][nearestZidx + 1]) * w1x * w2y * w2z;
+	local_noise += ((double)noise[nearestXidx + 1][nearestYidx][nearestZidx]) * w2x * w1y * w1z;
+	local_noise += ((double)noise[nearestXidx + 1][nearestYidx][nearestZidx + 1]) * w2x * w1y * w2z;
+	local_noise += ((double)noise[nearestXidx + 1][nearestYidx + 1][nearestZidx]) * w2x * w2y * w1z;
+	local_noise += ((double)noise[nearestXidx + 1][nearestYidx + 1][nearestZidx + 1]) * w2x * w2y * w2z;
+
+	/*local_noise += ((double)noise[nearestXidx][nearestYidx][nearestZidx] * sqrt(w1x*w1x + w1y*w1y + w1z*w1z));
+	local_noise += ((double)noise[nearestXidx][nearestYidx][nearestZidx + 1] * sqrt(w1x*w1x + w1y*w1y + (w2z)*(w2z)));
+	local_noise += ((double)noise[nearestXidx][nearestYidx + 1][nearestZidx] * sqrt(w1x*w1x + (w2y)*(w2y) + w1z*w1z));
+	local_noise += ((double)noise[nearestXidx + 1][nearestYidx][nearestZidx] * sqrt((w2x)*(w2x) + w1y*w1y + w1z*w1z));
+	local_noise += ((double)noise[nearestXidx + 1][nearestYidx + 1][nearestZidx] * sqrt((w2x)*(w2x) + (w2y)*(w2y) + w1z*w1z));
+	local_noise += ((double)noise[nearestXidx][nearestYidx + 1][nearestZidx + 1] * sqrt(w1x*w1x + (w2y)*(w2y) + (w2z)*(w2z)));
+	local_noise += ((double)noise[nearestXidx + 1][nearestYidx][nearestZidx + 1] * sqrt((w2x)*(w2x) + w1y*w1y + (w2z)*(w2z)));
+	local_noise += ((double)noise[nearestXidx + 1][nearestYidx + 1][nearestZidx + 1] * sqrt((w2x)*(w2x) + (w2y)*(w2y) + (w2z)*(w2z)));
+
+	local_noise /= sqrt(w1x*w1x + w1y*w1y + w1z*w1z)
+		+ sqrt(w1x*w1x + w1y*w1y + (w2z)*(w2z))
+		+ sqrt(w1x*w1x + (w2y)*(w2y) + w1z*w1z)
+		+ sqrt((w2x)*(w2x) + w1y*w1y + w1z*w1z)
+		+ sqrt((w2x)*(w2x) + (w2y)*(w2y) + w1z*w1z)
+		+ sqrt(w1x*w1x + (w2y)*(w2y) + (w2z)*(w2z))
+		+ sqrt((w2x)*(w2x) + w1y*w1y + (w2z)*(w2z))
+		+ sqrt((w2x)*(w2x) + (w2y)*(w2y) + (w2z)*(w2z));*/
+
+
+	/*
+	
+	local_noise += ((double)noise[nearestXidx][nearestYidx][nearestZidx] * sqrt(w1x*w1x + w1y*w1y + w1z*w1z));
+	local_noise += ((double)noise[nearestXidx][nearestYidx][nearestZidx + 1] * sqrt(w1x*w1x + w1y*w1y + (w1z + 1)*(w1z + 1)));
+	local_noise += ((double)noise[nearestXidx][nearestYidx + 1][nearestZidx] * sqrt(w1x*w1x + (w1y + 1)*(w1y + 1) + w1z*w1z));
+	local_noise += ((double)noise[nearestXidx + 1][nearestYidx][nearestZidx] * sqrt((w1x + 1)*(w1x + 1) + w1y*w1y + w1z*w1z));
+	local_noise += ((double)noise[nearestXidx + 1][nearestYidx + 1][nearestZidx] * sqrt((w1x + 1)*(w1x + 1) + (w1y + 1)*(w1y + 1) + w1z*w1z));
+	local_noise += ((double)noise[nearestXidx][nearestYidx + 1][nearestZidx + 1] * sqrt(w1x*w1x + (w1y + 1)*(w1y + 1) + (w1z + 1)*(w1z + 1)));
+	local_noise += ((double)noise[nearestXidx + 1][nearestYidx][nearestZidx + 1] * sqrt((w1x + 1)*(w1x + 1) + w1y*w1y + (w1z + 1)*(w1z + 1)));
+	local_noise += ((double)noise[nearestXidx + 1][nearestYidx + 1][nearestZidx + 1] * sqrt((w1x + 1)*(w1x + 1) + (w1y + 1)*(w1y + 1) + (w1z + 1)*(w1z + 1)));
+
+	local_noise /= sqrt(w1x*w1x + w1y*w1y + w1z*w1z)
+		+ sqrt(w1x*w1x + w1y*w1y + (w1z + 1)*(w1z + 1))
+		+ sqrt(w1x*w1x + (w1y + 1)*(w1y + 1) + w1z*w1z)
+		+ sqrt((w1x + 1)*(w1x + 1) + w1y*w1y + w1z*w1z)
+		+ sqrt((w1x + 1)*(w1x + 1) + (w1y + 1)*(w1y + 1) + w1z*w1z)
+		+ sqrt(w1x*w1x + (w1y + 1)*(w1y + 1) + (w1z + 1)*(w1z + 1))
+		+ sqrt((w1x + 1)*(w1x + 1) + w1y*w1y + (w1z + 1)*(w1z + 1))
+		+ sqrt((w1x + 1)*(w1x + 1) + (w1y + 1)*(w1y + 1) + (w1z + 1)*(w1z + 1));
+
+	*/
+
+	return local_noise;
+}
+
+double turbulance(const Point3D& pt, const BoundingBox& bbox, double size) {
+	double value = 0;
+	double initialSize = size;
+
+	while (size >= 1) {
+		Point3D pt2 = pt / size;
+		 value += noise_at_xy(pt2, bbox) * size;
+		//value += ((rand() % 32768) / 32768.0) * size;
+		size /= 2;
+	}
+
+	return (128.0 * value) / initialSize;
+}
+
+double smoothNoise(double x, double y, double z)
+{
+	if (!inited) {
+		for (int i = 0; i < nr_random + noise_margin + 1; i++) {
+			for (int j = 0; j < nr_random + noise_margin + 1; j++) {
+				for (int k = 0; k < nr_random + noise_margin + 1; k++) {
+					noise[i][j][k] = (rand() % 32768) / 32768.0;
+					//noise[i][j][k] = (rand() % 100) / 100.0;
+				}
+			}
+		}
+		inited = true;
+	}
+	//get fractional part of x and y
+	double fractX = x - int(x);
+	double fractY = y - int(y);
+	double fractZ = z - int(z);
+
+	//wrap around
+	int x1 = (int(x) + nr_random) % nr_random;
+	int y1 = (int(y) + nr_random) % nr_random;
+	int z1 = (int(z) + nr_random) % nr_random;
+
+	//neighbor values
+	int x2 = (x1 + nr_random - 1) % nr_random;
+	int y2 = (y1 + nr_random - 1) % nr_random;
+	int z2 = (z1 + nr_random - 1) % nr_random;
+
+	//smooth the noise with bilinear interpolation
+	double value = 0.0;
+	value += fractX     * fractY     * fractZ     * noise[z1][y1][x1];
+	value += fractX     * (1 - fractY) * fractZ     * noise[z1][y2][x1];
+	value += (1 - fractX) * fractY     * fractZ     * noise[z1][y1][x2];
+	value += (1 - fractX) * (1 - fractY) * fractZ     * noise[z1][y2][x2];
+
+	value += fractX     * fractY     * (1 - fractZ) * noise[z2][y1][x1];
+	value += fractX     * (1 - fractY) * (1 - fractZ) * noise[z2][y2][x1];
+	value += (1 - fractX) * fractY     * (1 - fractZ) * noise[z2][y1][x2];
+	value += (1 - fractX) * (1 - fractY) * (1 - fractZ) * noise[z2][y2][x2];
+
+	return value;
+}
+
+double turbulance2(const Point3D& pt, double size) {
+	double value = 0;
+	double initialSize = size;
+
+	while (size >= 1) {
+		Point3D pt2 = pt / size;
+		value += smoothNoise(pt2.x, pt2.y, pt.z) * size;
+		//value += ((rand() % 32768) / 32768.0) * size;
+		size /= 2;
+	}
+
+	return (128.0 * value) / initialSize;
+}
+
 COLORREF ApplyLight(const std::vector<LightSource>& lights, const std::vector<ShadowVolume>& svs, const MixedIntPoint& viewPt, const Point3D& pt, const ModelAttr& attr, COLORREF clr, const Vector3D& normal, const Point3D& viewPoint, double ambient)
 {
 	//const Point3D pt(pixel.x, pixel.y, pixel.z);
@@ -1444,7 +1638,67 @@ COLORREF ApplyLight(const std::vector<LightSource>& lights, const std::vector<Sh
 	double normDCoefficient = attr.DiffuseCoefficient / (attr.AmbientCoefficient + attr.DiffuseCoefficient + attr.SpecularCoefficient);
 	double normSCoefficient = attr.SpecularCoefficient / (attr.AmbientCoefficient + attr.DiffuseCoefficient + attr.SpecularCoefficient);
 
-	double rgbValues[] = { (double)(GetRValue(clr)), (double)(GetGValue(clr)), (double)(GetBValue(clr)) };
+	//double rgbValues[] = { (double)(GetRValue(clr)), (double)(GetGValue(clr)), (double)(GetBValue(clr)) };
+	// v_texture
+
+	Point3D pt1(attr.inv * HomogeneousPoint(pt));
+	BoundingBox bbox1 = attr.GetBoundingBox();
+
+	Point3D ptOffset(pt1.x - bbox1.minX, pt1.y - bbox1.minY, pt1.z - bbox1.minZ);
+
+	double local_noise = 0;// noise_at_xy(pt1, bbox1);
+
+	double diffs[3];
+	diffs[0] = (bbox1.maxX - bbox1.minX) / (double)nr_random;
+	diffs[1] = (bbox1.maxY - bbox1.minY) / (double)nr_random;
+	diffs[2] = (bbox1.maxZ - bbox1.minZ) / (double)nr_random;
+
+	Point3D pt01(100.0 * ptOffset.x / (bbox1.maxX - bbox1.minX), 100.0 * ptOffset.y / (bbox1.maxY - bbox1.minY), 100.0 * ptOffset.z / (bbox1.maxZ - bbox1.minZ));
+	//Point3D pt01(100 * ptOffset.x , 100 * ptOffset.y , 100* ptOffset.z );
+
+
+	const double pi = 3.141592;
+	//local_noise = (local_noise / 5.0);
+
+	double a = 0.001, turbPower = 2;
+	//double turbulance1 = turbPower * turbulance2(pt01, 8) / 256.0;
+	double turbulance1 = turbPower * turbulance2(pt01, 8) / 256.0;
+	/*double xyValue = (ptOffset.x) * a / (bbox1.maxX - bbox1.minX)
+		//+ (ptOffset.y) * a / (bbox1.maxY - bbox1.minY)
+		//+ (ptOffset.z) * a / (bbox1.maxZ - bbox1.minZ)
+		+ turbulance1;*/
+	double xyValue =a* sin(             ((ptOffset.x)  / (bbox1.maxX - bbox1.minX)) * 2 * pi        )
+		+ a*sin (        (ptOffset.y) / (bbox1.maxY - bbox1.minY)      * 2 * pi)
+		+ a*sin (        (ptOffset.z) / (bbox1.maxZ - bbox1.minZ)      * 2 * pi)
+		+ turbulance1;
+
+
+	//double num = abs(sin((pt1.x + pt1.y + pt1.z) / 3 * 100)) * 255;
+	double num = abs(sin(xyValue * pi));
+
+	//num = abs(turbulance1) * 255;
+
+	//num *= ((local_noise_x + local_noise_y + local_noise_z) / 3.0);
+	//num = ((local_noise_x + local_noise_y + local_noise_z) / 3.0) * 255.0;
+	//num = (local_noise) * 255.0;
+	//num *= local_noise;
+
+	//num = noise_at_xy(pt1, bbox1) * 256;
+
+	//num = smoothNoise(pt01.x, pt01.y, pt01.z) * 256.0;
+	//num = ptOffset.x / (bbox1.maxX - bbox1.minX);
+
+	double rgbValues[3];// = { num, num, num };
+	rgbValues[0] = num * 255;
+	rgbValues[1] = num * 255;// num;
+	rgbValues[2] = num * 255;// num;
+	//rgbValues[0] += ((int)((double)rand() * 0.005));
+	//rgbValues[1] += ((int)((double)rand() * 0.005));
+	//rgbValues[2] += ((int)((double)rand() * 0.005));
+
+	//rgbValues[0] = GetRValue(clr);
+	//rgbValues[1] = GetGValue(clr);
+	//rgbValues[2] = GetBValue(clr);
 
 	const Vector3D n = normal.Normalized();
 	const Vector3D viewVec = (viewPoint - pt).Normalized();

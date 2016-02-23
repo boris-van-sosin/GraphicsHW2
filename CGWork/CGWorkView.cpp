@@ -213,6 +213,7 @@ int CCGWorkView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 // This method initialized the CGWork system.
 BOOL CCGWorkView::InitializeCGWork()
 {
+	srand(time(NULL)); // v_texture
 	m_pDC = new CClientDC(this);
 
 	if (NULL == m_pDC) { // failure to get DC
@@ -413,6 +414,138 @@ afx_msg void CCGWorkView::OnLButtonDown(UINT nHitTest, CPoint point) {
 	active_object = glowing_object;
 }
 
+
+bool gluInvertMatrix(const double m[16], double invOut[16])
+{
+	double inv[16], det;
+	int i;
+
+	inv[0] = m[5] * m[10] * m[15] -
+		m[5] * m[11] * m[14] -
+		m[9] * m[6] * m[15] +
+		m[9] * m[7] * m[14] +
+		m[13] * m[6] * m[11] -
+		m[13] * m[7] * m[10];
+
+	inv[4] = -m[4] * m[10] * m[15] +
+		m[4] * m[11] * m[14] +
+		m[8] * m[6] * m[15] -
+		m[8] * m[7] * m[14] -
+		m[12] * m[6] * m[11] +
+		m[12] * m[7] * m[10];
+
+	inv[8] = m[4] * m[9] * m[15] -
+		m[4] * m[11] * m[13] -
+		m[8] * m[5] * m[15] +
+		m[8] * m[7] * m[13] +
+		m[12] * m[5] * m[11] -
+		m[12] * m[7] * m[9];
+
+	inv[12] = -m[4] * m[9] * m[14] +
+		m[4] * m[10] * m[13] +
+		m[8] * m[5] * m[14] -
+		m[8] * m[6] * m[13] -
+		m[12] * m[5] * m[10] +
+		m[12] * m[6] * m[9];
+
+	inv[1] = -m[1] * m[10] * m[15] +
+		m[1] * m[11] * m[14] +
+		m[9] * m[2] * m[15] -
+		m[9] * m[3] * m[14] -
+		m[13] * m[2] * m[11] +
+		m[13] * m[3] * m[10];
+
+	inv[5] = m[0] * m[10] * m[15] -
+		m[0] * m[11] * m[14] -
+		m[8] * m[2] * m[15] +
+		m[8] * m[3] * m[14] +
+		m[12] * m[2] * m[11] -
+		m[12] * m[3] * m[10];
+
+	inv[9] = -m[0] * m[9] * m[15] +
+		m[0] * m[11] * m[13] +
+		m[8] * m[1] * m[15] -
+		m[8] * m[3] * m[13] -
+		m[12] * m[1] * m[11] +
+		m[12] * m[3] * m[9];
+
+	inv[13] = m[0] * m[9] * m[14] -
+		m[0] * m[10] * m[13] -
+		m[8] * m[1] * m[14] +
+		m[8] * m[2] * m[13] +
+		m[12] * m[1] * m[10] -
+		m[12] * m[2] * m[9];
+
+	inv[2] = m[1] * m[6] * m[15] -
+		m[1] * m[7] * m[14] -
+		m[5] * m[2] * m[15] +
+		m[5] * m[3] * m[14] +
+		m[13] * m[2] * m[7] -
+		m[13] * m[3] * m[6];
+
+	inv[6] = -m[0] * m[6] * m[15] +
+		m[0] * m[7] * m[14] +
+		m[4] * m[2] * m[15] -
+		m[4] * m[3] * m[14] -
+		m[12] * m[2] * m[7] +
+		m[12] * m[3] * m[6];
+
+	inv[10] = m[0] * m[5] * m[15] -
+		m[0] * m[7] * m[13] -
+		m[4] * m[1] * m[15] +
+		m[4] * m[3] * m[13] +
+		m[12] * m[1] * m[7] -
+		m[12] * m[3] * m[5];
+
+	inv[14] = -m[0] * m[5] * m[14] +
+		m[0] * m[6] * m[13] +
+		m[4] * m[1] * m[14] -
+		m[4] * m[2] * m[13] -
+		m[12] * m[1] * m[6] +
+		m[12] * m[2] * m[5];
+
+	inv[3] = -m[1] * m[6] * m[11] +
+		m[1] * m[7] * m[10] +
+		m[5] * m[2] * m[11] -
+		m[5] * m[3] * m[10] -
+		m[9] * m[2] * m[7] +
+		m[9] * m[3] * m[6];
+
+	inv[7] = m[0] * m[6] * m[11] -
+		m[0] * m[7] * m[10] -
+		m[4] * m[2] * m[11] +
+		m[4] * m[3] * m[10] +
+		m[8] * m[2] * m[7] -
+		m[8] * m[3] * m[6];
+
+	inv[11] = -m[0] * m[5] * m[11] +
+		m[0] * m[7] * m[9] +
+		m[4] * m[1] * m[11] -
+		m[4] * m[3] * m[9] -
+		m[8] * m[1] * m[7] +
+		m[8] * m[3] * m[5];
+
+	inv[15] = m[0] * m[5] * m[10] -
+		m[0] * m[6] * m[9] -
+		m[4] * m[1] * m[10] +
+		m[4] * m[2] * m[9] +
+		m[8] * m[1] * m[6] -
+		m[8] * m[2] * m[5];
+
+	det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
+
+	if (det == 0)
+		return false;
+
+	det = 1.0 / det;
+
+	for (i = 0; i < 16; i++)
+		invOut[i] = inv[i] * det;
+
+	return true;
+}
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Apply matrix on a model
 /////////////////////////////////////////////////////////////////////////////
@@ -441,6 +574,23 @@ bool CCGWorkView::applyMat(const MatrixHomogeneous& mat) {
 	
 	const MatrixHomogeneous& mat1 = _view_space_transformations[active_object] * _model_space_transformations[active_object];
 
+	// v_texture
+	//////////////////////////////////////////////////////////////////////////////
+	double in[16], out[16];
+	for (int i = 0; i < 4; i++ ){
+		for (int j = 0; j < 4; j++) {
+			in[i * 4 + j] = mat1._rows[i][j];
+		}
+	}
+	gluInvertMatrix(in, out);
+
+	for (int i = 0; i < 4; i++){
+		for (int j = 0; j < 4; j++) {
+			_model_attr[active_object].inv._rows[i][j] = out[i * 4 + j];
+		}
+	}
+
+
 	for (auto it = model.begin(); it != model.end(); ++it) {
 		(*it) = mat1 * (*it);
 	}
@@ -460,6 +610,7 @@ bool CCGWorkView::applyMat(const MatrixHomogeneous& mat) {
 		_subObjectBoundingBoxes[active_object][i] = mat1 * _clean_subObjectBoundingBoxes[active_object][i];
 	}
 
+	//_model_attr[active_object].bbox = _bboxes[active_object];
 
 	return true;
 }
@@ -816,7 +967,7 @@ void CCGWorkView::OnFileLoad()
 		_bboxes.push_back(BoundingBox::OfObjects(_models.back()));
 
 		const BoundingBox bcube = _bboxes.back().BoundingCube();
-		_model_attr.push_back(ModelAttr());
+		_model_attr.push_back(ModelAttr(_bboxes.back()));
 
 		double gran_size = fmax(bcube.maxX - bcube.minX, fmax(bcube.maxY - bcube.minY, bcube.maxZ - bcube.minZ)) * 10;
 		_model_attr.back().sensitivity = 1.0 / gran_size;

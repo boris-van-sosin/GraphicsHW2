@@ -97,7 +97,7 @@ public:
 		return *this;
 	}
 
-private:
+public: // v_texture
 	T _rows[D];
 };
 

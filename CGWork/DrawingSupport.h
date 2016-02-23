@@ -11,6 +11,18 @@ enum BackFaceBehavior { BACKFACE_SHOW, BACKFACE_REMOVE_BACK, BACKFACE_REMOVE_FRO
 class ModelAttr
 { // don't make this struct big
 public:
+	ModelAttr()
+	{}
+
+	ModelAttr(const BoundingBox& b)
+		: minX(b.minX), maxX(b.maxX), minY(b.minY), maxY(b.maxY), minZ(b.minZ), maxZ(b.maxZ)
+	{}
+
+	BoundingBox GetBoundingBox() const
+	{
+		return BoundingBox(minX, maxX, minY, maxY, minZ, maxZ);
+	}
+
 	COLORREF color = RGB(0, 0, 255);
 	COLORREF normal_color = RGB(0, 255, 0);
 	COLORREF model_bbox_color = RGB(255, 0, 0);
@@ -32,6 +44,9 @@ public:
 	int shadowVolumeWireframe = -1;
 	double opacity = 1.0;
 	bool forceOpacity = false;
+	// v_texture
+	MatrixHomogeneous inv = Matrices::UnitMatrixHomogeneous; // inverse transformation matrix
+	double minX, maxX, minY, maxY, minZ, maxZ;
 };
 
 class LightSource
