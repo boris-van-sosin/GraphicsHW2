@@ -1704,16 +1704,16 @@ COLORREF ApplyLight(const std::vector<LightSource>& lights, const std::vector<Sh
 	//num = ptOffset.x / (bbox1.maxX - bbox1.minX);
 
 	double rgbValues[3];// = { num, num, num };
-	rgbValues[0] = num * 255;
-	rgbValues[1] = num * 255;// num;
-	rgbValues[2] = num * 255;// num;
+	//rgbValues[0] = num * 255;
+	//rgbValues[1] = num * 255;// num;
+	//rgbValues[2] = num * 255;// num;
 	//rgbValues[0] += ((int)((double)rand() * 0.005));
 	//rgbValues[1] += ((int)((double)rand() * 0.005));
 	//rgbValues[2] += ((int)((double)rand() * 0.005));
 
-	//rgbValues[0] = GetRValue(clr);
-	//rgbValues[1] = GetGValue(clr);
-	//rgbValues[2] = GetBValue(clr);
+	rgbValues[0] = GetRValue(clr);
+	rgbValues[1] = GetGValue(clr);
+	rgbValues[2] = GetBValue(clr);
 
 	const Vector3D n = normal.Normalized();
 	const Vector3D viewVec = (viewPoint - pt).Normalized();
