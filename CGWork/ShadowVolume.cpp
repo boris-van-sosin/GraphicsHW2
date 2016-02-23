@@ -240,26 +240,16 @@ bool ShadowVolume::IsPixelLit(size_t x, size_t y, double z, const Point3D& pt) c
 	//const Point3D pt2 = pt;
 	const Point3D pt2(x, y, z);
 	const Vector3D ray(0, 0, -1);
-	int shadowNesting = 0;
 	bool shadowCrossings = true;
 	for (auto i = _shadowSurfaces.begin(); i != _shadowSurfaces.end(); ++i)
 	{
 		std::pair<bool, double> bi = PolygonIntersection::PolygonRayIntersectionParam(pt2, ray, *i);
 		if (bi.first && bi.second > SV_COMPUTATION_EPSILON)
 		{
-			if (_shadowSurfaceNormals[i - _shadowSurfaces.begin()].PolygonNormal.DirectionVector().z < 0)
-			{
-				--shadowNesting;
-			}
-			else if (_shadowSurfaceNormals[i - _shadowSurfaces.begin()].PolygonNormal.DirectionVector().z > 0)
-			{
-				++shadowNesting;
-			}
 			shadowCrossings = !shadowCrossings;
 		}
 	}
 	return shadowCrossings;
-	return shadowNesting <= 0;
 	/*for (auto it = currPixel2.begin(); it != currPixel2.end(); ++it)
 	{
 		//if (z < it->second._minZ || z > it->second._maxZ)
