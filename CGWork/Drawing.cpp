@@ -1700,26 +1700,21 @@ COLORREF ApplyLight(const std::vector<LightSource>& lights, const std::vector<Sh
 		//double num = abs(sin((pt1.x + pt1.y + pt1.z) / 3 * 100)) * 255;
 		double num = abs(sin(xyValue * pi));
 
-		//num = abs(turbulance1) * 255;
 
-		//num *= ((local_noise_x + local_noise_y + local_noise_z) / 3.0);
-		//num = ((local_noise_x + local_noise_y + local_noise_z) / 3.0) * 255.0;
-		//num = (local_noise) * 255.0;
-		//num *= local_noise;
+		if (attr.v_texture == 1) {	// marble
+			rgbValues[0] = num * 255;
+			rgbValues[1] = num * 255;// num;
+			rgbValues[2] = num * 255;// num;
+		}
+		if (attr.v_texture == 2) {	// wood
+			int r = 143, g = 103, b = 20;
+			rgbValues[0] = r + num * 50 - 25;
+			rgbValues[1] = g + num * 50 - 25;// num;
+			rgbValues[2] = b + num * 50 - 25;// num;
 
-		//num = noise_at_xy(pt1, bbox1) * 256;
+			if (rgbValues[2] < 0) rgbValues[2] = 0;
+		}
 
-		//num = smoothNoise(pt01.x, pt01.y, pt01.z) * 256.0;
-		//num = ptOffset.x / (bbox1.maxX - bbox1.minX);
-
-		//double rgbValues[3];// = { num, num, num };
-
-		rgbValues[0] = num * 255;
-		rgbValues[1] = num * 255;// num;
-		rgbValues[2] = num * 255;// num;
-		//rgbValues[0] += ((int)((double)rand() * 0.005));
-		//rgbValues[1] += ((int)((double)rand() * 0.005));
-		//rgbValues[2] += ((int)((double)rand() * 0.005));
 	}
 
 	const Vector3D n = normal.Normalized();
