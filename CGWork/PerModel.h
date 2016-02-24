@@ -17,6 +17,8 @@ public:
 	int shadow_wireframe_light_src = -1;
 	double opacity;
 	bool forceOpacity;
+	int v_texture = 0;
+	double a, turb_power;
 };
 
 class CPerModel : public CDialogEx

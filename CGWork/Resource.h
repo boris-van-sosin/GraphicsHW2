@@ -74,6 +74,9 @@
 #define IDC_EDIT7                       1067
 #define IDC_RADIO15                     1068
 #define IDC_RADIO16                     1069
+#define IDC_EDIT8                       1070
+#define IDC_EDIT9                       1071
+#define IDC_EDIT10                      1072
 #define ID_FILE_LOAD                    32771
 #define ID_VIEW_ORTHOGRAPHIC            32772
 #define ID_VIEW_PERSPECTIVE             32773
@@ -119,7 +122,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        142
 #define _APS_NEXT_COMMAND_VALUE         32832
-#define _APS_NEXT_CONTROL_VALUE         1064
+#define _APS_NEXT_CONTROL_VALUE         1073
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

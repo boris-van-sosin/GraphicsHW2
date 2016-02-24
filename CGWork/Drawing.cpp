@@ -1645,6 +1645,7 @@ double turbulance2(const Point3D& pt, double size) {
 	return (128.0 * value) / initialSize;
 }
 
+
 COLORREF ApplyLight(const std::vector<LightSource>& lights, const std::vector<ShadowVolume>& svs, const MixedIntPoint& viewPt, const Point3D& pt, const ModelAttr& attr, COLORREF clr, const Vector3D& normal, const Point3D& viewPoint, double ambient)
 {
 	//const Point3D pt(pixel.x, pixel.y, pixel.z);
@@ -1653,67 +1654,71 @@ COLORREF ApplyLight(const std::vector<LightSource>& lights, const std::vector<Sh
 	double normDCoefficient = attr.DiffuseCoefficient / (attr.AmbientCoefficient + attr.DiffuseCoefficient + attr.SpecularCoefficient);
 	double normSCoefficient = attr.SpecularCoefficient / (attr.AmbientCoefficient + attr.DiffuseCoefficient + attr.SpecularCoefficient);
 
-	//double rgbValues[] = { (double)(GetRValue(clr)), (double)(GetGValue(clr)), (double)(GetBValue(clr)) };
+	double rgbValues[] = { (double)(GetRValue(clr)), (double)(GetGValue(clr)), (double)(GetBValue(clr)) };
 	// v_texture
 
-	Point3D pt1(attr.inv * HomogeneousPoint(pt));
-	BoundingBox bbox1 = attr.GetBoundingBox();
 
-	Point3D ptOffset(pt1.x - bbox1.minX, pt1.y - bbox1.minY, pt1.z - bbox1.minZ);
+	if (attr.v_texture) {
 
-	double local_noise = 0;// noise_at_xy(pt1, bbox1);
+		Point3D pt1(attr.inv * HomogeneousPoint(pt));
+		//BoundingBox bbox1 = attr.GetBoundingBox();
+		//BoundingBox bbox1 = *g_world_box; // BoundingBox(-10, 10, -10, 10, -10, 10);
+		BoundingBox bbox1 = BoundingBox(g_world_box->minX -1 , g_world_box->maxX + 1, g_world_box->minY - 1, g_world_box->maxY + 1, g_world_box->minZ - 1, g_world_box->maxZ + 1);
 
-	double diffs[3];
-	diffs[0] = (bbox1.maxX - bbox1.minX) / (double)nr_random;
-	diffs[1] = (bbox1.maxY - bbox1.minY) / (double)nr_random;
-	diffs[2] = (bbox1.maxZ - bbox1.minZ) / (double)nr_random;
+		Point3D ptOffset(pt1.x - bbox1.minX, pt1.y - bbox1.minY, pt1.z - bbox1.minZ);
 
-	Point3D pt01(100.0 * ptOffset.x / (bbox1.maxX - bbox1.minX), 100.0 * ptOffset.y / (bbox1.maxY - bbox1.minY), 100.0 * ptOffset.z / (bbox1.maxZ - bbox1.minZ));
-	//Point3D pt01(100 * ptOffset.x , 100 * ptOffset.y , 100* ptOffset.z );
+		double local_noise = 0;// noise_at_xy(pt1, bbox1);
 
+		double diffs[3];
+		diffs[0] = (bbox1.maxX - bbox1.minX) / (double)nr_random;
+		diffs[1] = (bbox1.maxY - bbox1.minY) / (double)nr_random;
+		diffs[2] = (bbox1.maxZ - bbox1.minZ) / (double)nr_random;
 
-	const double pi = 3.141592;
-	//local_noise = (local_noise / 5.0);
-
-	double a = 0.001, turbPower = 2;
-	//double turbulance1 = turbPower * turbulance2(pt01, 8) / 256.0;
-	double turbulance1 = turbPower * turbulance2(pt01, 8) / 256.0;
-	/*double xyValue = (ptOffset.x) * a / (bbox1.maxX - bbox1.minX)
-		//+ (ptOffset.y) * a / (bbox1.maxY - bbox1.minY)
-		//+ (ptOffset.z) * a / (bbox1.maxZ - bbox1.minZ)
-		+ turbulance1;*/
-	double xyValue =a* sin(             ((ptOffset.x)  / (bbox1.maxX - bbox1.minX)) * 2 * pi        )
-		+ a*sin (        (ptOffset.y) / (bbox1.maxY - bbox1.minY)      * 2 * pi)
-		+ a*sin (        (ptOffset.z) / (bbox1.maxZ - bbox1.minZ)      * 2 * pi)
-		+ turbulance1;
+		Point3D pt01(100.0 * ptOffset.x / (bbox1.maxX - bbox1.minX), 100.0 * ptOffset.y / (bbox1.maxY - bbox1.minY), 100.0 * ptOffset.z / (bbox1.maxZ - bbox1.minZ));
+		//Point3D pt01(100 * ptOffset.x , 100 * ptOffset.y , 100* ptOffset.z );
 
 
-	//double num = abs(sin((pt1.x + pt1.y + pt1.z) / 3 * 100)) * 255;
-	double num = abs(sin(xyValue * pi));
+		const double pi = 3.141592;
+		//local_noise = (local_noise / 5.0);
 
-	//num = abs(turbulance1) * 255;
+		//double a = 0.001, turbPower = 2;
+		double a = 0.001, turbPower = 2;
+		//double turbulance1 = turbPower * turbulance2(pt01, 8) / 256.0;
+		double turbulance1 = turbPower * turbulance2(pt01, 8) / 256.0;
+		/*double xyValue = (ptOffset.x) * a / (bbox1.maxX - bbox1.minX)
+			//+ (ptOffset.y) * a / (bbox1.maxY - bbox1.minY)
+			//+ (ptOffset.z) * a / (bbox1.maxZ - bbox1.minZ)
+			+ turbulance1;*/
+		double xyValue = a* sin(((ptOffset.x) / (bbox1.maxX - bbox1.minX)) * 2 * pi)
+			+ a*sin((ptOffset.y) / (bbox1.maxY - bbox1.minY) * 2 * pi)
+			+ a*sin((ptOffset.z) / (bbox1.maxZ - bbox1.minZ) * 2 * pi)
+			+ turbulance1;
 
-	//num *= ((local_noise_x + local_noise_y + local_noise_z) / 3.0);
-	//num = ((local_noise_x + local_noise_y + local_noise_z) / 3.0) * 255.0;
-	//num = (local_noise) * 255.0;
-	//num *= local_noise;
 
-	//num = noise_at_xy(pt1, bbox1) * 256;
+		//double num = abs(sin((pt1.x + pt1.y + pt1.z) / 3 * 100)) * 255;
+		double num = abs(sin(xyValue * pi));
 
-	//num = smoothNoise(pt01.x, pt01.y, pt01.z) * 256.0;
-	//num = ptOffset.x / (bbox1.maxX - bbox1.minX);
+		//num = abs(turbulance1) * 255;
 
-	double rgbValues[3];// = { num, num, num };
-	//rgbValues[0] = num * 255;
-	//rgbValues[1] = num * 255;// num;
-	//rgbValues[2] = num * 255;// num;
-	//rgbValues[0] += ((int)((double)rand() * 0.005));
-	//rgbValues[1] += ((int)((double)rand() * 0.005));
-	//rgbValues[2] += ((int)((double)rand() * 0.005));
+		//num *= ((local_noise_x + local_noise_y + local_noise_z) / 3.0);
+		//num = ((local_noise_x + local_noise_y + local_noise_z) / 3.0) * 255.0;
+		//num = (local_noise) * 255.0;
+		//num *= local_noise;
 
-	rgbValues[0] = GetRValue(clr);
-	rgbValues[1] = GetGValue(clr);
-	rgbValues[2] = GetBValue(clr);
+		//num = noise_at_xy(pt1, bbox1) * 256;
+
+		//num = smoothNoise(pt01.x, pt01.y, pt01.z) * 256.0;
+		//num = ptOffset.x / (bbox1.maxX - bbox1.minX);
+
+		//double rgbValues[3];// = { num, num, num };
+
+		rgbValues[0] = num * 255;
+		rgbValues[1] = num * 255;// num;
+		rgbValues[2] = num * 255;// num;
+		//rgbValues[0] += ((int)((double)rand() * 0.005));
+		//rgbValues[1] += ((int)((double)rand() * 0.005));
+		//rgbValues[2] += ((int)((double)rand() * 0.005));
+	}
 
 	const Vector3D n = normal.Normalized();
 	const Vector3D viewVec = (viewPoint - pt).Normalized();

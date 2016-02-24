@@ -199,4 +199,7 @@ namespace Normals
 	void ComputeNormals(const PolygonalModel& objs, std::vector<PolygonNormalData>& polygonNormals, NormalList& vertexNormals, PolygonAdjacencyGraph& polygonAdjacency, NormalsGeneration src = NORMALS_VERTEX_ORDER);
 }
 
+
+extern BoundingBox* g_world_box; // v_texture. I love global variables
+
 #endif

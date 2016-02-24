@@ -47,6 +47,8 @@ public:
 	// v_texture
 	MatrixHomogeneous inv = Matrices::UnitMatrixHomogeneous; // inverse transformation matrix
 	double minX, maxX, minY, maxY, minZ, maxZ;
+	int v_texture = 0;
+	double a = 0.001, turbPower = 2;
 };
 
 class LightSource

@@ -80,6 +80,12 @@ BOOL CPerModel::OnInitDialog() {
 	SetDlgItemText(IDC_EDIT6, str);
 	str.Format(_T("%f"), param.opacity);
 	SetDlgItemText(IDC_EDIT7, str);
+	str.Format(_T("%d"), param.v_texture);
+	SetDlgItemText(IDC_EDIT8, str);
+	str.Format(_T("%f"), param.a);
+	SetDlgItemText(IDC_EDIT9, str);
+	str.Format(_T("%f"), param.turb_power);
+	SetDlgItemText(IDC_EDIT10, str);
 	return res;
 }
 
@@ -96,7 +102,7 @@ void CPerModel::OnBnClickedOk()
 	m_tmp_param.cast_shadow = (bool)m_cast_shadow;
 	m_tmp_param.forceOpacity = (bool)m_force_opacity;
 
-	CString str1, str2, str3, str4, str5, str6, str7;
+	CString str1, str2, str3, str4, str5, str6, str7, str8, str9, str10;
 	GetDlgItemText(IDC_EDIT1, str1);
 	GetDlgItemText(IDC_EDIT2, str2);
 	GetDlgItemText(IDC_EDIT3, str3);
@@ -104,6 +110,9 @@ void CPerModel::OnBnClickedOk()
 	GetDlgItemText(IDC_EDIT5, str5);
 	GetDlgItemText(IDC_EDIT6, str6);
 	GetDlgItemText(IDC_EDIT7, str7);
+	GetDlgItemText(IDC_EDIT8, str8);
+	GetDlgItemText(IDC_EDIT9, str9);
+	GetDlgItemText(IDC_EDIT10, str10);
 
 	m_tmp_param.AmbientCoefficient = (double)_ttof(str1);
 	m_tmp_param.DiffuseCoefficient = (double)_ttof(str2);
@@ -112,6 +121,9 @@ void CPerModel::OnBnClickedOk()
 	m_tmp_param.AmbientIntensity = (double)_ttof(str5);
 	m_tmp_param.shadow_wireframe_light_src = (int)_ttof(str6);
 	m_tmp_param.opacity = (double)_ttof(str7);
+	m_tmp_param.v_texture = (int)_ttof(str8);
+	m_tmp_param.a = (double)_ttof(str9);
+	m_tmp_param.turb_power = (double)_ttof(str10);
 	if (m_tmp_param.opacity > 1)
 	{
 		m_tmp_param.opacity = 1.0;

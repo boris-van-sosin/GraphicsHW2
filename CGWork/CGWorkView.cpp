@@ -114,6 +114,8 @@ void ClearShadows()
 		sv->Clear();
 }
 
+BoundingBox* g_world_box = NULL;
+
 BoundingBox WorldBox(const std::vector<PolygonalModel>::const_iterator begin, const std::vector<PolygonalModel>::const_iterator end)
 {
 	if (begin + 1 == end)
@@ -997,6 +999,10 @@ void CCGWorkView::OnFileLoad()
 		assert(_model_attr.size() == _clean_modelBoundingBoxes.size());
 		assert(_model_attr.size() == _clean_subObjectBoundingBoxes.size());
 
+		if (g_world_box)
+			delete g_world_box;
+		g_world_box = new BoundingBox(WorldBox(_models.begin(), _models.end())); // v_texture
+
 		// Open the file and read it.
 		// Your code here...
 
@@ -1347,6 +1353,9 @@ void CCGWorkView::OnPerModel()
 	s.shadow_wireframe_light_src = model.shadowVolumeWireframe;
 	s.opacity = model.opacity;
 	s.forceOpacity = model.forceOpacity;
+	s.v_texture = model.v_texture;
+	s.a = model.a;
+	s.turb_power = model.turbPower;
 
 	CPerModel dlg(s);
 	if (dlg.DoModal() == IDOK)
@@ -1365,6 +1374,9 @@ void CCGWorkView::OnPerModel()
 		model.shadowVolumeWireframe = s.shadow_wireframe_light_src;
 		model.opacity = s.opacity;
 		model.forceOpacity = s.forceOpacity;
+		model.v_texture = s.v_texture;
+		model.a = s.a;
+		model.turbPower = s.turb_power;
 		Invalidate();
 	}
 }
