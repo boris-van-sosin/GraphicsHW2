@@ -1681,9 +1681,11 @@ COLORREF ApplyLight(const std::vector<LightSource>& lights, const std::vector<Sh
 		const double pi = 3.141592;
 		//local_noise = (local_noise / 5.0);
 
-		//double a = 0.001, turbPower = 2;
+
 		double a = 0.001, turbPower = 2;
-		//double turbulance1 = turbPower * turbulance2(pt01, 8) / 256.0;
+		a = attr.a;
+		turbPower = attr.turbPower;
+
 		double turbulance1 = turbPower * turbulance2(pt01, 8) / 256.0;
 		/*double xyValue = (ptOffset.x) * a / (bbox1.maxX - bbox1.minX)
 			//+ (ptOffset.y) * a / (bbox1.maxY - bbox1.minY)
