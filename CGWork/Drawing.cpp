@@ -1714,6 +1714,16 @@ COLORREF ApplyLight(const std::vector<LightSource>& lights, const std::vector<Sh
 
 			if (rgbValues[2] < 0) rgbValues[2] = 0;
 		}
+		if (attr.v_texture == 3) {	// light wood
+			int r = 238, g = 204, b = 134;
+			rgbValues[0] = r + num * 50 - 25;
+			rgbValues[1] = g + num * 50 - 25;// num;
+			rgbValues[2] = b + num * 50 - 25;// num;
+
+			if (rgbValues[2] < 0) rgbValues[2] = 0;
+			if (rgbValues[0] > 255) rgbValues[0] = 255;
+			if (rgbValues[1] > 255) rgbValues[1] = 255;
+		}
 
 	}
 
